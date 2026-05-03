@@ -1,0 +1,496 @@
+/* ============================================
+   BINGO CITY — UI System
+   Cadres 9-slice via border-image + boutons biseautés
+   ============================================ */
+
+/* ============================================
+   CADRES (9-slice)
+   ============================================ */
+.frame {
+  position: relative;
+  padding: 16px;
+  background-clip: padding-box;
+}
+
+/* Cadre bois (panneau principal — pour avatar/lobby/menus) */
+.frame-wood {
+  border: 32px solid transparent;
+  border-image-source: url('/assets/ui/frame_wood.png');
+  border-image-slice: 32 fill;
+  border-image-width: 16px;
+  border-image-repeat: stretch;
+  padding: 0;
+}
+
+/* Cadre beige (sous-panneau — pour le portrait, les stats, etc.) */
+.frame-beige {
+  border: 24px solid transparent;
+  border-image-source: url('/assets/ui/frame_beige.png');
+  border-image-slice: 32 fill;
+  border-image-width: 12px;
+  border-image-repeat: stretch;
+  padding: 0;
+}
+
+/* Cadre métal (HUD du jeu, sombre/SF) */
+.frame-metal {
+  border: 24px solid transparent;
+  border-image-source: url('/assets/ui/frame_metal.png');
+  border-image-slice: 32 fill;
+  border-image-width: 12px;
+  border-image-repeat: stretch;
+  padding: 0;
+  color: white;
+  text-shadow: 1px 1px 0 var(--ink);
+}
+
+.frame-metal-dark {
+  border: 24px solid transparent;
+  border-image-source: url('/assets/ui/frame_metal_dark.png');
+  border-image-slice: 32 fill;
+  border-image-width: 12px;
+  border-image-repeat: stretch;
+  padding: 0;
+  color: white;
+}
+
+/* Pour donner un peu de padding interne au contenu d'un frame */
+.frame > .content {
+  padding: 12px;
+}
+
+/* ============================================
+   TITRES SUR FRAME
+   "Tab" qui dépasse en haut du cadre
+   ============================================ */
+.frame-tab {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--wood-mid);
+  border: 2px solid var(--ink);
+  padding: 4px 14px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: var(--paper);
+  text-shadow: 1px 1px 0 var(--ink);
+  white-space: nowrap;
+  z-index: 2;
+  box-shadow:
+    inset 0 -2px 0 var(--wood-dark),
+    inset 0 2px 0 var(--wood-light),
+    0 2px 0 var(--ink);
+}
+.frame-tab.metal {
+  background: var(--metal-mid);
+  box-shadow:
+    inset 0 -2px 0 var(--metal-dark),
+    inset 0 2px 0 var(--metal-light),
+    0 2px 0 var(--ink);
+}
+
+/* ============================================
+   BOUTONS
+   Style "biseauté pixel" inspiré des boutons bois du sheet
+   ============================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: 'Press Start 2P', 'Courier New', monospace;
+  font-size: 10px;
+  padding: 12px 16px;
+  border: none;
+  cursor: pointer;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transition: transform 0.05s, box-shadow 0.05s;
+  position: relative;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Bouton bois (par défaut) */
+.btn-wood {
+  background: var(--wood-mid);
+  color: var(--paper);
+  box-shadow:
+    inset -2px -2px 0 var(--wood-dark),
+    inset 2px 2px 0 var(--wood-light),
+    0 4px 0 var(--ink);
+  text-shadow: 1px 1px 0 var(--ink);
+}
+.btn-wood:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset -2px -2px 0 var(--wood-dark),
+    inset 2px 2px 0 var(--wood-light),
+    0 2px 0 var(--ink);
+}
+
+/* Bouton métal */
+.btn-metal {
+  background: var(--metal-mid);
+  color: white;
+  box-shadow:
+    inset -2px -2px 0 var(--metal-dark),
+    inset 2px 2px 0 var(--metal-light),
+    0 4px 0 var(--ink);
+  text-shadow: 1px 1px 0 var(--ink);
+}
+.btn-metal:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset -2px -2px 0 var(--metal-dark),
+    inset 2px 2px 0 var(--metal-light),
+    0 2px 0 var(--ink);
+}
+
+/* Variations de couleur */
+.btn-orange {
+  background: var(--orange);
+  box-shadow:
+    inset -2px -2px 0 #c47018,
+    inset 2px 2px 0 #ffb84d,
+    0 4px 0 var(--ink);
+}
+.btn-orange:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset -2px -2px 0 #c47018,
+    inset 2px 2px 0 #ffb84d,
+    0 2px 0 var(--ink);
+}
+
+.btn-blue {
+  background: var(--blue);
+  box-shadow:
+    inset -2px -2px 0 var(--blue-dark),
+    inset 2px 2px 0 #7ab8d9,
+    0 4px 0 var(--ink);
+}
+.btn-blue:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset -2px -2px 0 var(--blue-dark),
+    inset 2px 2px 0 #7ab8d9,
+    0 2px 0 var(--ink);
+}
+
+.btn-green {
+  background: var(--green);
+  box-shadow:
+    inset -2px -2px 0 var(--green-dark),
+    inset 2px 2px 0 #a3d96b,
+    0 4px 0 var(--ink);
+}
+.btn-green:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset -2px -2px 0 var(--green-dark),
+    inset 2px 2px 0 #a3d96b,
+    0 2px 0 var(--ink);
+}
+
+.btn-red {
+  background: var(--red);
+  box-shadow:
+    inset -2px -2px 0 var(--red-dark),
+    inset 2px 2px 0 #f07060,
+    0 4px 0 var(--ink);
+}
+.btn-red:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset -2px -2px 0 var(--red-dark),
+    inset 2px 2px 0 #f07060,
+    0 2px 0 var(--ink);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--paper);
+  box-shadow: inset 0 0 0 2px var(--paper);
+  text-shadow: 1px 1px 0 var(--ink);
+}
+
+.btn-sm { font-size: 8px; padding: 8px 10px; }
+.btn-block { width: 100%; }
+
+/* Bouton icône carré */
+.btn-icon {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-icon img {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+}
+
+/* ============================================
+   INPUT
+   ============================================ */
+.input {
+  width: 100%;
+  font-family: 'VT323', monospace;
+  font-size: 22px;
+  padding: 8px 12px;
+  background: white;
+  border: 3px solid var(--ink);
+  color: var(--ink);
+  outline: none;
+  box-shadow: inset 2px 2px 0 var(--beige-shadow);
+}
+.input:focus {
+  border-color: var(--orange);
+  background: #fffbf0;
+}
+.input-code {
+  text-align: center;
+  letter-spacing: 0.3em;
+  font-size: 28px;
+  text-transform: uppercase;
+  font-family: 'Press Start 2P', monospace;
+  padding: 14px;
+}
+
+/* ============================================
+   LABELS / TYPOGRAPHIE
+   ============================================ */
+.label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--ink);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.title-game {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 32px;
+  color: var(--yellow);
+  text-align: center;
+  line-height: 1.4;
+  text-shadow: 3px 3px 0 var(--red), 6px 6px 0 var(--ink);
+  animation: titleBob 2s ease-in-out infinite;
+}
+@keyframes titleBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.title-screen {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px;
+  color: var(--yellow);
+  text-align: center;
+  text-shadow: 2px 2px 0 var(--ink);
+  margin: 16px 0 12px;
+}
+
+.subtitle {
+  font-family: 'VT323', monospace;
+  font-size: 22px;
+  color: var(--paper);
+  text-align: center;
+  text-shadow: 2px 2px 0 var(--ink);
+}
+
+.small {
+  font-size: 16px;
+  color: var(--ink-soft);
+}
+.small.light {
+  color: var(--paper);
+  opacity: 0.85;
+}
+
+/* ============================================
+   ICÔNES
+   ============================================ */
+.icon {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  vertical-align: middle;
+  image-rendering: pixelated;
+}
+.icon-sm { width: 16px; height: 16px; }
+.icon-lg { width: 48px; height: 48px; }
+
+/* Icon container — petit cadre beige autour d'une icône */
+.icon-frame {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 24px solid transparent;
+  border-image-source: url('/assets/ui/frame_beige.png');
+  border-image-slice: 32 fill;
+  border-image-width: 12px;
+  border-image-repeat: stretch;
+  position: relative;
+}
+.icon-frame img {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+}
+
+/* ============================================
+   JAUGES (gauges/bars)
+   ============================================ */
+.gauge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.gauge-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+.gauge-bar {
+  flex: 1;
+  height: 14px;
+  background: var(--wood-dark);
+  border: 2px solid var(--ink);
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 1px 1px 0 var(--wood-shadow);
+}
+.gauge-fill {
+  height: 100%;
+  background: var(--green);
+  border-right: 2px solid var(--green-dark);
+  transition: width 0.3s;
+  position: relative;
+}
+.gauge-fill::after {
+  content: '';
+  position: absolute;
+  top: 1px; left: 0; right: 1px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.3);
+}
+.gauge-fill.red { background: var(--red); border-right-color: var(--red-dark); }
+.gauge-fill.yellow { background: var(--yellow); border-right-color: #c4a01e; }
+.gauge-fill.blue { background: var(--blue); border-right-color: var(--blue-dark); }
+.gauge-fill.pink { background: var(--pink); border-right-color: #c45f8a; }
+
+.gauge-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: var(--paper);
+  text-shadow: 1px 1px 0 var(--ink);
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+/* ============================================
+   AVATAR (composé en couches)
+   ============================================ */
+.avatar {
+  position: relative;
+  background: linear-gradient(180deg, var(--sky) 0%, #a3dfff 100%);
+  border: 3px solid var(--ink);
+  box-shadow: 0 4px 0 var(--ink);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+/* Avatar: source sprites 64x64, on scale up pour pixel art */
+.avatar.lg { width: 128px; height: 128px; }
+.avatar.md { width: 80px; height: 80px; }
+.avatar.sm { width: 56px; height: 56px; }
+.avatar.xs { width: 40px; height: 40px; }
+.avatar.idle { animation: avatarIdle 2s steps(2) infinite; }
+@keyframes avatarIdle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+.avatar .layer {
+  position: absolute;
+  inset: 0;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  image-rendering: pixelated;
+}
+
+/* ============================================
+   GRILLE D'OPTIONS (avatar choices)
+   ============================================ */
+.opts-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.opt {
+  aspect-ratio: 1;
+  background: var(--paper);
+  border: 2px solid var(--wood-dark);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.05s;
+}
+.opt:active { transform: scale(0.95); }
+.opt.selected {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 2px var(--orange), inset 0 0 0 1px var(--orange);
+  background: #fff8e0;
+}
+.opt img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.opt .layer {
+  position: absolute;
+  inset: 0;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  image-rendering: pixelated;
+}
+.opt .opt-label {
+  position: absolute;
+  bottom: 2px; left: 2px;
+  font-family: 'VT323', monospace;
+  font-size: 11px;
+  color: var(--ink);
+  background: rgba(244, 228, 193, 0.85);
+  padding: 1px 3px;
+  line-height: 1;
+}
+.opt .opt-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
