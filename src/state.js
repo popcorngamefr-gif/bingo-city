@@ -8,6 +8,7 @@ export const state = {
   // Identité Firebase (persist across games)
   uid:         null,
   userProfile: null,   // { name, avatar, stats, ... }
+  accountKey:  null,   // clé Firestore du compte PIN (pseudo normalisé)
 
   // Partie
   isMJ:     false,

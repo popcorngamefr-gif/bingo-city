@@ -32,6 +32,12 @@ export function avatarHtml(av, opts = {}) {
 }
 
 export function avatarLayersHtml(av, mood = 'idle', confidence = 'neutral') {
+  if (av?.generatedImageUrl) {
+    return `
+      <div class="layer generated-img" style="background-image:url('${av.generatedImageUrl}')"></div>
+      <div class="layer mouth-layer" data-mouth>${mouthSvg(mood, confidence)}</div>
+    `
+  }
   const layers = avatarLayers(av)
   return `${layers.map(src => `<div class="layer" style="background-image:url('${src}')"></div>`).join('')}
     <div class="layer mouth-layer" data-mouth>${mouthSvg(mood, confidence)}</div>`

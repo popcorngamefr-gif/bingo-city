@@ -526,3 +526,258 @@
   color: var(--tram-yellow);
   margin-left: 4px;
 }
+
+/* ============================================
+   ACCOUNT SCREEN
+   ============================================ */
+.account-screen { gap: 0; }
+
+.account-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 14px;
+  position: relative;
+  z-index: 5;
+}
+.account-tab {
+  flex: 1;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  padding: 10px 6px;
+  border: 3px solid var(--ink);
+  border-radius: 8px;
+  cursor: pointer;
+  background: var(--cream-cold);
+  color: var(--ink-soft);
+  box-shadow: 0 3px 0 var(--ink);
+  transition: transform 0.05s, box-shadow 0.05s;
+}
+.account-tab.active {
+  background: var(--ink);
+  color: var(--tram-yellow);
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+.account-panel { position: relative; z-index: 5; }
+.account-panel.hidden { display: none; }
+
+/* Ligne PIN */
+.pin-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+.pin-digit {
+  width: 52px;
+  height: 60px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 20px;
+  text-align: center;
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  background: var(--cream-cold);
+  box-shadow: 0 4px 0 var(--ink);
+  color: var(--ink);
+  caret-color: var(--tram-red);
+}
+.pin-digit:focus {
+  outline: none;
+  border-color: var(--tram-red);
+  background: #fff8f4;
+  box-shadow: 0 4px 0 var(--tram-red-dark);
+}
+
+/* Status pseudo */
+.pseudo-status {
+  font-family: 'VT323', monospace;
+  font-size: 16px;
+  min-height: 20px;
+  margin-bottom: 10px;
+  padding-left: 4px;
+}
+.pseudo-status.ok   { color: var(--green-go); }
+.pseudo-status.err  { color: var(--tram-red); }
+
+/* Compte existant */
+.account-identity {
+  text-align: center;
+  margin-bottom: 16px;
+}
+.account-pseudo {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px;
+  color: var(--tram-red);
+  margin-bottom: 4px;
+}
+.account-name {
+  font-family: 'VT323', monospace;
+  font-size: 22px;
+  color: var(--ink-soft);
+}
+.account-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.stat-box {
+  text-align: center;
+  background: var(--cream-warm);
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  padding: 8px 4px;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+.stat-val {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 14px;
+  color: var(--tram-red);
+}
+.stat-lbl {
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+.account-pin-recall { }
+.account-code-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.account-code-label {
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  color: var(--ink-soft);
+  min-width: 60px;
+}
+.account-code-val {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  color: var(--ink);
+}
+
+/* ============================================
+   HOME SCREEN LAYOUT
+   ============================================ */
+.home-spacer {
+  flex: 1;
+  min-height: 16px;
+  max-height: 40px;
+}
+.home-actions {
+  padding: 0 6px;
+  position: relative;
+  z-index: 5;
+  margin-bottom: 8px;
+}
+.account-cta {
+  align-self: center;
+  width: auto !important;
+  padding: 8px 18px !important;
+}
+/* Profile badge cliquable */
+.profile-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--ink);
+  color: var(--cream-cold);
+  border: 2px solid var(--tram-yellow);
+  border-radius: 20px;
+  padding: 7px 16px;
+  font-family: 'VT323', monospace;
+  font-size: 17px;
+  cursor: pointer;
+  align-self: center;
+}
+.profile-badge .profile-stats {
+  font-size: 14px;
+  color: var(--tram-yellow);
+}
+
+/* ============================================
+   AVATAR GENERATOR (pixel art AI)
+   ============================================ */
+.gen-camera-frame {
+  width: 100%;
+  aspect-ratio: 1;
+  background: linear-gradient(135deg, var(--ink) 0%, #1a1020 100%);
+  border: 3px solid var(--tram-yellow);
+  border-radius: 10px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.gen-camera-frame::before {
+  content: '';
+  position: absolute;
+  inset: 10px;
+  border: 2px dashed rgba(240, 200, 96, 0.4);
+  animation: scanline 2s linear infinite;
+}
+
+.gen-result-box { max-width: 360px; }
+.gen-result-img-wrap {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 4px solid var(--tram-yellow);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 6px 0 var(--ink), 0 0 0 2px var(--ink);
+  margin-bottom: 4px;
+}
+.gen-result-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* Spinner pixel art */
+.gen-pixel-spinner {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 16px;
+  background: var(--tram-red);
+  box-shadow:
+    0 0 0 4px var(--ink),
+    8px 0 0 4px var(--tram-yellow),
+    -8px 0 0 4px var(--tram-yellow),
+    0 8px 0 4px var(--tram-yellow),
+    0 -8px 0 4px var(--tram-yellow);
+  animation: pixelSpin 0.6s steps(4) infinite;
+}
+@keyframes pixelSpin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.gen-loading-msg {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--ink);
+  text-align: center;
+  line-height: 1.8;
+  animation: textBlink 1s steps(2) infinite;
+}
+@keyframes textBlink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* Couche avatar générée (remplace les sprites) */
+.layer.generated-img {
+  background-size: cover;
+  background-position: center top;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+}

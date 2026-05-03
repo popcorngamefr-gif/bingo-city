@@ -1,0 +1,6 @@
+{
+  "functions": {
+    "api/start-generation.js": { "maxDuration": 15 },
+    "api/check-generation.js": { "maxDuration": 10 }
+  }
+}

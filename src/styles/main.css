@@ -175,7 +175,7 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 30%;
+  height: 26%;
   z-index: 1;
   pointer-events: none;
   overflow: hidden;
@@ -192,7 +192,7 @@ body {
      touchent les rails : bottom proche de 0, ajusté pour le viewBox */
   bottom: 2%;
   left: 0;
-  width: 22%;
+  width: 15%;
   height: auto;
   aspect-ratio: 80/30;
   z-index: 2;
@@ -201,7 +201,7 @@ body {
 }
 @keyframes tramPass {
   0% { transform: translateX(-110%); }
-  100% { transform: translateX(550%); }
+  100% { transform: translateX(700%); }
 }
 
 /* Screens */
