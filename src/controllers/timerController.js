@@ -1,10 +1,9 @@
 /**
  * Timer Controller
- * Gère le compte à rebours de la partie.
  */
 
 import { state } from '../state.js'
-import { navigate } from '../router.js'
+import { onTimerEnd } from './gameController.js'
 
 export function startTimer() {
   if (state.timerInterval) clearInterval(state.timerInterval)
@@ -15,7 +14,7 @@ export function startTimer() {
     updateTimer()
     if (state.timer <= 0) {
       clearInterval(state.timerInterval)
-      navigate('end')
+      onTimerEnd()
     }
   }, 1000)
 }

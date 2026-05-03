@@ -1,22 +1,26 @@
 /**
  * State global de Bingo Santé
- * Tout est en mémoire pour le proto. Plus tard on branchera Firebase ici.
+ * uid + userProfile persistent via Firebase Auth/Firestore.
+ * Le reste est réinitialisé entre les parties.
  */
 
 export const state = {
-  // Identité
+  // Identité Firebase (persist across games)
+  uid:         null,
+  userProfile: null,   // { name, avatar, stats, ... }
+
+  // Partie
   isMJ:     false,
   myName:   '',
   myAvatar: { skin: 0, eyes: 0, hairStyle: 0, hairColor: 0, acc: 0 },
 
-  // Partie
-  gameCode:  null,
-  gameName:  '',
-  players:   [],         // { id, name, avatar, score, isMJ, isYou, justJoined, hasBingo }
+  gameCode:        null,
+  gameName:        '',
+  players:         [],   // { id, name, avatar, score, isMJ, isYou, justJoined, hasBingo }
   selectedObjects: [],   // ids des objets choisis par MJ
-  myGrid:    [],         // { objId, status: 'empty' | 'validated' | 'rejected' }
+  myGrid:          [],   // { objId, status: 'empty' | 'validated' }
 
-  // Photos capturées : { [cellIdx]: dataUrl }
+  // Photos capturées : { [cellIdx]: url (Storage) ou dataUrl (avant upload) }
   myPhotos: {},
 
   // En cours
@@ -41,9 +45,13 @@ export function generateCode() {
 }
 
 /**
- * Reset du state pour une nouvelle partie.
+ * Reset du state entre les parties.
+ * Ne touche pas à uid / userProfile — l'identité persiste.
  */
 export function resetGame() {
+  state.isMJ            = false
+  state.myName          = state.userProfile?.name  || ''
+  state.myAvatar        = { ...(state.userProfile?.avatar || { skin: 0, eyes: 0, hairStyle: 0, hairColor: 0, acc: 0 }) }
   state.gameCode        = null
   state.gameName        = ''
   state.players         = []

@@ -500,3 +500,29 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ============================================
+   PROFILE BADGE (home screen)
+   ============================================ */
+.profile-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--ink);
+  color: var(--cream-cold);
+  border: 2px solid var(--tram-yellow);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-family: 'VT323', monospace;
+  font-size: 16px;
+  position: relative;
+  z-index: 5;
+  margin-bottom: 16px;
+  align-self: center;
+  max-width: 90%;
+}
+.profile-stats {
+  font-size: 13px;
+  color: var(--tram-yellow);
+  margin-left: 4px;
+}

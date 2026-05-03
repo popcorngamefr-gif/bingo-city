@@ -2,10 +2,12 @@
  * Écran : rejoindre une partie via code
  */
 
+import { state }        from '../state.js'
 import { bgVarsovieHtml } from '../ui/varsovie.js'
-import { icon } from '../ui/icons.js'
+import { icon }         from '../ui/icons.js'
 
 export function renderJoin() {
+  const savedName = state.myName || state.userProfile?.name || ''
   return `
     <section class="screen">
       ${bgVarsovieHtml({ withTram: false, opacity: 0.4 })}
@@ -24,7 +26,7 @@ export function renderJoin() {
 
       <div class="card mb" style="position: relative; z-index: 5;">
         <label class="label">Ton pseudo</label>
-        <input class="input" id="joiner-name-input" placeholder="ex: Marek" maxlength="15" />
+        <input class="input" id="joiner-name-input" placeholder="ex: Marek" maxlength="15" value="${savedName}" />
       </div>
 
       <div class="row mt" style="position: relative; z-index: 5;">

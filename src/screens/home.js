@@ -1,11 +1,21 @@
 /**
- * Écran d'accueil — Varsovie Édition
+ * Écran d'accueil — affiche le profil si déjà connecté
  */
 
+import { state }        from '../state.js'
 import { bgVarsovieHtml, floatingItemsHtml } from '../ui/varsovie.js'
-import { icon } from '../ui/icons.js'
+import { icon }         from '../ui/icons.js'
 
 export function renderHome() {
+  const profile = state.userProfile
+  const profileBadge = profile?.name ? `
+    <div class="profile-badge">
+      ${icon('user', { size: 14 })}
+      <span>${profile.name}</span>
+      ${profile.stats ? `<span class="profile-stats">★ ${profile.stats.totalScore || 0} pts · ${profile.stats.totalGames || 0} parties</span>` : ''}
+    </div>
+  ` : ''
+
   return `
     <section class="screen home-screen">
       ${bgVarsovieHtml()}
@@ -17,7 +27,7 @@ export function renderHome() {
         <div class="subtitle-banner">VARSOVIE ÉDITION</div>
       </div>
 
-      <div style="height: 24px;"></div>
+      ${profileBadge}
 
       <div class="stack" style="padding: 0 6px; position: relative; z-index: 5;">
         <button class="btn btn-red" data-action="goCreate">
@@ -37,7 +47,7 @@ export function renderHome() {
       </div>
 
       <p class="footer-info">
-        v0.7 · ${icon('bottle', { size: 14 })} Na zdrowie !
+        v0.8 · ${icon('bottle', { size: 14 })} Na zdrowie !
       </p>
 
       <div class="polska-sticker"></div>

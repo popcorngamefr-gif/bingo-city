@@ -1,19 +1,19 @@
 /**
  * Modal appareil photo
- * Capture une vraie photo (via input file/camera),
- * stockée en base64 dans state.myPhotos pour le récap de fin.
- * Pas d'IA — la validation est immédiate.
+ * Capture réelle via input file/camera.
+ * Upload vers Firebase Storage en background.
+ * Validation immédiate côté local.
  */
 
-import { state } from '../state.js'
-import { show } from '../router.js'
-import { toast } from './toast.js'
-import { icon } from './icons.js'
-import { getObject } from '../data/objects.js'
-import { triggerHudAvatar, updateHudConfidence, checkHeartbeat } from '../controllers/avatarController.js'
-import { checkBingo } from '../controllers/gameController.js'
+import { state }          from '../state.js'
+import { show }           from '../router.js'
+import { toast }          from './toast.js'
+import { icon }           from './icons.js'
+import { getObject }      from '../data/objects.js'
+import { handleValidation } from '../controllers/gameController.js'
+import { triggerHudAvatar } from '../controllers/avatarController.js'
 
-// ─── Ouverture du modal ───────────────────────────────────────────────────────
+// ─── Ouverture ───────────────────────────────────────────────────────────────
 
 export function openCameraModal(cellIdx) {
   state.currentPickingObj = cellIdx
@@ -46,51 +46,44 @@ export function openCameraModal(cellIdx) {
     </div>
   `
 
-  // Input caméra caché — déclenché par le bouton "Capturer"
-  const input = document.createElement('input')
-  input.type    = 'file'
-  input.accept  = 'image/*'
-  input.capture = 'environment'
+  // Input caméra caché
+  const input    = document.createElement('input')
+  input.type     = 'file'
+  input.accept   = 'image/*'
+  input.capture  = 'environment'
 
   input.addEventListener('change', (e) => {
     const file = e.target.files[0]
     if (!file) return
     const reader = new FileReader()
-    reader.onload = (ev) => _storeAndValidate(cellIdx, ev.target.result)
+    reader.onload = (ev) => _process(cellIdx, ev.target.result)
     reader.readAsDataURL(file)
   })
 
-  document.getElementById('capture-btn').addEventListener('click', () => input.click())
+  document.getElementById('capture-btn')?.addEventListener('click', () => input.click())
 }
 
-// ─── Stockage + validation immédiate ─────────────────────────────────────────
+// ─── Traitement ───────────────────────────────────────────────────────────────
 
-function _storeAndValidate(cellIdx, dataUrl) {
-  if (!state.myPhotos) state.myPhotos = {}
+function _process(cellIdx, dataUrl) {
+  // 1. Stockage local immédiat (base64 → visible tout de suite)
   state.myPhotos[cellIdx] = dataUrl
 
-  const cell = state.myGrid[cellIdx]
-  const obj  = getObject(cell.objId)
-
-  cell.status = 'validated'
-
-  const me = state.players.find(p => p.isYou)
-  if (me) me.score = (me.score || 0) + (obj.points || 1)
-
+  // 2. Ferme le modal, valide la cellule
   closeModal()
   state.currentPickingObj = null
+  handleValidation(cellIdx)
 
-  toast(`✓ ${obj.name} capturé ! +${obj.points} pts`)
-  triggerHudAvatar('jump', { duration: 800, emote: 'star' })
-
-  if (state.currentScreen === 'game') show('game')
-
-  setTimeout(() => {
-    updateHudConfidence()
-    checkHeartbeat()
-  }, 100)
-
-  checkBingo()
+  // 3. Upload Firebase Storage en arrière-plan
+  //    Quand c'est prêt, on remplace le dataUrl par l'URL Storage
+  if (state.gameCode && state.uid) {
+    const cell = state.myGrid[cellIdx]
+    import('../firebase/storage.js').then(({ uploadPhoto }) => {
+      uploadPhoto(state.gameCode, state.uid, cellIdx, dataUrl, cell?.objId)
+        .then(url => { state.myPhotos[cellIdx] = url })
+        .catch(err => console.warn('Photo upload failed:', err))
+    })
+  }
 }
 
 // ─── Fermeture ────────────────────────────────────────────────────────────────

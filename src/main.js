@@ -1,6 +1,6 @@
 /**
  * BINGO SANTÉ — Varsovie Édition
- * Entry point : styles + router + délégation d'événements
+ * Entry point : auth Firebase + router + délégation d'événements
  */
 
 import './styles/main.css'
@@ -8,19 +8,75 @@ import './styles/ui.css'
 import './styles/screens.css'
 
 import { state, generateCode, resetGame } from './state.js'
-import { initRouter, navigate, show } from './router.js'
-import { toast } from './ui/toast.js'
-import { randomAvatar } from './utils/random.js'
-import { getObjects } from './data/objects.js'
-import { PORTRAIT } from './data/portrait.js'
+import { initRouter, navigate, show }     from './router.js'
+import { toast }                          from './ui/toast.js'
+import { randomAvatar }                   from './utils/random.js'
+import { getObjects }                     from './data/objects.js'
+import { PORTRAIT }                       from './data/portrait.js'
 
 import { refreshAvatarUI, cycleAvatarField, setupAvatarLoops, updateHudConfidence, checkHeartbeat } from './controllers/avatarController.js'
-import { startTimer } from './controllers/timerController.js'
-import { simulateJoin } from './controllers/gameController.js'
-import { openCameraModal, closeModal } from './ui/modal.js'
+import { startTimer }                     from './controllers/timerController.js'
+import { simulateJoin }                   from './controllers/gameController.js'
+import { openCameraModal, closeModal }    from './ui/modal.js'
+
+import { initAuth, saveProfile }          from './firebase/auth.js'
+import { createGame, joinGame, startGame, subscribeToPlayers, subscribeToGame, unsubscribeAll } from './firebase/game.js'
 
 /* ============================================================
-   ACTIONS — toutes les actions custom déclenchées par les boutons
+   LOBBY — suivi temps réel des joueurs
+   ============================================================ */
+
+// UIDs déjà vus dans la session lobby (pour détecter les nouveaux)
+const _seenPlayerIds = new Set()
+
+function _onPlayersUpdate(players) {
+  const newIds = players
+    .filter(p => !_seenPlayerIds.has(p.id))
+    .map(p => { _seenPlayerIds.add(p.id); return p.id })
+
+  state.players = players.map(p => ({
+    ...p,
+    isYou:      p.id === state.uid,
+    justJoined: newIds.includes(p.id),
+  }))
+
+  if (state.currentScreen === 'lobby') {
+    show('lobby')
+    if (newIds.length) {
+      setTimeout(() => {
+        state.players = state.players.map(p => ({ ...p, justJoined: false }))
+      }, 600)
+    }
+  }
+}
+
+function _onGameUpdate(gameData) {
+  // Non-MJ : démarre la partie quand le MJ lance
+  if (
+    gameData.status === 'playing' &&
+    state.currentScreen === 'lobby' &&
+    !state.isMJ
+  ) {
+    state.selectedObjects = gameData.selectedObjects || []
+    state.myGrid = state.selectedObjects.map(id => ({ objId: id, status: 'empty' }))
+    startTimer()
+    navigate('game')
+  }
+  // Tout le monde : si la partie est terminée côté serveur, aller à l'écran de fin
+  if (gameData.status === 'ended' && state.currentScreen === 'game') {
+    navigate('end')
+  }
+}
+
+function _setupLobbySubscriptions() {
+  _seenPlayerIds.clear()
+  if (!state.gameCode) return
+  subscribeToPlayers(state.gameCode, _onPlayersUpdate)
+  subscribeToGame(state.gameCode, _onGameUpdate)
+}
+
+/* ============================================================
+   ACTIONS
    ============================================================ */
 const ACTIONS = {
 
@@ -38,24 +94,31 @@ const ACTIONS = {
     toast("Le MJ choisit les objets, vous les trouvez en photo. Premier à compléter sa grille gagne !", 4000)
   },
 
-  createGame() {
+  async createGame() {
     const gameName = (document.getElementById('game-name-input')?.value || '').trim() || 'Sans nom'
     const myName   = (document.getElementById('creator-name-input')?.value || '').trim()
     if (!myName) return toast('Entre ton pseudo')
+
     state.gameName = gameName
     state.myName   = myName
     state.gameCode = generateCode()
     navigate('avatar')
   },
 
-  joinGame() {
+  async joinGame() {
     const code   = (document.getElementById('join-code-input')?.value || '').trim().toUpperCase()
     const myName = (document.getElementById('joiner-name-input')?.value || '').trim()
     if (code.length < 4) return toast('Code à 4 caractères')
-    if (!myName) return toast('Entre ton pseudo')
-    state.gameCode = code
-    state.myName   = myName
-    navigate('avatar')
+    if (!myName)          return toast('Entre ton pseudo')
+
+    try {
+      await joinGame({ code, uid: state.uid, name: myName, avatar: state.myAvatar })
+      state.gameCode = code
+      state.myName   = myName
+      navigate('avatar')
+    } catch (err) {
+      toast(err.message || 'Impossible de rejoindre')
+    }
   },
 
   randomizeAvatar() {
@@ -63,37 +126,54 @@ const ACTIONS = {
     refreshAvatarUI({ mood: 'jump', sparkles: true, duration: 600 })
   },
 
-  confirmAvatar() {
+  async confirmAvatar() {
     const nameInput = document.getElementById('avatar-name-input')
     if (nameInput) {
-      const newName = nameInput.value.trim()
-      if (newName) state.myName = newName
+      const v = nameInput.value.trim()
+      if (v) state.myName = v
+    }
+
+    // Sauvegarde le profil dans Firestore
+    try {
+      await saveProfile({ name: state.myName || 'Anonyme', avatar: state.myAvatar })
+    } catch (err) {
+      console.warn('saveProfile failed:', err)
     }
 
     const me = {
-      id:     'me',
+      id:     state.uid || 'me',
       name:   state.myName || 'Moi',
       avatar: { ...state.myAvatar },
       score:  0,
       isMJ:   state.isMJ,
       isYou:  true,
     }
-    state.players = [me]
 
     if (state.isMJ) {
-      setTimeout(() => simulateJoin('Marion'), 800)
-      setTimeout(() => simulateJoin('Karim'),  2000)
-      setTimeout(() => simulateJoin('Léa'),    3400)
+      state.players = [me]
+      // Crée la salle dans Firestore
+      try {
+        await createGame({
+          code:        state.gameCode,
+          name:        state.gameName,
+          hostUid:     state.uid,
+          hostName:    state.myName,
+          hostAvatar:  state.myAvatar,
+        })
+      } catch (err) {
+        console.warn('createGame failed:', err)
+        // Fallback : on continue quand même en local
+        setTimeout(() => simulateJoin('Marion'), 800)
+        setTimeout(() => simulateJoin('Karim'),  2000)
+        setTimeout(() => simulateJoin('Léa'),    3400)
+      }
     } else {
-      state.players.unshift({
-        id:     'mj',
-        name:   'MJ',
-        avatar: randomAvatar(),
-        score:  0,
-        isMJ:   true,
-      })
-      setTimeout(() => simulateJoin('Marion'), 1000)
-      setTimeout(() => simulateJoin('Karim'),  2400)
+      // Mise à jour du doc joueur avec l'avatar définitif
+      try {
+        const { updatePlayerGrid } = await import('./firebase/game.js')
+        await updatePlayerGrid(state.gameCode, state.uid, [])
+      } catch {}
+      state.players = [me]
     }
 
     navigate('lobby')
@@ -102,6 +182,12 @@ const ACTIONS = {
   startGame() {
     if (state.selectedObjects.length < 6) return toast('Min. 6 objets')
     state.myGrid = state.selectedObjects.map(id => ({ objId: id, status: 'empty' }))
+
+    // Push vers Firestore pour que les non-MJ démarrent aussi
+    if (state.gameCode) {
+      startGame(state.gameCode, state.selectedObjects).catch(console.error)
+    }
+
     startTimer()
     navigate('game')
   },
@@ -112,9 +198,8 @@ const ACTIONS = {
   },
 
   newGame() {
+    unsubscribeAll()
     resetGame()
-    state.myAvatar = { skin: 0, eyes: 0, hairStyle: 0, hairColor: 0, acc: 0 }
-    state.myName   = ''
     navigate('home')
   },
 }
@@ -125,7 +210,7 @@ const ACTIONS = {
 function setupEventDelegation() {
   document.addEventListener('click', (e) => {
     const target = e.target.closest(
-      '[data-action],[data-nav],[data-cycle],[data-toggle-obj],[data-cell],[data-validate]'
+      '[data-action],[data-nav],[data-cycle],[data-toggle-obj],[data-cell]'
     )
     if (!target || target.disabled) return
 
@@ -145,7 +230,7 @@ function setupEventDelegation() {
       return
     }
 
-    // 3. Cycle de catégorie d'avatar (← / →)
+    // 3. Cycle avatar
     const cycleExpr = target.dataset.cycle
     if (cycleExpr) {
       const [field, dirStr] = cycleExpr.split(':')
@@ -153,7 +238,7 @@ function setupEventDelegation() {
       return
     }
 
-    // 4. Toggle objet (écran setup MJ) — flash du counter + scroll to top
+    // 4. Toggle objet (setup) — flash counter
     const objId = target.dataset.toggleObj
     if (objId) {
       const idx = state.selectedObjects.indexOf(objId)
@@ -165,13 +250,11 @@ function setupEventDelegation() {
         return toast('Max 25 objets')
       }
       show('setup')
-      // Le re-render recrée un .screen neuf → déjà scrollé en haut.
-      // On ajoute juste le flash sur le counter.
       requestAnimationFrame(() => {
         const counter = document.getElementById('obj-counter')
         if (!counter) return
         counter.classList.remove('flash')
-        void counter.offsetWidth              // force reflow pour relancer l'anim
+        void counter.offsetWidth
         counter.classList.add('flash')
       })
       return
@@ -201,28 +284,61 @@ function setupInputFilters() {
 }
 
 /* ============================================================
-   INIT
+   GESTION DES SUBSCRIPTIONS PAR SCREEN
    ============================================================ */
-document.addEventListener('DOMContentLoaded', () => {
-  setupInputFilters()
-  setupEventDelegation()
-  initRouter()
-
+function setupScreenHooks() {
   window.addEventListener('hashchange', () => {
+    const screen = state.currentScreen
     setTimeout(() => {
       setupAvatarLoops()
-      if (state.currentScreen === 'game') {
+      if (screen === 'game') {
         updateHudConfidence()
         checkHeartbeat()
       }
+      if (screen === 'lobby') {
+        _setupLobbySubscriptions()
+      }
+      if (screen === 'home' || screen === 'end') {
+        unsubscribeAll()
+      }
     }, 50)
   })
+}
 
+/* ============================================================
+   INIT
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', async () => {
+  setupInputFilters()
+  setupEventDelegation()
+  setupScreenHooks()
+
+  // Affiche l'app en mode "chargement" le temps que Firebase auth réponde
+  document.getElementById('app').innerHTML = `
+    <section class="screen" style="display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
+      <div style="font-family:'Press Start 2P',monospace;font-size:11px;color:var(--ink);text-align:center;line-height:1.8;">
+        BINGO SANTÉ<br>VARSOVIE
+      </div>
+      <div style="font-family:'VT323',monospace;font-size:18px;color:var(--ink-soft);">
+        Connexion...
+      </div>
+    </section>
+  `
+
+  try {
+    await initAuth()
+  } catch (err) {
+    console.warn('Auth failed, running offline:', err)
+    // Fallback sans Firebase — le jeu fonctionne en local
+  }
+
+  initRouter()
   setTimeout(setupAvatarLoops, 100)
 
   console.log('🍻 Bingo Santé Varsovie ready', {
+    uid:         state.uid,
+    hasProfile:  !!state.userProfile,
     skins:       PORTRAIT.skins.length,
-    eyes:        PORTRAIT.eyes.length,
     hairStyles:  PORTRAIT.hairStyles.length,
     accessories: PORTRAIT.accessories.length,
     objects:     getObjects().length,

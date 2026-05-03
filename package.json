@@ -1,12 +1,15 @@
 {
   "name": "bingo-sante-varsovie",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Bingo Santé — Varsovie Édition. Le bingo urbain pixel art pour groupes en voyage.",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
+  },
+  "dependencies": {
+    "firebase": "^11.0.0"
   },
   "devDependencies": {
     "vite": "^5.4.10"

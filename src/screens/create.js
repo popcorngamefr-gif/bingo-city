@@ -2,10 +2,12 @@
  * Écran : créer une partie (mode MJ)
  */
 
+import { state }        from '../state.js'
 import { bgVarsovieHtml } from '../ui/varsovie.js'
-import { icon } from '../ui/icons.js'
+import { icon }         from '../ui/icons.js'
 
 export function renderCreate() {
+  const savedName = state.myName || state.userProfile?.name || ''
   return `
     <section class="screen">
       ${bgVarsovieHtml({ withTram: false, opacity: 0.4 })}
@@ -24,7 +26,7 @@ export function renderCreate() {
         <input class="input mb" id="game-name-input" placeholder="ex: Varsovie Mai 26" maxlength="30" />
 
         <label class="label">Ton pseudo</label>
-        <input class="input" id="creator-name-input" placeholder="ex: Tristan" maxlength="15" />
+        <input class="input" id="creator-name-input" placeholder="ex: Marek" maxlength="15" value="${savedName}" />
       </div>
 
       <div class="row mt" style="position: relative; z-index: 5;">

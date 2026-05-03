@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Profil utilisateur : lecture/écriture par le propriétaire uniquement
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Parties : lecture pour tous les users connectés
+    match /games/{gameId} {
+      allow read: if request.auth != null;
+      // Création / update du doc principal : n'importe quel user connecté
+      allow write: if request.auth != null;
+
+      // Joueurs : lecture pour tous, écriture par le propriétaire du doc
+      match /players/{playerId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && request.auth.uid == playerId;
+      }
+
+      // Photos : lecture pour tous, écriture par le propriétaire
+      match /photos/{photoId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null;
+      }
+    }
+  }
+}
