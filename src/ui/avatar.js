@@ -205,18 +205,28 @@ export function triggerMood(el, mood, opts = {}) {
 }
 
 /**
- * Affiche une bulle d'emote au-dessus de l'avatar (BD style)
+ * Affiche une bulle d'emote au-dessus de l'avatar (BD style).
+ * @param {HTMLElement} el
+ * @param {String} content - peut être un caractère court (!?★) OU un nom d'icône SVG (robot, heart, star, exclam, question)
  */
-export function showEmote(el, char) {
-  if (!el) return
-  // Retirer toute bulle précédente
+export function showEmote(el, content) {
+  if (!el || !content) return
   el.querySelectorAll('.emote-bubble').forEach(b => b.remove())
 
   const bubble = document.createElement('div')
   bubble.className = 'emote-bubble'
-  bubble.textContent = char
-  el.appendChild(bubble)
 
+  // Si content est un nom d'icône connu, on charge le SVG depuis icons.js
+  // (import dynamique pour éviter cycle)
+  import('./icons.js').then(({ iconSvg, ICON_NAMES }) => {
+    if (ICON_NAMES.includes(content)) {
+      bubble.innerHTML = `<span class="emote-icon">${iconSvg(content)}</span>`
+    } else {
+      bubble.textContent = content
+    }
+  })
+
+  el.appendChild(bubble)
   setTimeout(() => bubble.remove(), 1200)
 }
 

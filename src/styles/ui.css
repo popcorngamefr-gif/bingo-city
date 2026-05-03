@@ -846,15 +846,15 @@
    ============================================ */
 .emote-bubble {
   position: absolute;
-  top: -22px;
+  top: -24px;
   left: 50%;
   transform: translateX(-50%);
   background: var(--cream-cold);
   color: var(--ink);
   border: 3px solid var(--ink);
   border-radius: 50%;
-  width: 38px;
-  height: 38px;
+  width: 42px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -864,6 +864,17 @@
   box-shadow: 0 3px 0 var(--ink);
   animation: emotePop 1.2s ease-out forwards;
   pointer-events: none;
+}
+.emote-bubble .emote-icon {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.emote-bubble .emote-icon svg {
+  width: 100%;
+  height: 100%;
 }
 .emote-bubble::after {
   content: '';

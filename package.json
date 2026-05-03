@@ -1,6 +1,6 @@
 {
   "name": "bingo-sante-varsovie",
-  "version": "0.6.2",
+  "version": "0.7.0",
   "description": "Bingo Santé — Varsovie Édition. Le bingo urbain pixel art pour groupes en voyage.",
   "type": "module",
   "scripts": {

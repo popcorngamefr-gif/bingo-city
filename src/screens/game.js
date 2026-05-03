@@ -6,6 +6,7 @@
 import { state } from '../state.js'
 import { getObject, objectSvg } from '../data/objects.js'
 import { avatarLayersHtml } from '../ui/avatar.js'
+import { icon } from '../ui/icons.js'
 
 export function renderGame() {
   const me = state.players.find(p => p.isYou) || { score: 0, avatar: state.myAvatar }
@@ -30,21 +31,21 @@ export function renderGame() {
           </div>
         </div>
         <div class="hud-stat">
-          <span class="hud-icon">🥟</span>
+          ${icon('pierogi', { size: 18 })}
           <span class="hud-value">${me.score || 0}</span>
         </div>
         <div class="hud-stat">
-          <span class="hud-icon">⭐</span>
+          ${icon('star', { size: 18 })}
           <span class="hud-value">${rank || '?'}/${totalPlayers}</span>
         </div>
         <div class="hud-stat">
-          <span class="hud-icon">⏱</span>
+          ${icon('hourglass', { size: 18 })}
           <span class="hud-value timer" id="game-timer">30:00</span>
         </div>
       </div>
 
       <p class="small light center mb">
-        Repéré ? <strong style="color: var(--tram-red);">Tape</strong> et photo ! L'IA valide.
+        Repéré ? <strong style="color: var(--tram-red);">Tape</strong> et photo. L'IA valide.
       </p>
 
       <!-- Grille de bingo -->
@@ -52,12 +53,15 @@ export function renderGame() {
         ${state.myGrid.map((cell, i) => {
           const obj = getObject(cell.objId)
           if (!obj) return ''
+          const statusIcon =
+            cell.status === 'pending'   ? icon('robot', { size: 18, cls: 'cell-status-icon' }) :
+            cell.status === 'validated' ? icon('check', { size: 20, cls: 'cell-status-icon' }) :
+            cell.status === 'rejected'  ? icon('cross', { size: 18, cls: 'cell-status-icon' }) :
+            ''
           return `<div class="bingo-cell ${cell.status}" data-cell="${i}">
             <div class="bingo-cell-icon">${objectSvg(obj)}</div>
             <div class="bingo-cell-name">${obj.name}</div>
-            ${cell.status === 'pending' ? '<div class="bingo-cell-status">🤖</div>' : ''}
-            ${cell.status === 'validated' ? '<div class="bingo-cell-status">✓</div>' : ''}
-            ${cell.status === 'rejected' ? '<div class="bingo-cell-status">✗</div>' : ''}
+            ${statusIcon}
           </div>`
         }).join('')}
       </div>
@@ -86,13 +90,12 @@ export function renderGame() {
       .hud-stat {
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: 6px;
         font-family: 'Press Start 2P', monospace;
         font-size: 10px;
         color: var(--cream-cold);
         text-shadow: 1px 1px 0 var(--ink);
       }
-      .hud-icon { font-size: 14px; }
       .hud-value.timer { color: var(--tram-yellow); }
 
       .bingo-grid {
@@ -145,18 +148,18 @@ export function renderGame() {
       }
       .bingo-cell.rejected {
         background: var(--brick);
-        opacity: 0.6;
+        opacity: 0.7;
       }
       .bingo-cell.rejected .bingo-cell-name {
         color: white;
       }
-      .bingo-cell-status {
-        position: absolute;
-        top: 2px; right: 4px;
-        font-family: 'Press Start 2P', monospace;
-        font-size: 14px;
-        color: var(--ink);
-        text-shadow: 1px 1px 0 var(--cream-cold);
+      .cell-status-icon {
+        position: absolute !important;
+        top: 4px; right: 4px;
+        background: rgba(255, 255, 255, 0.85);
+        border: 1px solid var(--ink);
+        border-radius: 4px;
+        padding: 1px;
       }
     </style>
   `

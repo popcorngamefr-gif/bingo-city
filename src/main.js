@@ -119,8 +119,8 @@ const ACTIONS = {
     show('game')
 
     // Avatar transpire pendant que IA réfléchit + bulle robot
-    triggerHudAvatar('sweat', { duration: 2500, emote: '🤖' })
-    toast('🤖 IA analyse la photo...')
+    triggerHudAvatar('sweat', { duration: 2500, emote: 'robot' })
+    toast('IA analyse la photo...')
 
     const obj = getObject(cell.objId)
     const result = await validatePhotoAI({
@@ -240,7 +240,7 @@ function checkHeartbeat() {
   const total = state.myGrid.length
   // Heartbeat quand il manque 1 ou 2 cases pour le bingo
   if (total > 0 && validated >= total - 2 && validated < total) {
-    triggerMood(el, 'heartbeat', { persist: true, emote: '♥' })
+    triggerMood(el, 'heartbeat', { persist: true, emote: 'heart' })
   }
 }
 
@@ -256,11 +256,11 @@ function handleValidationResult(cellIdx, result) {
     const me = state.players.find(p => p.isYou)
     if (me) me.score = (me.score || 0) + (obj.points || 1)
     toast(`✓ ${result.reason || 'Validé'} +${obj.points} pts`)
-    triggerHudAvatar('jump', { duration: 800, emote: '★' })
+    triggerHudAvatar('jump', { duration: 800, emote: 'star' })
   } else {
     cell.status = 'rejected'
     toast(`✗ ${result.reason || 'Refusé'}`)
-    triggerHudAvatar('sad', { duration: 1500, emote: '?' })
+    triggerHudAvatar('sad', { duration: 1500, emote: 'question' })
   }
 
   if (state.currentScreen === 'game') show('game')
@@ -295,7 +295,7 @@ function checkBingo() {
   if (validated === state.myGrid.length && state.myGrid.length > 0) {
     const me = state.players.find(p => p.isYou)
     if (me) me.hasBingo = true
-    triggerHudAvatar('dance', { duration: 2500, emote: '★' })
+    triggerHudAvatar('dance', { duration: 2500, emote: 'star' })
     setTimeout(() => {
       toast('★ BINGO COMPLET ! ★')
       navigate('end')
@@ -335,74 +335,96 @@ function openCameraModal(cellIdx) {
   const cell = state.myGrid[cellIdx]
   const obj = getObject(cell.objId)
   const root = document.getElementById('modal-root')
-  root.innerHTML = `
-    <div class="modal show">
-      <div class="modal-box">
-        <div style="padding: 16px;">
-          <h3 class="modal-title">📷 ${obj.name}</h3>
-          <div class="camera-frame"><span>VISÉ → CAPTURÉ</span></div>
-          <p class="small center mb">L'IA va vérifier que la photo correspond.</p>
-          <div class="row">
-            <button class="btn btn-cream btn-sm" data-action="cancelPhoto">Annuler</button>
-            <button class="btn btn-red btn-sm" data-action="submitPhoto">Envoyer</button>
+
+  // Import dynamique d'icon (cycle évité)
+  import('./ui/icons.js').then(({ icon }) => {
+    root.innerHTML = `
+      <div class="modal show">
+        <div class="modal-box">
+          <div style="padding: 16px;">
+            <h3 class="modal-title">
+              ${icon('camera', { size: 22 })}
+              <span>${obj.name}</span>
+            </h3>
+            <div class="camera-frame">
+              <div class="camera-frame-inner">
+                ${icon('camera', { size: 56 })}
+                <span>VISÉ → CAPTURÉ</span>
+              </div>
+            </div>
+            <p class="small center mb">L'IA va vérifier que la photo correspond.</p>
+            <div class="row">
+              <button class="btn btn-cream btn-sm" data-action="cancelPhoto">Annuler</button>
+              <button class="btn btn-red btn-sm" data-action="submitPhoto">Envoyer</button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    <style>
-      .modal {
-        position: fixed; inset: 0;
-        background: rgba(42, 34, 40, 0.85);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 100;
-        padding: 20px;
-      }
-      .modal-box {
-        max-width: 360px;
-        width: 100%;
-        background: var(--cream-cold);
-        border: 4px solid var(--ink);
-        border-radius: 14px;
-        box-shadow: 0 8px 0 var(--tram-red-dark);
-      }
-      .modal-title {
-        font-family: 'Press Start 2P', monospace;
-        font-size: 12px;
-        color: var(--tram-red);
-        margin-bottom: 14px;
-        text-align: center;
-        text-shadow: 1px 1px 0 var(--cream-warm);
-      }
-      .camera-frame {
-        width: 100%;
-        aspect-ratio: 1;
-        background: linear-gradient(135deg, var(--concrete-mid), var(--concrete-dark));
-        border: 3px solid var(--ink);
-        border-radius: 8px;
-        margin-bottom: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--tram-yellow);
-        font-family: 'Press Start 2P', monospace;
-        font-size: 10px;
-        position: relative;
-      }
-      .camera-frame::before {
-        content: '';
-        position: absolute;
-        inset: 8px;
-        border: 2px dashed var(--tram-yellow);
-        animation: scanline 2s linear infinite;
-      }
-      @keyframes scanline {
-        0%, 100% { opacity: 0.5; }
-        50% { opacity: 1; }
-      }
-    </style>
-  `
+      <style>
+        .modal {
+          position: fixed; inset: 0;
+          background: rgba(42, 34, 40, 0.85);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 100;
+          padding: 20px;
+        }
+        .modal-box {
+          max-width: 360px;
+          width: 100%;
+          background: var(--cream-cold);
+          border: 4px solid var(--ink);
+          border-radius: 14px;
+          box-shadow: 0 8px 0 var(--tram-red-dark);
+        }
+        .modal-title {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          font-family: 'Press Start 2P', monospace;
+          font-size: 12px;
+          color: var(--tram-red);
+          margin-bottom: 14px;
+          text-shadow: 1px 1px 0 var(--cream-warm);
+        }
+        .camera-frame {
+          width: 100%;
+          aspect-ratio: 1;
+          background: linear-gradient(135deg, var(--concrete-mid), var(--concrete-dark));
+          border: 3px solid var(--ink);
+          border-radius: 8px;
+          margin-bottom: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+        }
+        .camera-frame::before {
+          content: '';
+          position: absolute;
+          inset: 8px;
+          border: 2px dashed var(--tram-yellow);
+          animation: scanline 2s linear infinite;
+        }
+        .camera-frame-inner {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          color: var(--tram-yellow);
+          font-family: 'Press Start 2P', monospace;
+          font-size: 9px;
+          z-index: 1;
+        }
+        @keyframes scanline {
+          0%, 100% { opacity: 0.5; }
+          50% { opacity: 1; }
+        }
+      </style>
+    `
+  })
 }
 
 function closeModal() {

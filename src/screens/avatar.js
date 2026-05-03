@@ -9,13 +9,14 @@ import { state } from '../state.js'
 import { PORTRAIT } from '../data/portrait.js'
 import { avatarLayersHtml } from '../ui/avatar.js'
 import { bgVarsovieHtml, miniSkylineHtml } from '../ui/varsovie.js'
+import { icon } from '../ui/icons.js'
 
 export function renderAvatar() {
   return `
     <section class="screen avatar-screen">
       ${bgVarsovieHtml({ withTram: false, withStorks: false, opacity: 0.35 })}
 
-      <button class="btn-back" data-nav="home">←</button>
+      <button class="btn-back" data-nav="home">${icon('arrow_left', { size: 16 })}</button>
 
       <h2 class="title-screen">★ TON AVATAR ★</h2>
 
@@ -41,7 +42,8 @@ export function renderAvatar() {
         </div>
 
         <button class="btn btn-yellow btn-sm mt" data-action="randomizeAvatar">
-          🎲 Randomise
+          ${icon('dice', { size: 16 })}
+          Randomise
         </button>
       </div>
 

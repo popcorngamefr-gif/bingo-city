@@ -5,6 +5,7 @@
 
 import { state } from '../state.js'
 import { CATEGORIES, objectSvg } from '../data/objects.js'
+import { icon } from '../ui/icons.js'
 
 export function renderSetup() {
   const n = state.selectedObjects.length
@@ -12,7 +13,7 @@ export function renderSetup() {
 
   return `
     <section class="screen setup-screen">
-      <button class="btn-back" data-nav="lobby">←</button>
+      <button class="btn-back" data-nav="lobby">${icon('arrow_left', { size: 16 })}</button>
 
       <h2 class="title-screen">★ CHOISIS LES OBJETS ★</h2>
 
@@ -37,6 +38,7 @@ export function renderSetup() {
                 <div class="obj-tile-icon">${objectSvg(obj)}</div>
                 <div class="obj-tile-name">${obj.name}</div>
                 <div class="obj-tile-points">${obj.points}pt${obj.points > 1 ? 's' : ''}</div>
+                ${selected ? `<div class="obj-tile-check">${icon('check', { size: 18 })}</div>` : ''}
               </div>`
             }).join('')}
           </div>
@@ -48,7 +50,7 @@ export function renderSetup() {
         data-action="startGame"
         ${n < 6 || n > 25 ? 'disabled' : ''}
       >
-        Lancer la partie →
+        Lancer la partie ${icon('arrow_right', { size: 16 })}
       </button>
     </section>
 
@@ -112,6 +114,7 @@ export function renderSetup() {
         font-size: 14px;
         color: var(--ink-soft);
       }
+
       .obj-library {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -137,21 +140,17 @@ export function renderSetup() {
         background: linear-gradient(180deg, #fce080 0%, var(--tram-yellow) 100%);
         box-shadow: 0 0 0 3px var(--tram-red), 2px 2px 0 var(--ink);
       }
-      .obj-tile.selected::after {
-        content: '✓';
+      .obj-tile-check {
         position: absolute;
         top: -6px; right: -6px;
         width: 22px; height: 22px;
         background: var(--green-go);
-        color: white;
         border: 2px solid var(--ink);
         border-radius: 50%;
-        font-family: 'Press Start 2P', monospace;
-        font-size: 11px;
         display: flex;
         align-items: center;
         justify-content: center;
-        line-height: 0;
+        z-index: 2;
       }
       .obj-tile-icon { width: 70%; height: 55%; }
       .obj-tile-icon svg { width: 100%; height: 100%; }
@@ -168,6 +167,11 @@ export function renderSetup() {
         font-size: 7px;
         color: var(--tram-red);
         margin-top: 2px;
+      }
+
+      /* Bouton avec icone : flèche alignée à droite */
+      .setup-screen .btn .ico {
+        margin-left: 6px;
       }
     </style>
   `

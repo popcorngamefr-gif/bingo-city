@@ -5,6 +5,7 @@
 import { state } from '../state.js'
 import { avatarLayersHtml } from '../ui/avatar.js'
 import { bgVarsovieHtml } from '../ui/varsovie.js'
+import { icon } from '../ui/icons.js'
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))
@@ -30,9 +31,14 @@ export function renderLobby() {
 
       <h2 class="title-screen">★ SALLE D'ATTENTE ★</h2>
 
-      <div class="code-badge">
-        <div class="code-label">CODE À PARTAGER</div>
-        <div class="code-value">${state.gameCode || '----'}</div>
+      <!-- Code badge encadré par 2 sparkles décoratives -->
+      <div class="code-badge-wrap">
+        <span class="code-deco code-deco-left">${icon('sparkle', { size: 24 })}</span>
+        <div class="code-badge">
+          <div class="code-label">CODE À PARTAGER</div>
+          <div class="code-value">${state.gameCode || '----'}</div>
+        </div>
+        <span class="code-deco code-deco-right">${icon('sparkle', { size: 24 })}</span>
       </div>
 
       <div class="card mb" style="position: relative; z-index: 5;">
@@ -46,11 +52,47 @@ export function renderLobby() {
 
       <div class="mt" style="position: relative; z-index: 5;">
         ${isMJ
-          ? `<button class="btn btn-red btn-block" data-nav="setup">Choisir les objets →</button>`
-          : `<p class="small light center mb">⏳ Le MJ prépare la partie...</p>
+          ? `<button class="btn btn-red btn-block" data-nav="setup">
+               Choisir les objets ${icon('arrow_right', { size: 16 })}
+             </button>`
+          : `<p class="small light center mb">
+               ${icon('hourglass', { size: 14 })} Le MJ prépare la partie...
+             </p>
              <button class="btn btn-yellow btn-block btn-sm" data-nav="game">[demo] Forcer démarrage</button>`
         }
       </div>
+
+      <style>
+        .code-badge-wrap {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          margin-bottom: 16px;
+          position: relative;
+          z-index: 5;
+        }
+        .code-badge-wrap .code-badge {
+          flex: 1;
+          margin-bottom: 0;
+        }
+        .code-deco {
+          flex-shrink: 0;
+          animation: codeDecoPulse 2s ease-in-out infinite;
+        }
+        .code-deco-right {
+          animation-delay: 1s;
+        }
+        @keyframes codeDecoPulse {
+          0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.7; }
+          50% { transform: scale(1.2) rotate(20deg); opacity: 1; }
+        }
+
+        /* Boutons MJ avec icone : flèche alignée à droite */
+        .lobby-screen .btn .ico {
+          margin-left: 6px;
+        }
+      </style>
     </section>
   `
 }

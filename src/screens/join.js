@@ -3,13 +3,14 @@
  */
 
 import { bgVarsovieHtml } from '../ui/varsovie.js'
+import { icon } from '../ui/icons.js'
 
 export function renderJoin() {
   return `
     <section class="screen">
       ${bgVarsovieHtml({ withTram: false, opacity: 0.4 })}
 
-      <button class="btn-back" data-nav="home">←</button>
+      <button class="btn-back" data-nav="home">${icon('arrow_left', { size: 16 })}</button>
 
       <h2 class="title-screen">★ REJOINDRE ★</h2>
 

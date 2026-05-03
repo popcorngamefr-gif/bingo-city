@@ -5,6 +5,7 @@
 import { state } from '../state.js'
 import { avatarLayersHtml } from '../ui/avatar.js'
 import { bgVarsovieHtml } from '../ui/varsovie.js'
+import { icon } from '../ui/icons.js'
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))
@@ -20,9 +21,13 @@ export function renderEnd() {
 
   const sorted = [...state.players].sort((a, b) => (b.score || 0) - (a.score || 0))
   const winner = sorted[0]
-  const title = winner.isYou ? '★ TU AS GAGNÉ ! ★' : `★ ${winner.name.toUpperCase()} GAGNE ! ★`
+  const title = winner.isYou ? 'TU AS GAGNÉ !' : `${winner.name.toUpperCase()} GAGNE !`
 
-  const medals = ['🥇', '🥈', '🥉']
+  const medals = [
+    icon('medal_gold', { size: 28 }),
+    icon('medal_silver', { size: 28 }),
+    icon('medal_bronze', { size: 28 }),
+  ]
 
   return `
     <section class="screen end-screen">
@@ -34,7 +39,7 @@ export function renderEnd() {
         <div class="leaderboard">
           ${sorted.map((p, i) => `
             <div class="lb-row rank-${i+1} ${p.hasBingo ? 'bingo' : ''}">
-              <div class="lb-rank">${medals[i] || '#' + (i+1)}</div>
+              <div class="lb-rank">${medals[i] || `<span class="rank-num">#${i+1}</span>`}</div>
               <div class="avatar xs">
                 <div class="avatar-inner">
                   ${avatarLayersHtml(p.avatar)}
