@@ -11,7 +11,7 @@ import { initRouter, navigate, show } from './router.js'
 import { toast } from './ui/toast.js'
 import { PORTRAIT } from './data/portrait.js'
 import { getObjects, getObject } from './data/objects.js'
-import { avatarLayersHtml, triggerMood, startBlinkLoop } from './ui/avatar.js'
+import { avatarLayersHtml, triggerMood, startBlinkLoop, setConfidence, calcConfidence } from './ui/avatar.js'
 import { validatePhotoAI } from './ui/ai-validator.js'
 
 /* ============================================================
@@ -117,15 +117,15 @@ const ACTIONS = {
     closeModal()
     state.currentPickingObj = null
     show('game')
-    triggerHudAvatar('excited', 1500)
+
+    // Avatar transpire pendant que IA réfléchit + bulle robot
+    triggerHudAvatar('sweat', { duration: 2500, emote: '🤖' })
     toast('🤖 IA analyse la photo...')
 
-    // Validation par IA (mockée pour l'instant)
     const obj = getObject(cell.objId)
     const result = await validatePhotoAI({
       objectId: cell.objId,
       objectName: obj.name,
-      // photoBase64: ... (sera fourni quand on branchera la vraie caméra)
     })
 
     handleValidationResult(cellIdx, result)
@@ -161,7 +161,7 @@ function refreshAvatarUI({ mood = 'hop', sparkles = true, duration = 500 } = {})
       inner.innerHTML = avatarLayersHtml(state.myAvatar, currentMood)
     }
     // Trigger le mood passager (qui va aussi mettre à jour la bouche)
-    triggerMood(previewEl, mood, duration)
+    triggerMood(previewEl, mood, { duration })
   }
 
   // 2. Update les compteurs des catégories (X / Y) et value labels
@@ -194,18 +194,54 @@ function updateCategoryCounters() {
 }
 
 let blinkCleanup = null
+let hudBlinkCleanup = null
 function setupAvatarLoops() {
   if (blinkCleanup) blinkCleanup()
+  if (hudBlinkCleanup) hudBlinkCleanup()
   const previewEl = document.getElementById('avatar-preview')
   if (previewEl) blinkCleanup = startBlinkLoop(previewEl)
+  const hudEl = document.querySelector('.hud-avatar .avatar')
+  if (hudEl) hudBlinkCleanup = startBlinkLoop(hudEl)
 }
 
 /**
- * Trigger un mood sur l'avatar dans le HUD (pendant le jeu)
+ * Trigger un mood sur l'avatar dans le HUD pendant le jeu.
+ * @param {String} mood
+ * @param {Object|Number} opts - duration directement, ou objet { duration, emote, persist }
  */
-function triggerHudAvatar(mood, duration) {
+function triggerHudAvatar(mood, opts = {}) {
   const el = document.querySelector('.hud-avatar .avatar')
-  if (el) triggerMood(el, mood, duration)
+  if (!el) return
+  // Si on passe juste un nombre, c'est la duration (compat ancien code)
+  if (typeof opts === 'number') opts = { duration: opts }
+  triggerMood(el, mood, opts)
+}
+
+/**
+ * Met à jour le niveau de confidence de l'avatar HUD selon la progression actuelle.
+ * timid (<20%) → neutral → confident (≥60%) → proud (≥85%)
+ */
+function updateHudConfidence() {
+  const el = document.querySelector('.hud-avatar .avatar')
+  if (!el) return
+  const validated = state.myGrid.filter(c => c.status === 'validated').length
+  const total = state.myGrid.length
+  const conf = calcConfidence(validated, total)
+  setConfidence(el, conf)
+}
+
+/**
+ * Vérifie si on est à 1 case du bingo → passe l'avatar en heartbeat permanent
+ */
+function checkHeartbeat() {
+  const el = document.querySelector('.hud-avatar .avatar')
+  if (!el) return
+  const validated = state.myGrid.filter(c => c.status === 'validated').length
+  const total = state.myGrid.length
+  // Heartbeat quand il manque 1 ou 2 cases pour le bingo
+  if (total > 0 && validated >= total - 2 && validated < total) {
+    triggerMood(el, 'heartbeat', { persist: true, emote: '♥' })
+  }
 }
 
 /* ============================================================
@@ -220,14 +256,19 @@ function handleValidationResult(cellIdx, result) {
     const me = state.players.find(p => p.isYou)
     if (me) me.score = (me.score || 0) + (obj.points || 1)
     toast(`✓ ${result.reason || 'Validé'} +${obj.points} pts`)
-    triggerHudAvatar('jump', 700)
+    triggerHudAvatar('jump', { duration: 800, emote: '★' })
   } else {
     cell.status = 'rejected'
     toast(`✗ ${result.reason || 'Refusé'}`)
-    triggerHudAvatar('sad', 1200)
+    triggerHudAvatar('sad', { duration: 1500, emote: '?' })
   }
 
   if (state.currentScreen === 'game') show('game')
+  // Update la confidence + check heartbeat APRES re-render
+  setTimeout(() => {
+    updateHudConfidence()
+    checkHeartbeat()
+  }, 100)
   checkBingo()
 }
 
@@ -254,11 +295,11 @@ function checkBingo() {
   if (validated === state.myGrid.length && state.myGrid.length > 0) {
     const me = state.players.find(p => p.isYou)
     if (me) me.hasBingo = true
-    triggerHudAvatar('dance', 2000)
+    triggerHudAvatar('dance', { duration: 2500, emote: '★' })
     setTimeout(() => {
       toast('★ BINGO COMPLET ! ★')
       navigate('end')
-    }, 1800)
+    }, 2200)
   }
 }
 
@@ -500,7 +541,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Sur chaque show de screen, redémarrer les boucles d'animation
   window.addEventListener('hashchange', () => {
-    setTimeout(setupAvatarLoops, 50)
+    setTimeout(() => {
+      setupAvatarLoops()
+      // Si on est sur game, init la confidence + check heartbeat
+      if (state.currentScreen === 'game') {
+        updateHudConfidence()
+        checkHeartbeat()
+      }
+    }, 50)
   })
   setTimeout(setupAvatarLoops, 100)
 

@@ -10,8 +10,10 @@ export function bgVarsovieHtml(opts = {}) {
 
   return `
     <div class="bg-varsovie" ${op}>
-      <div class="skyline">${skylineSvg()}</div>
-      ${withTram ? tramSvg() : ''}
+      <div class="skyline">
+        ${skylineSvg()}
+        ${withTram ? tramSvg() : ''}
+      </div>
       <div class="cloud cloud-1"></div>
       <div class="cloud cloud-2"></div>
       <div class="cloud cloud-3"></div>

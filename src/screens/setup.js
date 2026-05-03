@@ -25,7 +25,7 @@ export function renderSetup() {
       </p>
 
       ${CATEGORIES.map(cat => `
-        <div class="category-section">
+        <div class="category-section cat-${cat.id}">
           <div class="category-header">
             <strong>${cat.name}</strong>
             <span class="category-subtitle">${cat.subtitle}</span>
@@ -86,6 +86,22 @@ export function renderSetup() {
         border-radius: 8px;
         box-shadow: 2px 2px 0 var(--ink);
       }
+      .cat-urbain .category-header {
+        background: linear-gradient(180deg, #f4a4a4 0%, var(--brick) 100%);
+      }
+      .cat-urbain .category-header strong { color: var(--cream-cold); text-shadow: 1px 1px 0 var(--brick-dark); }
+      .cat-urbain .category-header .category-subtitle { color: var(--cream-cold); opacity: 0.9; }
+
+      .cat-voyage .category-header {
+        background: linear-gradient(180deg, #fce080 0%, var(--tram-yellow-warm) 100%);
+      }
+
+      .cat-memoire .category-header {
+        background: linear-gradient(180deg, #aabcc8 0%, var(--rynek-blue) 100%);
+      }
+      .cat-memoire .category-header strong { color: var(--cream-cold); text-shadow: 1px 1px 0 var(--ink); }
+      .cat-memoire .category-header .category-subtitle { color: var(--cream-cold); opacity: 0.9; }
+
       .category-header strong {
         font-family: 'Press Start 2P', monospace;
         font-size: 11px;
