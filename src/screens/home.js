@@ -1,27 +1,42 @@
 /**
- * Écran d'accueil
+ * Écran d'accueil — Varsovie Édition
  */
+
+import { bgVarsovieHtml, floatingItemsHtml } from '../ui/varsovie.js'
 
 export function renderHome() {
   return `
     <section class="screen home-screen">
-      <div class="stars-bg"></div>
+      ${bgVarsovieHtml()}
+      ${floatingItemsHtml()}
 
-      <h1 class="title-game">BINGO<br>CITY</h1>
-      <p class="subtitle mt mb">★ Le bingo urbain pixel ★</p>
+      <div class="title-game-stack">
+        <div class="title-bingo">BINGO</div>
+        <div class="title-sante">SANTÉ!</div>
+        <div class="subtitle-banner">VARSOVIE ÉDITION</div>
+      </div>
 
-      <div class="stack" style="margin-top: 24px;">
-        <button class="btn btn-orange btn-block" data-action="goCreate">
+      <div style="height: 24px;"></div>
+
+      <div class="stack" style="padding: 0 6px; position: relative; z-index: 5;">
+        <button class="btn btn-red" data-action="goCreate">
           🎯 Créer une partie
         </button>
-        <button class="btn btn-blue btn-block" data-action="goJoin">
+
+        <button class="btn btn-yellow" data-action="goJoin">
           🔗 Rejoindre
+        </button>
+
+        <button class="btn btn-cream btn-sm" data-action="showHelp">
+          ? Comment jouer
         </button>
       </div>
 
-      <p class="small light center" style="margin-top: auto; padding-top: 24px; opacity: 0.6;">
-        v0.3 — proto · ⚙ pour debug
+      <p class="footer-info">
+        v0.5 · Na zdrowie ! 🍻
       </p>
+
+      <div class="polska-sticker"></div>
     </section>
   `
 }

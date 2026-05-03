@@ -1,6 +1,5 @@
 /**
  * Écran : grille de bingo en cours de partie
- * HUD style métal (style 2)
  */
 
 import { state } from '../state.js'
@@ -12,7 +11,6 @@ export function renderGame() {
   const rank = sorted.findIndex(p => p.isYou) + 1
   const totalPlayers = state.players.length
 
-  // Grille adaptative
   const n = state.myGrid.length
   let cols = 3
   if (n > 9) cols = 4
@@ -20,28 +18,24 @@ export function renderGame() {
 
   return `
     <section class="screen game-screen">
-      <!-- HUD haut (style métal) -->
-      <div class="game-hud frame frame-metal-dark">
-        <div class="content">
-          <div class="hud-row">
-            <div class="hud-stat">
-              <img src="/assets/icons/coin_gold.png" class="icon-sm" alt="" />
-              <span class="hud-value">${me.score || 0}</span>
-            </div>
-            <div class="hud-stat">
-              <img src="/assets/icons/star_gold.png" class="icon-sm" alt="" />
-              <span class="hud-value">${rank}/${totalPlayers}</span>
-            </div>
-            <div class="hud-stat">
-              <img src="/assets/icons/hourglass.png" class="icon-sm" alt="" />
-              <span class="hud-value timer" id="game-timer">30:00</span>
-            </div>
-          </div>
+      <!-- HUD haut -->
+      <div class="game-hud">
+        <div class="hud-stat">
+          <span class="hud-icon">🥟</span>
+          <span class="hud-value">${me.score || 0}</span>
+        </div>
+        <div class="hud-stat">
+          <span class="hud-icon">⭐</span>
+          <span class="hud-value">${rank || '?'}/${totalPlayers}</span>
+        </div>
+        <div class="hud-stat">
+          <span class="hud-icon">⏱</span>
+          <span class="hud-value timer" id="game-timer">30:00</span>
         </div>
       </div>
 
       <p class="small light center mb">
-        Repéré ? <strong style="color: var(--yellow);">Tape</strong> et photo !
+        Repéré ? <strong style="color: var(--tram-red);">Tape</strong> et photo !
       </p>
 
       <!-- Grille de bingo -->
@@ -52,30 +46,30 @@ export function renderGame() {
           return `<div class="bingo-cell ${cell.status}" data-cell="${i}">
             <div class="bingo-cell-icon">${objectSvg(obj)}</div>
             <div class="bingo-cell-name">${obj.name}</div>
-            ${cell.status === 'pending' ? '<div class="bingo-cell-pending">⏳</div>' : ''}
-            ${cell.status === 'validated' ? '<div class="bingo-cell-check">✓</div>' : ''}
-            ${cell.status === 'rejected' ? '<div class="bingo-cell-cross">✗</div>' : ''}
+            ${cell.status === 'pending' ? '<div class="bingo-cell-status">⏳</div>' : ''}
+            ${cell.status === 'validated' ? '<div class="bingo-cell-status">✓</div>' : ''}
+            ${cell.status === 'rejected' ? '<div class="bingo-cell-status">✗</div>' : ''}
           </div>`
         }).join('')}
       </div>
 
       <div class="row mt">
-        ${state.isMJ ? '<button class="btn btn-blue btn-sm" data-nav="validate">Validations MJ</button>' : ''}
-        <button class="btn btn-metal btn-sm" data-nav="end">Voir classement</button>
+        ${state.isMJ ? '<button class="btn btn-yellow btn-sm" data-nav="validate">Validations MJ</button>' : ''}
+        <button class="btn btn-concrete btn-sm" data-nav="end">Classement</button>
       </div>
     </section>
 
     <style>
       .game-hud {
-        margin-bottom: 12px;
-      }
-      .game-hud .content {
-        padding: 8px 12px;
-      }
-      .hud-row {
+        background: var(--ink);
+        border: 3px solid var(--tram-yellow);
+        border-radius: 10px;
+        padding: 10px 14px;
         display: flex;
         justify-content: space-around;
         align-items: center;
+        margin-bottom: 14px;
+        box-shadow: 0 4px 0 var(--tram-red-dark);
       }
       .hud-stat {
         display: flex;
@@ -83,14 +77,11 @@ export function renderGame() {
         gap: 6px;
         font-family: 'Press Start 2P', monospace;
         font-size: 11px;
-        color: var(--paper);
+        color: var(--cream-cold);
         text-shadow: 1px 1px 0 var(--ink);
       }
-      .hud-stat .icon-sm {
-        width: 20px;
-        height: 20px;
-      }
-      .hud-value.timer { color: var(--orange); }
+      .hud-icon { font-size: 16px; }
+      .hud-value.timer { color: var(--tram-yellow); }
 
       .bingo-grid {
         display: grid;
@@ -99,8 +90,9 @@ export function renderGame() {
       }
       .bingo-cell {
         aspect-ratio: 1;
-        background: var(--paper);
-        border: 2px solid var(--wood-dark);
+        background: var(--cream-cold);
+        border: 3px solid var(--ink);
+        border-radius: 8px;
         cursor: pointer;
         display: flex;
         flex-direction: column;
@@ -108,11 +100,11 @@ export function renderGame() {
         justify-content: center;
         padding: 4px;
         position: relative;
-        box-shadow: 2px 2px 0 var(--wood-shadow);
+        box-shadow: 2px 2px 0 var(--ink);
       }
       .bingo-cell:active {
         transform: translate(1px, 1px);
-        box-shadow: 1px 1px 0 var(--wood-shadow);
+        box-shadow: 1px 1px 0 var(--ink);
       }
       .bingo-cell-icon { width: 60%; height: 50%; }
       .bingo-cell-icon svg { width: 100%; height: 100%; }
@@ -125,43 +117,34 @@ export function renderGame() {
         margin-top: 2px;
       }
       .bingo-cell.pending {
-        background: var(--yellow);
-        animation: pendingPulse 1s steps(2) infinite;
+        background: linear-gradient(180deg, #fce080 0%, var(--tram-yellow) 100%);
+        animation: pendingPulse 1.5s steps(2) infinite;
       }
       @keyframes pendingPulse {
-        0%, 100% { background: var(--yellow); }
-        50% { background: var(--orange); }
-      }
-      .bingo-cell-pending {
-        position: absolute;
-        top: 4px; right: 4px;
-        font-size: 14px;
+        0%, 100% { box-shadow: 2px 2px 0 var(--ink); }
+        50% { box-shadow: 0 0 0 3px var(--tram-yellow-warm), 2px 2px 0 var(--ink); }
       }
       .bingo-cell.validated {
-        background: var(--green);
+        background: linear-gradient(180deg, #88a890 0%, var(--green-go) 100%);
       }
       .bingo-cell.validated .bingo-cell-name {
         color: white;
-        text-shadow: 1px 1px 0 var(--ink);
-      }
-      .bingo-cell-check {
-        position: absolute;
-        top: 2px; right: 4px;
-        color: white;
-        font-family: 'Press Start 2P', monospace;
-        font-size: 14px;
-        text-shadow: 1px 1px 0 var(--ink);
+        text-shadow: 1px 1px 0 var(--green-go-dark);
       }
       .bingo-cell.rejected {
-        background: #c98080;
-        opacity: 0.7;
+        background: var(--brick);
+        opacity: 0.6;
       }
-      .bingo-cell-cross {
+      .bingo-cell.rejected .bingo-cell-name {
+        color: white;
+      }
+      .bingo-cell-status {
         position: absolute;
         top: 2px; right: 4px;
-        color: white;
         font-family: 'Press Start 2P', monospace;
         font-size: 14px;
+        color: var(--ink);
+        text-shadow: 1px 1px 0 var(--cream-cold);
       }
     </style>
   `

@@ -1,6 +1,9 @@
 /**
- * Bibliothèque d'objets urbains à trouver pendant la partie
- * Chaque objet : id, nom, points, grille pixel art (SVG inline)
+ * Bibliothèque d'objets bingo — Varsovie Édition
+ * 3 catégories :
+ *  - urbain : objets à repérer dans la rue à Varsovie
+ *  - voyage : trucs spécifiques à un trip de groupe
+ *  - memoire : moments/blagues du voyage à cocher
  */
 
 function pixelSvg(grid, palette) {
@@ -17,98 +20,128 @@ function pixelSvg(grid, palette) {
   return `<svg viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">${cells}</svg>`
 }
 
-const OBJECTS = [
-  { id: 'pigeon', name: 'Pigeon', points: 1,
-    grid: ['............','............','....gggg....','...gGGGGg...','..gGGwwGGo..','..gGGGGGGG..','..gGGGGGG...','...gggggG...','....g..g....','....g..g....','...oo..oo...','............'],
-    pal: { g: '#5a5a6a', G: '#8a8a99', w: '#ffffff', o: '#f29022' }},
-  { id: 'baguette', name: 'Baguette', points: 1,
-    grid: ['............','............','............','............','..bbbbbbbb..','.bttttttttb.','bttBtBtBttb.','.bttttttttb.','..bbbbbbbb..','............','............','............'],
-    pal: { b: '#8b5a2b', t: '#d4a574', B: '#5c3a1e' }},
-  { id: 'velo', name: 'Vélo', points: 2,
-    grid: ['............','............','....rr......','...r..r..r..','..r....r.r..','.r......rrr.','r..rrrrr...r','rrrrrrrrrrr.','.r..r.r..r..','.r.r..r.r...','..r....r....','............'],
-    pal: { r: '#2a1810' }},
-  { id: 'metro', name: 'Métro', points: 2,
-    grid: ['............','....yyyy....','...yyyyyy...','..yyyyyyyy..','..yyMMMMyy..','..yMyyyyMy..','..yMyyyyMy..','..yyMMMMyy..','..yyyyyyyy..','..yyyyyyyy..','...y....y...','............'],
-    pal: { y: '#f5cd47', M: '#2a1810' }},
-  { id: 'banc', name: 'Banc', points: 1,
-    grid: ['............','............','............','bbbbbbbbbbbb','bbbbbbbbbbbb','............','bbbbbbbbbbbb','bbbbbbbbbbbb','b..........b','b..........b','B..........B','............'],
-    pal: { b: '#8b5a2b', B: '#5c3a1e' }},
-  { id: 'stop', name: 'STOP', points: 2,
+const URBAIN = [
+  { id: 'tram_red', name: 'Tram rouge', points: 1,
+    grid: ['............','............','...rrrrrrr..','..rrwwwwwrr.','.rrwwwwwwwr.','.rwwwwwwwwr.','.rrrrrrrrrr.','.rrrrrrrrrr.','.r.kk..kk.r.','.r.kk..kk.r.','............','............'],
+    pal: { r: '#d04848', w: '#c0c8d0', k: '#2a2228' }},
+  { id: 'palais', name: 'Palais Culture', points: 3,
+    grid: ['......k.....','......k.....','.....kkk....','.....ggg....','....ggggg...','....ggggg...','...ggggggg..','..ggggggggg.','..ggggggggg.','.gggggggggg.','gggggggggggg','............'],
+    pal: { g: '#a8a6a0', k: '#6a6a68' }},
+  { id: 'pierogi', name: 'Pierogi', points: 1,
+    grid: ['............','............','............','...yyyyyy...','..yYYYYYYy..','..yYYYYYYy..','..yYYYYYYy..','..yyyyyyyy..','...kkkkkk...','............','............','............'],
+    pal: { y: '#f0d090', Y: '#f8e4b0', k: '#a87858' }},
+  { id: 'vodka', name: 'Vodka', points: 2,
+    grid: ['............','......kk....','......gg....','.....gggg...','....gggggg..','....gwwwwg..','....gwwwwg..','....gRRRRg..','....gRRRRg..','....gggggg..','....gggggg..','............'],
+    pal: { g: '#a8a6a0', w: '#fbf3e0', R: '#d04848', k: '#5a4858' }},
+  { id: 'cigogne', name: 'Cigogne', points: 2,
+    grid: ['............','............','...wwww.....','..wwwwwwk...','.wwwwwwk....','wwwwww......','wwwww.......','...wwk......','...www......','....k.......','....k.......','............'],
+    pal: { w: '#ffffff', k: '#2a2228' }},
+  { id: 'zubr', name: 'Żubr', points: 3,
+    grid: ['............','...kk..k....','..kkkkkkk...','..kbkkkbk...','..kkbwwbkk..','..kkkbbkkk..','...kkkkkk...','...kkkkkkk..','..k.kkkk.k..','..k.k..k.k..','..k.k..k.k..','............'],
+    pal: { k: '#5a4858', b: '#2a2228', w: '#f0c860' }},
+  { id: 'kiosk', name: 'Kiosque', points: 2,
+    grid: ['............','...kkkkkkk..','..kRRRRRRRk.','..krrrrrrrk.','..kwwwwwwwk.','..kwppppwk..','..kwppppwk..','..kwwwwwwk..','..kwwwwwwk..','..kkkkkkkk..','............','............'],
+    pal: { k: '#2a2228', R: '#d04848', r: '#a02828', w: '#fbf3e0', p: '#3a2a3e' }},
+  { id: 'metro', name: 'Bouche M', points: 2,
+    grid: ['............','...kkkkkk...','..kRRRRRRk..','.kRRwMRRRk..','.kRwMMMwRk..','.kRMMMMMRk..','.kRwMMMwRk..','.kRRRRRRRk..','..kkkkkkk...','...gggggg...','...gggggg...','............'],
+    pal: { k: '#2a2228', R: '#d04848', w: '#fbf3e0', M: '#f0c860', g: '#6a6a68' }},
+  { id: 'panneau_rouge', name: 'STOP', points: 2,
     grid: ['............','....rrrr....','...rrrrrr...','..rrrrrrrr..','..rwwwwwwr..','..rwwwwwwr..','..rwwwwwwr..','..rrrrrrrr..','...rrrrrr...','....rrrr....','......g.....','......g.....'],
-    pal: { r: '#d94c3d', w: '#ffffff', g: '#5a5a6a' }},
-  { id: 'cafe', name: 'Café', points: 2,
-    grid: ['............','............','...bbbbb....','..b.....bb..','.b.......bb.','.b.cccc..bb.','.b.cccc..bb.','.b.cccc..bb.','.b.......bb.','..b.....bb..','...bbbbb....','............'],
-    pal: { b: '#ffffff', c: '#5c3a1e' }},
-  { id: 'arbre', name: 'Arbre', points: 1,
-    grid: ['............','....ggg.....','...ggGgg....','..ggGGGgg...','.gGGGGGGGg..','..ggGGGgg...','...ggggg....','.....bb.....','.....bb.....','.....bb.....','....bbbb....','............'],
-    pal: { g: '#6ab04c', G: '#4f8a2e', b: '#8b5a2b' }},
-  { id: 'fleur', name: 'Fleur', points: 2,
-    grid: ['............','...p..p.....','..pPp.pPp...','..pPpypPp...','...p.p.p....','....g.......','....g.......','...gg.......','....g.......','....g.......','....g.......','............'],
-    pal: { p: '#e87ca8', P: '#d94c3d', y: '#f5cd47', g: '#6ab04c' }},
-  { id: 'voiture', name: 'Voiture', points: 1,
-    grid: ['............','............','....rrrrr...','...rwwwwwr..','.rrrrrrrrr..','rrwwrrrrrwr.','rrrrrrrrrrr.','r.kkr.r.kk.r','..kk.....kk.','............','............','............'],
-    pal: { r: '#d94c3d', w: '#7cc5e8', k: '#2a1810' }},
-  { id: 'feu', name: 'Feu rouge', points: 2,
-    grid: ['............','....kkkk....','....kRRk....','....kRRk....','....kkkk....','....kYYk....','....kYYk....','....kkkk....','....kGGk....','....kGGk....','....kkkk....','.....kk.....'],
-    pal: { k: '#2a1810', R: '#d94c3d', Y: '#f5cd47', G: '#6ab04c' }},
-  { id: 'pharmacie', name: 'Pharmacie', points: 2,
-    grid: ['............','............','....gggg....','...gggggg...','..gg.GG.gg..','..gG.GG.gg..','..GGGGGGGG..','..GGGGGGGG..','..gG.GG.gg..','..gg.GG.gg..','...gggggg...','....gggg....'],
-    pal: { g: '#6ab04c', G: '#ffffff' }},
-  { id: 'graffiti', name: 'Graffiti', points: 3,
-    grid: ['............','...pp.bb....','..ppppbbbb..','.pppPPbbBB..','pppPPpbBBb..','ppPPpppBBb..','.pPpppyyy...','..pppyyyyy..','...yyyyy....','....yy......','............','............'],
-    pal: { p: '#e87ca8', P: '#d94c3d', b: '#4a90c2', B: '#2d6a96', y: '#f5cd47' }},
-  { id: 'chien', name: 'Chien', points: 2,
-    grid: ['............','...bb..b....','..bbbbbbb...','..bBbbbBb...','..bbBwwBb...','..bbbBBbb...','...bbbbbb...','...bbbbbbbb.','..b.bbbb.bb.','..b.b..b..b.','..b.b..b..b.','............'],
-    pal: { b: '#8b5a2b', B: '#2a1810', w: '#ffffff' }},
-  { id: 'lampadaire', name: 'Lampadaire', points: 1,
-    grid: ['............','....yyyy....','...yYYYYy...','...yYwwYy...','....yYYy....','.....kk.....','.....kk.....','.....kk.....','.....kk.....','.....kk.....','....kkkk....','...kkkkkk...'],
-    pal: { y: '#f5cd47', Y: '#f29022', w: '#ffffff', k: '#2a1810' }},
-  { id: 'glace', name: 'Glace', points: 3,
-    grid: ['............','....pppp....','...ppPPpp...','...pppppp...','....cccc....','....bbbb....','....bccb....','....bbbb....','....bccb....','....bbbb....','.....bb.....','............'],
-    pal: { p: '#e87ca8', P: '#d94c3d', c: '#f4e4c1', b: '#d4a574' }},
-  { id: 'pomme', name: 'Pomme', points: 2,
-    grid: ['............','............','......bb....','.....gg.....','....rrrr....','...rRrrRr...','..rRrrrrRr..','..rrrrrrrr..','..rrrrrrrr..','...rrrrrr...','....rrrr....','............'],
-    pal: { r: '#d94c3d', R: '#a32d20', g: '#6ab04c', b: '#5c3a1e' }},
-  { id: 'fontaine', name: 'Fontaine', points: 3,
-    grid: ['............','......b.....','.....bbb....','....bbbbb...','....bsbsb...','...bsbsbsb..','...sssssss..','..ggggggggg.','..gGGGGGGGg.','..gGgGgGgGg.','..ggggggggg.','............'],
-    pal: { b: '#7cc5e8', s: '#4a90c2', g: '#8a8a99', G: '#5a5a6a' }},
-  { id: 'tour', name: 'Tour Eiffel', points: 5,
-    grid: ['............','......b.....','......b.....','.....bbb....','.....b.b....','....bb.bb...','....b...b...','...bb...bb..','..bbbbbbbbb.','..b.b.b.b.b.','.bbbbbbbbbbb','............'],
-    pal: { b: '#5a5a6a' }},
-  { id: 'parapluie', name: 'Parapluie', points: 2,
-    grid: ['............','....bbbb....','...bRRRRb...','..bRwRwRRb..','.bRRwRwRRRb.','bRRRRRRRRRRR','......k.....','......k.....','......k.....','......kk....','.......k....','............'],
-    pal: { R: '#d94c3d', w: '#ffffff', b: '#a32d20', k: '#2a1810' }},
-  { id: 'bouquin', name: 'Livre', points: 2,
-    grid: ['............','............','..pppppppp..','..pwwwwwwp..','..pwBBBBwp..','..pwBBBBwp..','..pwwwwwwp..','..pwBBBBwp..','..pwwwwwwp..','..pppppppp..','............','............'],
-    pal: { p: '#8b5fbf', w: '#f4e4c1', B: '#2a1810' }},
-  { id: 'horloge', name: 'Horloge', points: 3,
-    grid: ['............','....kkkkk...','...kwwwwwk..','..kwwkwkwwk.','..kwkwkwkwk.','..kwwwwwwwk.','..kwkkwwwwk.','..kwkwkwkwk.','..kwwkwkwwk.','...kwwwwwk..','....kkkkk...','............'],
-    pal: { k: '#2a1810', w: '#ffffff' }},
-  { id: 'taxi', name: 'Taxi', points: 3,
-    grid: ['............','............','....yyyyy...','...ywwwwwy..','.yyyyyyyyy..','yywwyyyyywy.','yyyyyyyyyyy.','y.kky.y.kk.y','..kk.....kk.','............','............','............'],
-    pal: { y: '#f5cd47', w: '#7cc5e8', k: '#2a1810' }},
-  { id: 'cigarette', name: 'Mégot', points: 1,
-    grid: ['............','............','............','............','............','....rrr.....','....bwwwwwww','....bwwwwwww','....rrr.....','............','............','............'],
-    pal: { r: '#d94c3d', b: '#f29022', w: '#f4e4c1' }},
-  { id: 'panier', name: 'Poubelle', points: 1,
-    grid: ['............','............','..gggggggg..','..gGGGGGGg..','..gGGGGGGg..','..gGGGGGGg..','..gGGGGGGg..','..gGGGGGGg..','..gGGGGGGg..','..ggggggggg.','............','............'],
-    pal: { g: '#5a5a6a', G: '#2a1810' }},
-  { id: 'masque', name: 'Masque', points: 3,
-    grid: ['............','............','...wwwwww...','..wwwwwwww..','.wwwwwwwwww.','wwwwwwwwwwww','kwwwwwwwwwwk','kwwwwwwwwwwk','kwwwwwwwwwwk','wwwwwwwwwwww','.wwwwwwwwww.','............'],
-    pal: { w: '#7cc5e8', k: '#4a90c2' }},
-  { id: 'ballon', name: 'Ballon', points: 2,
-    grid: ['............','....rrrrr...','...rrwwwrr..','..rwrrrrwwr.','..rrrwwrrrr.','..rwrrrrwrr.','..rrrrwrrrr.','..rwrrrrrrr.','...rrwrrrr..','....rrrrr...','............','............'],
-    pal: { r: '#d94c3d', w: '#ffffff' }},
+    pal: { r: '#d04848', w: '#fbf3e0', g: '#5a4858' }},
+  { id: 'tramcarte', name: 'Ticket tram', points: 1,
+    grid: ['............','.kkkkkkkkkk.','.kwwwwwwwwk.','.kwYYYYYYwk.','.kwYBBBBYwk.','.kwYBBBBYwk.','.kwYYYYYYwk.','.kwwwwwwwwk.','.kwBBBBBBwk.','.kwwwwwwwwk.','.kkkkkkkkkk.','............'],
+    pal: { k: '#2a2228', w: '#fbf3e0', Y: '#f0c860', B: '#7a98b0' }},
+  { id: 'fenetre', name: 'Fenêtre déco', points: 1,
+    grid: ['............','..kkkkkkkk..','..kbbbbbbk..','..kbwwwwbk..','..kbwBBwbk..','..kbwBBwbk..','..kbwwwwbk..','..kbwwwwbk..','..kbwwwwbk..','..kbbbbbbk..','..kkkkkkkk..','............'],
+    pal: { k: '#2a2228', b: '#7a4848', w: '#c0c8d0', B: '#7a98b0' }},
+  { id: 'velo_orange', name: 'Vélo Veturilo', points: 2,
+    grid: ['............','............','....oo......','...o..o..o..','..o....o.o..','.o......ooo.','o..ooooo...o','oooooooooooo','.o..o.o..o..','.o.o..o.o...','..o....o....','............'],
+    pal: { o: '#e8a838' }},
+  { id: 'graff', name: 'Graff Mur', points: 3,
+    grid: ['............','...rr.bb....','..rrrrbbbb..','.rrrRRbbBB..','rrrRRrbBBb..','rrRRrrrBBb..','.rRrrrryyy..','..rrryyyyy..','...yyyyy....','....yy......','............','............'],
+    pal: { r: '#d04848', R: '#a02828', b: '#7a98b0', B: '#3d5a72', y: '#f0c860' }},
 ]
 
+const VOYAGE = [
+  { id: 'shot', name: 'Shot żubrówka', points: 2,
+    grid: ['............','............','..kkkkkkkk..','..kwwwwwwk..','..kwggggwk..','..kwggggwk..','..kwggggwk..','..kwwwwwwk..','...kkkkkk...','....kkkk....','....kkkk....','............'],
+    pal: { k: '#2a2228', w: '#c0c8d0', g: '#86a890' }},
+  { id: 'biere', name: 'Bière', points: 1,
+    grid: ['............','...kkkkkk...','..kwwwwwwk..','..kwYYYYwk..','..kwYYYYwk..','..kwYYYYwk..','..kwYYYYwk..','..kwYYYYwk..','..kwYYYYwk..','..kwYYYYwk..','...kkkkkk...','............'],
+    pal: { k: '#2a2228', w: '#fbf3e0', Y: '#e8a838' }},
+  { id: 'pierogi_assiette', name: 'Pierogi resto', points: 2,
+    grid: ['............','............','...wwwwwww..','..wwYYYYYww.','.wwYyyyyYwww','.wYyYYYyYww.','.wYyYYYyYww.','.wwYyyyyYww.','..wwYYYYYww.','...wwwwwww..','............','............'],
+    pal: { w: '#fbf3e0', Y: '#f0d090', y: '#f8e4b0' }},
+  { id: 'taxi_app', name: 'Taxi/Uber', points: 1,
+    grid: ['............','............','....yyyyy...','...ywwwwwy..','.yyyyyyyyy..','yywwyyyyywy.','yyyyyyyyyyy.','y.kky.y.kk.y','..kk.....kk.','............','............','............'],
+    pal: { y: '#f0c860', w: '#7a98b0', k: '#2a2228' }},
+  { id: 'airbnb', name: 'Clés Airbnb', points: 1,
+    grid: ['............','............','...kkk......','..kk.kk.....','..k...k.....','..k...k.....','..kk.kk.....','...kkkk.....','......kk....','......kkkk..','........kkk.','............'],
+    pal: { k: '#e8a838' }},
+  { id: 'plan_metro', name: 'Plan métro', points: 1,
+    grid: ['............','.kkkkkkkkkk.','.kwwwwwwwwk.','.kwRwwBBwwk.','.kwwRwwBwwk.','.kwwwRBwwwk.','.kwwBwRwwwk.','.kwBwwwRwwk.','.kBwwwwwRwk.','.kwwwwwwwwk.','.kkkkkkkkkk.','............'],
+    pal: { k: '#2a2228', w: '#fbf3e0', R: '#d04848', B: '#7a98b0' }},
+  { id: 'doner', name: 'Zapiekanka', points: 2,
+    grid: ['............','............','............','..yyyyyyyy..','.yYYYYYYYYy.','.yYrrrrrrYy.','.yYgrrrrgYy.','.yYgggggrYy.','.yYYYYYYYYy.','..yyyyyyyy..','............','............'],
+    pal: { y: '#f0d090', Y: '#e8a838', r: '#d04848', g: '#86a890' }},
+  { id: 'chambre', name: 'Chambre AirB', points: 2,
+    grid: ['............','............','.kkkkkkkkkk.','.kbbbbbbbbk.','.kbwwwwwwbk.','.kbwYYYYwbk.','.kbwYBBYwbk.','.kbwYYYYwbk.','.kbwwwwwwbk.','.kbbbbbbbbk.','.kkkkkkkkkk.','............'],
+    pal: { k: '#2a2228', b: '#a8746a', w: '#fbf3e0', Y: '#f0d090', B: '#7a98b0' }},
+  { id: 'photo_groupe', name: 'Photo groupe', points: 2,
+    grid: ['............','...kkkkkkkk.','..kwwwwwwwk.','..kwAAAAAAk.','..kwBCCCCBk.','..kwBCDDCBk.','..kwBCDDCBk.','..kwwwwwwwk.','..kwwwwwwwk.','..kkkkkkkkk.','............','............'],
+    pal: { k: '#2a2228', w: '#fbf3e0', A: '#7a98b0', B: '#a8746a', C: '#f0d090', D: '#3a2a3e' }},
+  { id: 'shopping', name: 'Sac shopping', points: 1,
+    grid: ['............','...k.....k..','...k.....k..','..kRRRRRRRk.','..kRRRRRRRk.','..kRRRRRRRk.','..kRwwwwRk..','..kRwYYwRk..','..kRRRRRRk..','..kkkkkkkk..','............','............'],
+    pal: { k: '#2a2228', R: '#d04848', w: '#fbf3e0', Y: '#f0c860' }},
+]
+
+const MEMOIRE = [
+  { id: 'perdu', name: 'Perdu en chemin', points: 2,
+    grid: ['............','............','......?.....','.....???....','....??.??...','....??.??...','......??....','.....??.....','............','......?.....','............','............'],
+    pal: { '?': '#a02828' }},
+  { id: 'vomi', name: 'Vomi mémorable', points: 3,
+    grid: ['............','......o.....','.....ooo....','....ooooo...','...ggggggg..','..gggggggg..','..ggggggggg.','...gggggggg.','...gggggg...','....gggg....','............','............'],
+    pal: { g: '#86a890', o: '#e8a838' }},
+  { id: 'kebab_3am', name: 'Kebab à 3h', points: 2,
+    grid: ['............','............','............','..yyyyyyyy..','.yYYYYYYYYy.','.yYrrrrrrYy.','.yYrrrrrrYy.','.yYrrrrrrYy.','.yYYYYYYYYy.','..yyyyyyyy..','......zzz...','............'],
+    pal: { y: '#f0d090', Y: '#e8a838', r: '#d04848', z: '#fbf3e0' }},
+  { id: 'reveille_tot', name: 'En retard', points: 2,
+    grid: ['............','...kkkkkkk..','..kwwwwwwwk.','..kw.....wk.','..kw..k..wk.','..kw..k..wk.','..kw..kkkwk.','..kw.....wk.','..kwwwwwwwk.','...kkkkkkk..','............','............'],
+    pal: { k: '#2a2228', w: '#fbf3e0' }},
+  { id: 'selfie', name: 'Selfie cliché', points: 1,
+    grid: ['............','............','...wwwwwww..','..wkkkkkkkw.','..wkkggkkw..','..wkgggggw..','..wkgggggw..','..wkkkkkkw..','...wwwwwww..','......w.....','............','............'],
+    pal: { w: '#a8a6a0', k: '#2a2228', g: '#7a98b0' }},
+  { id: 'crush', name: 'Crush au bar', points: 3,
+    grid: ['............','...rr..rr...','..rrrrrrrr..','..rRrrrrRr..','..rrRrrrRr..','...rRrrRr...','....rRRr....','.....rr.....','............','............','............','............'],
+    pal: { r: '#d04848', R: '#a02828' }},
+  { id: 'argent', name: 'Pris la note', points: 2,
+    grid: ['............','............','..yyyyyyyy..','..yYYYYYYy..','..yYwwwwYy..','..yYw$$wYy..','..yYw$$wYy..','..yYwwwwYy..','..yYYYYYYy..','..yyyyyyyy..','............','............'],
+    pal: { y: '#f0c860', Y: '#e8a838', w: '#fbf3e0', '$': '#86a890' }},
+  { id: 'photo_palais', name: 'Photo Palais', points: 1,
+    grid: ['............','...kkkkkk...','..kwwwwwwk..','..kwgggggk..','..kwgkggk_..','..kwggggwk..','..kwwwwwwk..','...kwwwwwk..','....kwwwwk..','.....kkkk...','............','............'],
+    pal: { k: '#2a2228', w: '#fbf3e0', g: '#a8a6a0' }},
+  { id: 'taxi_engueul', name: 'Taxi galère', points: 2,
+    grid: ['............','............','....yyyyy...','...y!www!y..','.yyyyyyyyy..','yyyyyyyyyyy.','y.kky.y.kk.y','..kk.....kk.','............','............','............','............'],
+    pal: { y: '#f0c860', w: '#fbf3e0', k: '#2a2228', '!': '#d04848' }},
+]
+
+export const CATEGORIES = [
+  { id: 'urbain', name: 'Urbain', subtitle: 'À voir dans la rue', objects: URBAIN },
+  { id: 'voyage', name: 'Voyage', subtitle: 'Spécifique au trip', objects: VOYAGE },
+  { id: 'memoire', name: 'Mémoire', subtitle: 'Blagues du groupe', objects: MEMOIRE },
+]
+
+const ALL = [...URBAIN, ...VOYAGE, ...MEMOIRE]
+
 export function getObjects() {
-  return OBJECTS
+  return ALL
 }
 
 export function getObject(id) {
-  return OBJECTS.find(o => o.id === id)
+  return ALL.find(o => o.id === id)
 }
 
 export function objectSvg(obj) {
+  if (!obj) return ''
   return pixelSvg(obj.grid, obj.pal)
 }

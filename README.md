@@ -1,85 +1,69 @@
-# 🎯 BINGO CITY
+# 🍻 BINGO SANTÉ — Varsovie Édition
 
-Le bingo urbain pixel art — multijoueur en sessions privées.
+Le bingo urbain en pixel art pour groupes en voyage. Photographie les objets, valide les défis, deviens le champion·ne du groupe.
 
 ## Quick start
 
 ```bash
-# Installation
 npm install
-
-# Dev (hot reload sur http://localhost:5173)
-npm run dev
-
-# Build de production
-npm run build
-
-# Preview du build
-npm run preview
+npm run dev          # http://localhost:5173
+npm run build        # build prod dans /dist
 ```
 
 ## Déploiement Vercel
 
 ```bash
-# Une seule fois : link au projet
-npm i -g vercel
-vercel
-
-# Pour les déploiements suivants
-vercel --prod
+npm i -g vercel       # une seule fois
+vercel                # première fois (login + setup)
+vercel --prod         # déploiements suivants
 ```
 
-Vercel auto-détecte Vite, pas besoin de configurer.
+Vercel auto-détecte Vite. Aucune config nécessaire.
+
+## DA — "Varsovie 88"
+
+Palette pastel froide inspirée de Varsovie : bétons communistes, brique vieille ville, façades colorées de Rynek, accents tram (rouge & jaune polonais).
+
+- **Cards arrondies** crème + ombre 4px style retro game
+- **Skyline pixel art** : Palais de la Culture + vieille ville + blocs communistes
+- **Animations idle** : nuages, cigognes, tram qui passe, avatars qui respirent
+- **Encre violet sombre** (`#2a2228`) au lieu de noir pur — plus chaud
 
 ## Architecture
 
 ```
-bingo-city/
-├── public/
-│   └── assets/             # Sprites Modern UI
-│       ├── ui/             # Cadres, boutons, jauges (9-slice)
-│       ├── icons/          # Icônes (cœur, étoile, sablier, etc.)
-│       └── portrait/       # Portrait Generator (skin/eyes/hair/acc)
-├── src/
-│   ├── main.js             # Entry — délégation d'événements + init
-│   ├── state.js            # State global (sera remplacé par Firebase)
-│   ├── router.js           # Navigation entre écrans (hash-based)
-│   ├── data/
-│   │   ├── objects.js      # Bibliothèque d'objets de bingo
-│   │   └── portrait.js     # Config Portrait Generator
-│   ├── ui/
-│   │   ├── avatar.js       # Composant Avatar (rendu en couches)
-│   │   └── toast.js        # Notifications
-│   ├── screens/            # Un fichier par écran
-│   │   ├── home.js
-│   │   ├── create.js
-│   │   ├── join.js
-│   │   ├── avatar.js       # Fiche perso style RPG (image 1)
-│   │   ├── lobby.js
-│   │   ├── setup.js
-│   │   ├── game.js         # Grille bingo + HUD métal
-│   │   ├── validate.js
-│   │   └── end.js
-│   ├── styles/
-│   │   ├── main.css        # Couleurs, polices, base
-│   │   └── ui.css          # Cadres, boutons, jauges, avatar
-│   └── utils/
-│       └── assets.js       # Helper paths
-├── index.html
-├── package.json
-└── vite.config.js
+src/
+├── main.js              Entry — délégation d'événements + init
+├── state.js             State global (à remplacer par Firebase plus tard)
+├── router.js            Navigation hash-based entre écrans
+├── data/
+│   ├── objects.js       3 catégories d'objets bingo (urbain/voyage/mémoire)
+│   └── portrait.js      Config Portrait Generator
+├── ui/
+│   ├── avatar.js        Composant avatar (rendu en couches)
+│   ├── toast.js         Notifications
+│   └── varsovie.js      Skyline + tram + cigognes + items flottants
+├── screens/             Un fichier par écran (home, lobby, setup, game...)
+├── styles/
+│   ├── main.css         Palette + base + ambiance
+│   └── ui.css           Composants (cards, buttons, tabs, avatar)
+└── utils/
+    └── assets.js
 ```
 
-## Conventions de design
+## Catégories d'objets bingo
 
-- **Cadres bois** (`frame-wood`) → écrans persos, lobby, panneaux narratifs
-- **Cadres beige** (`frame-beige`) → sous-panneaux, conteneurs internes
-- **Cadres métal** (`frame-metal`) → HUD du jeu, contexte SF/moderne
+Le MJ peut piocher librement dans 3 catégories :
+
+| Catégorie | Description | Exemples |
+|---|---|---|
+| **Urbain** | Objets visibles dans la rue à Varsovie | Tram rouge, Palais de la Culture, pierogi, kiosque, bouche de métro... |
+| **Voyage** | Spécifique à un trip de groupe | Shot żubrówka, plan de métro, taxi/Uber, photo de groupe... |
+| **Mémoire** | Blagues / moments du voyage | Quelqu'un perdu en chemin, kebab à 3h, vomi mémorable... |
 
 ## Délégation d'événements
 
-Tous les événements passent par un seul listener dans `main.js` qui lit les
-data attributes :
+Tous les événements passent par un seul listener dans `main.js` qui lit les data attributes :
 
 | Attribut | Effet |
 |---|---|
@@ -95,12 +79,18 @@ Pas de `onclick="..."` inline. Pas de plantage silencieux.
 
 ## Roadmap
 
-- [x] V0 : prototype d'interface (sans backend)
-- [ ] V1 : Firebase Realtime DB pour la synchro multi-joueur
-- [ ] V2 : capture photo réelle (`getUserMedia`)
-- [ ] V3 : validation IA optionnelle (Claude Vision API)
-- [ ] V4 : PWA installable
+- [x] V0.5 : refonte DA Varsovie + 3 catégories d'objets
+- [ ] V0.6 : Firebase Realtime DB pour la synchro multi-joueur
+- [ ] V0.7 : capture photo réelle (`getUserMedia`)
+- [ ] V0.8 : validation IA optionnelle (Claude Vision API)
+- [ ] V1.0 : PWA installable
 
 ## Crédits
 
-Assets : [Modern User Interface](https://blue-cap-studio.itch.io/) by Blue Cap Studio.
+Assets portraits : [Modern User Interface](https://blue-cap-studio.itch.io/) by Blue Cap Studio.
+
+Skyline & tram & objets bingo : pixel art original.
+
+---
+
+🍻 **Na zdrowie !**

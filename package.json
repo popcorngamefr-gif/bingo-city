@@ -1,7 +1,7 @@
 {
-  "name": "bingo-city",
-  "version": "0.1.0",
-  "description": "Le bingo urbain pixel art — multijoueur en sessions privées",
+  "name": "bingo-sante-varsovie",
+  "version": "0.5.0",
+  "description": "Bingo Santé — Varsovie Édition. Le bingo urbain pixel art pour groupes en voyage.",
   "type": "module",
   "scripts": {
     "dev": "vite",

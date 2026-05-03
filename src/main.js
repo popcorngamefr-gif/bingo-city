@@ -30,6 +30,10 @@ const ACTIONS = {
     navigate('join')
   },
 
+  showHelp() {
+    toast('Bingo de groupe : le MJ choisit les objets, vous les trouvez en photo. Le premier à compléter sa grille gagne !', 4000)
+  },
+
   createGame() {
     const gameName = (document.getElementById('game-name-input')?.value || '').trim() || 'Sans nom'
     const myName = (document.getElementById('creator-name-input')?.value || '').trim()

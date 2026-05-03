@@ -14,54 +14,43 @@ export function renderValidate() {
 
   return `
     <section class="screen validate-screen">
-      <h2 class="title-screen">★ Validation MJ ★</h2>
+      <button class="btn-back" data-nav="game">←</button>
+
+      <h2 class="title-screen">★ VALIDATION MJ ★</h2>
 
       <p class="small light center mb">
         ${queue.length} photo${queue.length > 1 ? 's' : ''} en attente
       </p>
 
-      <div class="validation-queue">
+      <div class="stack">
         ${queue.length === 0
-          ? `<div class="frame frame-wood"><div class="content">
-              <p class="small center">Aucune photo en attente.</p>
-            </div></div>`
+          ? `<div class="card"><p class="small center">Aucune photo en attente.</p></div>`
           : queue.map((v, i) => {
               const obj = getObject(v.objId)
-              return `<div class="validation-card frame frame-wood">
-                <div class="content">
-                  <div class="val-header">
-                    <strong>${escapeHtml(v.playerName)}</strong> a vu :
+              return `<div class="card">
+                <div class="val-header">
+                  <strong>${escapeHtml(v.playerName)}</strong> a vu :
+                </div>
+                <div class="val-photo">
+                  <span>📸 PHOTO_${v.timestamp}</span>
+                  <div class="val-overlay">
+                    <div class="val-overlay-icon">${objectSvg(obj)}</div>
+                    <span>${obj.name}</span>
                   </div>
-                  <div class="val-photo">
-                    <span>📸 PHOTO_${v.timestamp}</span>
-                    <div class="val-overlay">
-                      <div class="val-overlay-icon">${objectSvg(obj)}</div>
-                      <span>${obj.name}</span>
-                    </div>
-                  </div>
-                  <div class="row">
-                    <button class="btn btn-red btn-sm" data-validate="${i}:0">✗ Refuser</button>
-                    <button class="btn btn-green btn-sm" data-validate="${i}:1">✓ Valider</button>
-                  </div>
+                </div>
+                <div class="row">
+                  <button class="btn btn-cream btn-sm" data-validate="${i}:0">✗ Refuser</button>
+                  <button class="btn btn-green btn-sm" data-validate="${i}:1">✓ Valider</button>
                 </div>
               </div>`
             }).join('')
         }
       </div>
 
-      <button class="btn btn-blue btn-sm mt" data-nav="game">← Retour au jeu</button>
+      <button class="btn btn-yellow btn-sm mt" data-nav="game">← Retour au jeu</button>
     </section>
 
     <style>
-      .validation-queue {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        margin-bottom: 12px;
-      }
-      .validation-card .content {
-        padding: 12px;
-      }
       .val-header {
         font-family: 'VT323', monospace;
         font-size: 18px;
@@ -70,9 +59,10 @@ export function renderValidate() {
       .val-photo {
         width: 100%;
         aspect-ratio: 4/3;
-        background: linear-gradient(135deg, #888, #555);
-        border: 2px solid var(--ink);
-        margin-bottom: 8px;
+        background: linear-gradient(135deg, var(--concrete-mid), var(--concrete-dark));
+        border: 3px solid var(--ink);
+        border-radius: 6px;
+        margin-bottom: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -86,9 +76,10 @@ export function renderValidate() {
         bottom: 6px; right: 6px;
         background: var(--ink);
         padding: 4px 6px;
-        color: var(--yellow);
+        color: var(--tram-yellow);
         font-size: 9px;
-        border: 2px solid var(--yellow);
+        border: 2px solid var(--tram-yellow);
+        border-radius: 4px;
         display: flex;
         align-items: center;
         gap: 4px;
