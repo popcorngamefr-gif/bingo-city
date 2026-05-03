@@ -1,8 +1,6 @@
 /**
  * Écran : édition d'avatar — version simplifiée + update chirurgical
- *
- * Toutes les zones qui changent au cycle ont un data-* pour qu'on puisse
- * les update sans re-render l'écran (= plus de flash blanc).
+ * Styles dans src/styles/screens.css
  */
 
 import { state } from '../state.js'
@@ -20,7 +18,6 @@ export function renderAvatar() {
 
       <h2 class="title-screen">★ TON AVATAR ★</h2>
 
-      <!-- Fiche perso -->
       <div class="char-sheet">
         <div class="char-sheet-header">
           <div class="char-name-tag">
@@ -47,88 +44,19 @@ export function renderAvatar() {
         </button>
       </div>
 
-      <!-- Catégories scrollables -->
       <div class="char-categories">
-        ${categoryRow('skin', 'Peau', state.myAvatar.skin, PORTRAIT.skins.length)}
-        ${categoryRow('hairStyle', 'Cheveux', state.myAvatar.hairStyle, PORTRAIT.hairStyles.length)}
-        ${categoryRow('hairColor', 'Couleur', state.myAvatar.hairColor, PORTRAIT.hairStyles[state.myAvatar.hairStyle].colors.length)}
-        ${categoryRow('eyes', 'Yeux', state.myAvatar.eyes, PORTRAIT.eyes.length)}
-        ${categoryRow('acc', 'Accessoire', state.myAvatar.acc, PORTRAIT.accessories.length, accessoryLabel(state.myAvatar.acc), true)}
+        ${categoryRow('skin',      'Peau',       state.myAvatar.skin,      PORTRAIT.skins.length)}
+        ${categoryRow('hairStyle', 'Cheveux',    state.myAvatar.hairStyle, PORTRAIT.hairStyles.length)}
+        ${categoryRow('hairColor', 'Couleur',    state.myAvatar.hairColor, PORTRAIT.hairStyles[state.myAvatar.hairStyle].colors.length)}
+        ${categoryRow('eyes',      'Yeux',       state.myAvatar.eyes,      PORTRAIT.eyes.length)}
+        ${categoryRow('acc',       'Accessoire', state.myAvatar.acc,       PORTRAIT.accessories.length, accessoryLabel(state.myAvatar.acc), true)}
       </div>
 
-      <button class="btn btn-red mt" data-action="confirmAvatar" style="position: relative; z-index: 5;">
-        ✓ Valider mon look
-      </button>
-
-      <style>
-        .char-categories {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          position: relative;
-          z-index: 5;
-          margin-bottom: 16px;
-        }
-        .cat-row {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          background: var(--cream-cold);
-          border: 3px solid var(--ink);
-          border-radius: 10px;
-          padding: 10px 12px;
-          box-shadow: 0 3px 0 var(--ink);
-        }
-        .cat-row-label {
-          flex: 1;
-          font-family: 'Press Start 2P', monospace;
-          font-size: 9px;
-          color: var(--ink);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          line-height: 1.3;
-        }
-        .cat-row-value {
-          font-family: 'VT323', monospace;
-          font-size: 14px;
-          color: var(--ink-soft);
-          margin-left: 6px;
-          text-transform: none;
-          letter-spacing: 0;
-        }
-        .cat-arrow {
-          background: linear-gradient(180deg, var(--tram-yellow) 0%, var(--tram-yellow-warm) 100%);
-          border: 2px solid var(--ink);
-          border-radius: 6px;
-          width: 36px;
-          height: 36px;
-          font-family: 'Press Start 2P', monospace;
-          font-size: 14px;
-          color: var(--ink);
-          cursor: pointer;
-          box-shadow: 0 3px 0 var(--ink);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          padding: 0;
-          transition: transform 0.05s, box-shadow 0.05s;
-        }
-        .cat-arrow:active {
-          transform: translateY(2px);
-          box-shadow: 0 1px 0 var(--ink);
-        }
-        .cat-counter {
-          font-family: 'Press Start 2P', monospace;
-          font-size: 8px;
-          color: var(--tram-red);
-          min-width: 36px;
-          text-align: center;
-        }
-
-        /* Le cadre avatar plus grand */
-        #avatar-preview { box-shadow: 0 6px 0 var(--ink), inset 0 0 0 2px var(--cream-cold); }
-      </style>
+      <div class="sticky-cta">
+        <button class="btn btn-red" data-action="confirmAvatar">
+          ✓ Valider mon look
+        </button>
+      </div>
     </section>
   `
 }

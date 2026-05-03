@@ -1,27 +1,29 @@
 /**
- * State global de Bingo City
+ * State global de Bingo Santé
  * Tout est en mémoire pour le proto. Plus tard on branchera Firebase ici.
  */
 
 export const state = {
   // Identité
-  isMJ: false,
-  myName: '',
+  isMJ:     false,
+  myName:   '',
   myAvatar: { skin: 0, eyes: 0, hairStyle: 0, hairColor: 0, acc: 0 },
 
   // Partie
-  gameCode: null,
-  gameName: '',
-  players: [],         // { id, name, avatar, score, isMJ, isYou, justJoined, hasBingo }
-  selectedObjects: [], // ids des objets choisis par MJ
-  myGrid: [],          // { objId, status: 'empty' | 'pending' | 'validated' | 'rejected' }
+  gameCode:  null,
+  gameName:  '',
+  players:   [],         // { id, name, avatar, score, isMJ, isYou, justJoined, hasBingo }
+  selectedObjects: [],   // ids des objets choisis par MJ
+  myGrid:    [],         // { objId, status: 'empty' | 'validated' | 'rejected' }
 
-  // Validation
-  pendingValidations: [], // { playerId, playerName, objId, cellIdx, timestamp }
+  // Photos capturées : { [cellIdx]: dataUrl }
+  myPhotos: {},
+
+  // En cours
   currentPickingObj: null,
 
   // Timer
-  timer: 1800,
+  timer:         1800,
   timerInterval: null,
 
   // Routing
@@ -29,7 +31,7 @@ export const state = {
 }
 
 /**
- * Génère un code de partie à 4 caractères (sans 0/O/I/1 confus)
+ * Génère un code de partie à 4 caractères (sans 0/O/I/1 ambigus).
  */
 export function generateCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -39,30 +41,17 @@ export function generateCode() {
 }
 
 /**
- * Génère un avatar aléatoire (pour les joueurs simulés)
- */
-export function randomAvatar() {
-  return {
-    skin: Math.floor(Math.random() * 9),
-    eyes: Math.floor(Math.random() * 7),
-    hairStyle: Math.floor(Math.random() * 15),
-    hairColor: Math.floor(Math.random() * 7),
-    acc: Math.floor(Math.random() * 15), // 0 = aucun
-  }
-}
-
-/**
- * Reset du state pour nouvelle partie
+ * Reset du state pour une nouvelle partie.
  */
 export function resetGame() {
-  state.gameCode = null
-  state.gameName = ''
-  state.players = []
+  state.gameCode        = null
+  state.gameName        = ''
+  state.players         = []
   state.selectedObjects = []
-  state.myGrid = []
-  state.pendingValidations = []
+  state.myGrid          = []
+  state.myPhotos        = {}
   state.currentPickingObj = null
-  state.timer = 1800
+  state.timer           = 1800
   if (state.timerInterval) {
     clearInterval(state.timerInterval)
     state.timerInterval = null

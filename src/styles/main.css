@@ -225,48 +225,6 @@ body {
 }
 
 /* Debug nav */
-#debug-toggle {
-  position: fixed;
-  top: 4px;
-  right: 4px;
-  z-index: 1001;
-  background: var(--tram-red);
-  color: white;
-  border: 2px solid var(--ink);
-  width: 28px;
-  height: 28px;
-  font-family: 'Press Start 2P', monospace;
-  font-size: 10px;
-  cursor: pointer;
-}
-#debug-bar {
-  position: fixed;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--ink);
-  padding: 4px 6px;
-  z-index: 1000;
-  display: none;
-  gap: 2px;
-  flex-wrap: wrap;
-  max-width: 420px;
-  border-bottom: 2px solid var(--tram-yellow);
-}
-#debug-bar.show { display: flex; }
-#debug-bar button {
-  background: var(--ink-soft);
-  color: var(--tram-yellow);
-  border: none;
-  padding: 4px 6px;
-  font-family: 'Press Start 2P', monospace;
-  font-size: 7px;
-  cursor: pointer;
-}
-#debug-bar button.active {
-  background: var(--tram-yellow);
-  color: var(--ink);
-}
 
 /* Toast */
 .toast {
