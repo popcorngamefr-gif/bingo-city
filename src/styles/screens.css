@@ -76,7 +76,7 @@
   background: var(--ink);
   border: 3px solid var(--tram-yellow);
   border-radius: 12px;
-  padding: 8px 12px;
+  padding: 10px 14px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -94,15 +94,15 @@
   align-items: center;
   gap: 6px;
   font-family: 'Press Start 2P', monospace;
-  font-size: 9px;
+  font-size: 10px;
   color: var(--cream-cold);
   text-shadow: 1px 1px 0 var(--ink);
 }
 .hud-value {
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1;
 }
-.hud-value.timer { color: var(--tram-yellow); font-size: 12px; }
+.hud-value.timer { color: var(--tram-yellow); font-size: 13px; }
 
 .bingo-grid {
   display: grid;
@@ -175,7 +175,7 @@
   padding: 10px;
   text-align: center;
   font-family: 'Press Start 2P', monospace;
-  font-size: 9px;
+  font-size: 10px;
   margin-bottom: 10px;
   border: 3px solid var(--tram-yellow);
   border-radius: 6px;
@@ -235,14 +235,14 @@
   aspect-ratio: 1;
   background: var(--cream-cold);
   border: 2px solid var(--ink);
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   position: relative;
-  padding: 4px;
+  padding: 6px 4px;
   box-shadow: 2px 2px 0 var(--ink);
   transition: transform 0.05s;
 }
@@ -313,14 +313,14 @@
 }
 .lb-name {
   font-family: 'VT323', monospace;
-  font-size: 18px;
+  font-size: 22px;
   flex: 1;
   color: var(--ink);
   font-weight: bold;
 }
 .lb-score {
   font-family: 'Press Start 2P', monospace;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink);
 }
 .lb-row.bingo::after {
@@ -393,7 +393,7 @@
 .cat-row-label {
   flex: 1;
   font-family: 'Press Start 2P', monospace;
-  font-size: 9px;
+  font-size: 10px;
   color: var(--ink);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -780,87 +780,98 @@
 .ap-cards {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   position: relative;
   z-index: 5;
   flex: 1;
 }
 
+/* ── Card de base ── */
 .ap-card {
   display: flex;
   align-items: center;
-  gap: 14px;
-  background: var(--cream-cold);
+  gap: 0;
   border: 3px solid var(--ink);
   border-radius: 14px;
-  padding: 16px 14px;
   cursor: pointer;
-  box-shadow: 0 5px 0 var(--ink);
+  box-shadow: 0 6px 0 var(--ink);
   transition: transform 0.06s, box-shadow 0.06s;
-  position: relative;
   overflow: hidden;
+  min-height: 80px;
+  background: var(--cream-cold);
 }
 .ap-card:active {
-  transform: translateY(3px);
+  transform: translateY(4px);
   box-shadow: 0 2px 0 var(--ink);
 }
 
-/* Accent couleur gauche */
-.ap-card::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 5px;
-  border-radius: 11px 0 0 11px;
-}
-.ap-card-ai::before     { background: var(--tram-red); }
-.ap-card-manual::before { background: var(--tram-yellow-warm); }
-.ap-card-profile::before { background: var(--green-go); }
-
-/* Couleurs de fond subtiles par type */
-.ap-card-ai {
-  background: linear-gradient(135deg, #fdf0ee 0%, var(--cream-cold) 60%);
-}
-.ap-card-manual {
-  background: linear-gradient(135deg, #fdf8e8 0%, var(--cream-cold) 60%);
-}
-.ap-card-profile {
-  background: linear-gradient(135deg, #eef4f0 0%, var(--cream-cold) 60%);
-}
-
-.ap-card-icon {
-  font-size: 32px;
-  line-height: 1;
+/* ── Bande couleur gauche (6px solid) ── */
+.ap-card-stripe {
+  width: 8px;
+  align-self: stretch;
   flex-shrink: 0;
-  width: 44px;
-  text-align: center;
+  border-radius: 8px 0 0 8px;
+}
+.ap-card-ai     .ap-card-stripe { background: var(--tram-red); }
+.ap-card-manual .ap-card-stripe { background: var(--tram-yellow-warm); }
+.ap-card-profile .ap-card-stripe { background: var(--green-go); }
+
+/* ── Zone icône ── */
+.ap-card-icon {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 .ap-card-avatar {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
+
+/* ── Contenu textuel ── */
 .ap-card-body {
   flex: 1;
+  padding: 14px 8px 14px 4px;
   min-width: 0;
 }
 .ap-card-title {
   font-family: 'Press Start 2P', monospace;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--ink);
-  margin-bottom: 5px;
+  margin-bottom: 6px;
   line-height: 1.4;
 }
 .ap-card-sub {
   font-family: 'VT323', monospace;
-  font-size: 15px;
+  font-size: 18px;
   color: var(--ink-soft);
   line-height: 1.2;
 }
+
+/* ── Flèche droite ── */
 .ap-card-arrow {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 14px;
-  color: var(--ink-faded);
+  width: 40px;
+  height: 40px;
+  margin-right: 10px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--concrete);
+  border: 2px solid var(--ink);
+  border-radius: 8px;
 }
+
+/* ── Fonds colorés subtils ── */
+.ap-card-ai     { background: linear-gradient(90deg, #fff4f2 0%, var(--cream-cold) 50%); }
+.ap-card-manual { background: linear-gradient(90deg, #fffae8 0%, var(--cream-cold) 50%); }
+.ap-card-profile { background: linear-gradient(90deg, #f0f6f2 0%, var(--cream-cold) 50%); }
 
 /* Vue confirmation post-IA */
 .ap-generated-preview {

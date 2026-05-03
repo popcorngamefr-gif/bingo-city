@@ -211,7 +211,7 @@ body {
   display: none;
   flex-direction: column;
   z-index: 1;
-  padding: 24px 16px 20px;
+  padding: 76px 20px 20px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -288,8 +288,8 @@ body {
 .row { display: flex; gap: 8px; }
 .row > * { flex: 1; }
 .stack { display: flex; flex-direction: column; gap: 12px; }
-.mb { margin-bottom: 12px; }
-.mt { margin-top: 12px; }
+.mb { margin-bottom: 16px; }
+.mt { margin-top: 16px; }
 .hidden { display: none !important; }
 
 .section-title {
@@ -326,3 +326,6 @@ body {
   z-index: 1;
   opacity: 0.45;
 }
+
+/* Écrans sans bouton retour : padding top réduit */
+.screen-home { padding-top: 20px; }

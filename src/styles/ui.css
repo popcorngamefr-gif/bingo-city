@@ -63,13 +63,13 @@
   font-family: 'Press Start 2P', monospace;
   font-size: 11px;
   letter-spacing: 0.05em;
-  padding: 14px 18px;
+  padding: 16px 20px;
   border: 3px solid var(--ink);
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
   text-transform: uppercase;
   width: 100%;
-  min-height: 44px;
+  min-height: 56px;
   transition: transform 0.08s, box-shadow 0.08s;
   text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.3);
   color: var(--ink);
@@ -172,7 +172,7 @@
   box-shadow: 0 1px 0 var(--ink);
 }
 
-.btn-sm { font-size: 8px; padding: 11px 14px; border-radius: 8px; min-height: 44px; }
+.btn-sm { font-size: 10px; padding: 12px 16px; border-radius: 10px; min-height: 48px; }
 .btn-block { width: 100%; }
 
 /* Bouton retour rond */
@@ -184,13 +184,13 @@
   background: var(--cream-cold);
   border: 3px solid var(--ink);
   border-radius: 50%;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   font-family: 'Press Start 2P', monospace;
   font-size: 14px;
   color: var(--ink);
   cursor: pointer;
-  box-shadow: 0 3px 0 var(--ink);
+  box-shadow: 0 4px 0 var(--ink);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -231,11 +231,11 @@
    ============================================ */
 .label {
   font-family: 'Press Start 2P', monospace;
-  font-size: 9px;
+  font-size: 10px;
   color: var(--ink);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   display: block;
 }
 
@@ -287,11 +287,11 @@
 
 .title-screen {
   font-family: 'Press Start 2P', monospace;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--tram-red);
   text-align: center;
   text-shadow: 2px 2px 0 var(--cream-cold), 3px 3px 0 var(--ink);
-  margin: 0 0 14px;
+  margin: 0 0 18px;
   position: relative;
   z-index: 5;
 }
@@ -306,7 +306,7 @@
 }
 
 .small {
-  font-size: 16px;
+  font-size: 18px;
   color: var(--ink-soft);
 }
 .small.light {
@@ -590,17 +590,17 @@
 }
 .code-label {
   font-family: 'Press Start 2P', monospace;
-  font-size: 8px;
+  font-size: 10px;
   color: var(--cream-cold);
   opacity: 0.85;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.15em;
 }
 .code-value {
   font-family: 'Press Start 2P', monospace;
-  font-size: 30px;
+  font-size: 34px;
   color: var(--tram-yellow);
-  letter-spacing: 0.3em;
-  margin-top: 8px;
+  letter-spacing: 0.4em;
+  margin-top: 10px;
   text-shadow: 2px 2px 0 var(--tram-red-dark);
 }
 
@@ -629,7 +629,7 @@
   50% { background: var(--green-go); }
 }
 .player-name {
-  font-size: 18px;
+  font-size: 22px;
   color: var(--ink);
   font-weight: bold;
   flex: 1;
@@ -637,10 +637,10 @@
 }
 .mj-badge {
   font-family: 'Press Start 2P', monospace;
-  font-size: 8px;
+  font-size: 9px;
   background: var(--tram-red);
   color: white;
-  padding: 4px 6px;
+  padding: 5px 8px;
   border: 2px solid var(--ink);
   border-radius: 4px;
 }

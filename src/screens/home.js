@@ -23,7 +23,7 @@ export function renderHome() {
   `
 
   return `
-    <section class="screen home-screen">
+    <section class="screen home-screen" style="padding-top: 20px;">
       ${bgVarsovieHtml()}
       ${floatingItemsHtml()}
 
