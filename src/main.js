@@ -248,6 +248,10 @@ const ACTIONS = {
     openGeneratorModal()
   },
 
+  openAvatarGenerator() {
+    openGeneratorModal()
+  },
+
   logoutAccount() {
     state.accountKey  = null
     state.userProfile = { ...state.userProfile, accountKey: null }
@@ -317,10 +321,6 @@ function setupInputFilters() {
 /* ============================================================
    AVATAR SCREEN — bouton génération IA
    ============================================================ */
-function _setupAvatarPickScreen() {
-  document.getElementById('ap-ai-btn')?.addEventListener('click', openGeneratorModal)
-}
-
 /* ============================================================
    SCREEN HOOKS
    ============================================================ */
@@ -332,7 +332,6 @@ function setupScreenHooks() {
       if (screen === 'game')    { updateHudConfidence(); checkHeartbeat() }
       if (screen === 'lobby')   _setupLobbySubscriptions()
       if (screen === 'account') _setupAccountScreen()
-      if (screen === 'avatar-pick')  _setupAvatarPickScreen()
       if (screen === 'home' || screen === 'end') unsubscribeAll()
     }, 50)
   })

@@ -65,7 +65,7 @@ function _renderChoice(hasProfile) {
       </p>
 
       <div class="ap-cards">
-        <div class="ap-card ap-card-ai" id="ap-ai-btn">
+        <div class="ap-card ap-card-ai" data-action="openAvatarGenerator">
           <div class="ap-card-stripe"></div>
           <div class="ap-card-icon">${icon('scan', { size: 36 })}</div>
           <div class="ap-card-body">
