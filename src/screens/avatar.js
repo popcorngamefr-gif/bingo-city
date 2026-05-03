@@ -1,11 +1,8 @@
 /**
- * Écran : édition d'avatar — version simplifiée
+ * Écran : édition d'avatar — version simplifiée + update chirurgical
  *
- * UX : pas d'onglets, tout sur un seul écran scrollable
- *  - Avatar central animé (respire, cligne, hop à chaque changement)
- *  - Bouton 🎲 "Randomise" en haut
- *  - 4 catégories en pile, chacune avec ← → pour cycler
- *  - Compteur "n/total" pour chaque catégorie
+ * Toutes les zones qui changent au cycle ont un data-* pour qu'on puisse
+ * les update sans re-render l'écran (= plus de flash blanc).
  */
 
 import { state } from '../state.js'
@@ -38,7 +35,7 @@ export function renderAvatar() {
           <div class="avatar lg mood-idle" id="avatar-preview" style="margin: 0 auto;">
             ${miniSkylineHtml()}
             <div class="avatar-inner">
-              ${avatarLayersHtml(state.myAvatar)}
+              ${avatarLayersHtml(state.myAvatar, 'idle')}
             </div>
           </div>
         </div>
@@ -48,13 +45,13 @@ export function renderAvatar() {
         </button>
       </div>
 
-      <!-- Catégories scrollables avec flèches -->
+      <!-- Catégories scrollables -->
       <div class="char-categories">
         ${categoryRow('skin', 'Peau', state.myAvatar.skin, PORTRAIT.skins.length)}
         ${categoryRow('hairStyle', 'Cheveux', state.myAvatar.hairStyle, PORTRAIT.hairStyles.length)}
         ${categoryRow('hairColor', 'Couleur', state.myAvatar.hairColor, PORTRAIT.hairStyles[state.myAvatar.hairStyle].colors.length)}
         ${categoryRow('eyes', 'Yeux', state.myAvatar.eyes, PORTRAIT.eyes.length)}
-        ${categoryRow('acc', 'Accessoire', state.myAvatar.acc, PORTRAIT.accessories.length, accessoryLabel(state.myAvatar.acc))}
+        ${categoryRow('acc', 'Accessoire', state.myAvatar.acc, PORTRAIT.accessories.length, accessoryLabel(state.myAvatar.acc), true)}
       </div>
 
       <button class="btn btn-red mt" data-action="confirmAvatar" style="position: relative; z-index: 5;">
@@ -87,12 +84,15 @@ export function renderAvatar() {
           color: var(--ink);
           text-transform: uppercase;
           letter-spacing: 0.05em;
+          line-height: 1.3;
         }
         .cat-row-value {
           font-family: 'VT323', monospace;
           font-size: 14px;
           color: var(--ink-soft);
           margin-left: 6px;
+          text-transform: none;
+          letter-spacing: 0;
         }
         .cat-arrow {
           background: linear-gradient(180deg, var(--tram-yellow) 0%, var(--tram-yellow-warm) 100%);
@@ -123,20 +123,23 @@ export function renderAvatar() {
           min-width: 36px;
           text-align: center;
         }
+
+        /* Le cadre avatar plus grand */
+        #avatar-preview { box-shadow: 0 6px 0 var(--ink), inset 0 0 0 2px var(--cream-cold); }
       </style>
     </section>
   `
 }
 
-function categoryRow(field, label, currentIdx, total, valueLabel = null) {
+function categoryRow(field, label, currentIdx, total, valueLabel = null, isAcc = false) {
   return `
     <div class="cat-row">
       <button class="cat-arrow" data-cycle="${field}:-1">◄</button>
       <div class="cat-row-label">
         ${label}
-        ${valueLabel ? `<span class="cat-row-value">${valueLabel}</span>` : ''}
+        ${valueLabel ? `<span class="cat-row-value" ${isAcc ? 'data-acc-label' : ''}>${valueLabel}</span>` : ''}
       </div>
-      <div class="cat-counter">${currentIdx + 1}/${total}</div>
+      <div class="cat-counter" data-counter="${field}">${currentIdx + 1}/${total}</div>
       <button class="cat-arrow" data-cycle="${field}:1">►</button>
     </div>
   `

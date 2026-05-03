@@ -349,10 +349,10 @@
   overflow: hidden;
   flex-shrink: 0;
 }
-.avatar.lg { width: 148px; height: 148px; border-radius: 12px; }
-.avatar.md { width: 80px; height: 80px; }
-.avatar.sm { width: 56px; height: 56px; }
-.avatar.xs { width: 40px; height: 40px; border-radius: 6px; }
+.avatar.lg { width: 200px; height: 200px; border-radius: 14px; }
+.avatar.md { width: 96px; height: 96px; }
+.avatar.sm { width: 64px; height: 64px; }
+.avatar.xs { width: 44px; height: 44px; border-radius: 6px; }
 
 .avatar.idle .avatar-inner {
   animation: avatarBreathe 2.5s ease-in-out infinite;
@@ -372,8 +372,7 @@
 
 .avatar .layer {
   position: absolute;
-  width: 80%;
-  height: 80%;
+  inset: 0;
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -713,16 +712,16 @@
   100% { transform: rotate(-5deg) translateY(-1px); }
 }
 
-/* BLINK : on cache les yeux pendant un instant en superposant un masque */
+/* BLINK : barre courte sur les yeux pendant 120ms */
 .avatar.blinking::before {
   content: '';
   position: absolute;
-  left: 26%;
-  right: 26%;
-  top: 38%;
-  height: 8%;
+  left: 28%;
+  right: 28%;
+  top: 44%;
+  height: 4%;
   background: var(--ink);
-  border-radius: 2px;
+  border-radius: 1px;
   z-index: 5;
   animation: blinkClose 120ms steps(2);
 }
@@ -767,3 +766,24 @@
   border-radius: 8px;
   padding: 0;
 }
+
+/* ============================================
+   AVATAR — couche bouche expressive
+   ============================================ */
+.avatar .layer.mouth-layer {
+  z-index: 4;
+  pointer-events: none;
+}
+.avatar .layer.mouth-layer svg {
+  transition: opacity 0.2s;
+}
+
+/* Dans certaines moods, la bouche bouge légèrement */
+.avatar.mood-jump .mouth-layer {
+  animation: mouthBob 0.4s ease-out;
+}
+@keyframes mouthBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(2px); }
+}
+

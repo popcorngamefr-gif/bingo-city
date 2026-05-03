@@ -144,18 +144,52 @@ const ACTIONS = {
    ============================================================ */
 
 /**
- * Re-render l'écran avatar entier (preview + catégories)
- * et redéclenche un mood passager + sparkles
+ * Update CHIRURGICAL de l'avatar et des compteurs sans re-render l'écran.
+ * Évite le flash blanc à chaque clic sur les flèches.
  */
 function refreshAvatarUI({ mood = 'hop', sparkles = true, duration = 500 } = {}) {
-  // Re-render le screen avatar (puisque les compteurs et value labels ont changé)
-  if (state.currentScreen === 'avatar') {
-    show('avatar')
-    // Re-déclencher le blink loop sur le nouvel élément
-    setupAvatarLoops()
-    // Trigger le mood sur le nouvel avatar
-    const previewEl = document.getElementById('avatar-preview')
-    if (previewEl) triggerMood(previewEl, mood, duration)
+  if (state.currentScreen !== 'avatar') return
+
+  // 1. Update les couches de l'avatar (skin/eyes/hair/acc) sans toucher au mood/sparkles
+  const previewEl = document.getElementById('avatar-preview')
+  if (previewEl) {
+    const inner = previewEl.querySelector('.avatar-inner')
+    if (inner) {
+      // On garde le mood actuel pour la bouche
+      const currentMoodClass = [...previewEl.classList].find(c => c.startsWith('mood-')) || 'mood-idle'
+      const currentMood = currentMoodClass.replace('mood-', '')
+      inner.innerHTML = avatarLayersHtml(state.myAvatar, currentMood)
+    }
+    // Trigger le mood passager (qui va aussi mettre à jour la bouche)
+    triggerMood(previewEl, mood, duration)
+  }
+
+  // 2. Update les compteurs des catégories (X / Y) et value labels
+  updateCategoryCounters()
+}
+
+/**
+ * Met à jour les compteurs et labels des catégories (sans re-render).
+ */
+function updateCategoryCounters() {
+  const fields = [
+    { id: 'skin', total: PORTRAIT.skins.length },
+    { id: 'hairStyle', total: PORTRAIT.hairStyles.length },
+    { id: 'hairColor', total: PORTRAIT.hairStyles[state.myAvatar.hairStyle].colors.length },
+    { id: 'eyes', total: PORTRAIT.eyes.length },
+    { id: 'acc', total: PORTRAIT.accessories.length },
+  ]
+
+  fields.forEach(f => {
+    const counter = document.querySelector(`[data-counter="${f.id}"]`)
+    if (counter) counter.textContent = `${state.myAvatar[f.id] + 1}/${f.total}`
+  })
+
+  // Update du nom de l'accessoire (label dynamique)
+  const accLabel = document.querySelector('[data-acc-label]')
+  if (accLabel) {
+    const acc = PORTRAIT.accessories[state.myAvatar.acc]
+    accLabel.textContent = acc ? acc.name : ''
   }
 }
 
