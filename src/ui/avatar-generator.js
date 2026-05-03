@@ -1,70 +1,55 @@
 /**
  * Avatar Generator — Selfie → Pixel Art via Replicate
- *
- * Flow :
- *  1. openGeneratorModal()  — ouvre la modal + input caméra
- *  2. Selfie pris → redimensionné à 512px (Canvas)
- *  3. POST /api/start-generation → { id }
- *  4. Poll /api/check-generation?id= toutes les 2s
- *  5. Résultat affiché → user accepte ou réessaie
+ * Fix iOS : input appendé au DOM avant clic.
  */
 
-import { state }    from '../state.js'
-import { show }     from '../router.js'
-import { toast }    from './toast.js'
+import { state }           from '../state.js'
+import { navigate }        from '../router.js'
+import { toast }           from './toast.js'
+import { _openCamera }     from './modal.js'
 
-const MAX_SIZE = 512   // px — redimensionné avant envoi
-const POLL_MS  = 2000  // intervalle de polling
+const MAX_SIZE = 512
+const POLL_MS  = 2000
 
 // ─── Entrée publique ─────────────────────────────────────────────────────────
 
 export function openGeneratorModal() {
   const root = document.getElementById('modal-root')
-  root.innerHTML = _modalHtml('ready')
+  root.innerHTML = _modalHtml()
 
-  // Déclenche la caméra frontale dès l'ouverture
-  const input   = document.createElement('input')
-  input.type    = 'file'
-  input.accept  = 'image/*'
-  input.capture = 'user'        // caméra frontale
-
-  input.addEventListener('change', (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    _resizeAndSend(file)
+  document.getElementById('gen-capture-btn')?.addEventListener('click', () => {
+    _openCamera('user', (dataUrl) => _resizeAndSend(dataUrl))
   })
-
-  document.getElementById('gen-capture-btn')?.addEventListener('click', () => input.click())
-  document.getElementById('gen-cancel-btn')?.addEventListener('click',  closeGeneratorModal)
+  document.getElementById('gen-cancel-btn')?.addEventListener('click', closeGeneratorModal)
 }
 
 export function closeGeneratorModal() {
   document.getElementById('modal-root').innerHTML = ''
 }
 
-// ─── Redimensionnement Canvas → base64 ───────────────────────────────────────
+// ─── Redimensionnement ────────────────────────────────────────────────────────
 
-function _resizeAndSend(file) {
-  _setState('loading', 'Redimensionnement…')
+function _resizeAndSend(dataUrl) {
+  _setLoading('Redimensionnement…')
   const img = new Image()
   img.onload = () => {
-    const canvas = document.createElement('canvas')
-    const ratio  = Math.min(MAX_SIZE / img.width, MAX_SIZE / img.height)
+    const canvas  = document.createElement('canvas')
+    const ratio   = Math.min(MAX_SIZE / img.width, MAX_SIZE / img.height)
     canvas.width  = Math.round(img.width  * ratio)
     canvas.height = Math.round(img.height * ratio)
     canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
     const base64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1]
     _startGeneration(base64)
   }
-  img.src = URL.createObjectURL(file)
+  img.src = dataUrl
 }
 
-// ─── API calls ───────────────────────────────────────────────────────────────
+// ─── API ─────────────────────────────────────────────────────────────────────
 
 async function _startGeneration(base64) {
-  _setState('loading', "L'IA dessine votre tête…")
+  _setLoading("L'IA dessine ta tête…")
   try {
-    const res  = await fetch('/api/start-generation', {
+    const res = await fetch('/api/start-generation', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ imageBase64: base64 }),
@@ -73,46 +58,34 @@ async function _startGeneration(base64) {
     const { id } = await res.json()
     _pollResult(id)
   } catch (err) {
-    console.error('start-generation error:', err)
-    _setState('error', "Impossible de contacter le serveur")
+    _setError('Serveur injoignable')
   }
 }
 
 function _pollResult(id, attempts = 0) {
-  if (attempts > 30) { _setState('error', 'Délai dépassé, réessaie'); return }
-
+  if (attempts > 30) { _setError('Délai dépassé, réessaie'); return }
   setTimeout(async () => {
     try {
       const res  = await fetch(`/api/check-generation?id=${id}`)
       const data = await res.json()
-
       if (data.status === 'succeeded' && data.url) {
         _showResult(data.url)
       } else if (data.status === 'failed') {
-        _setState('error', data.error || 'Génération échouée')
+        _setError(data.error || 'Génération échouée')
       } else {
-        // starting | processing — on re-poll
-        const msgs = [
-          "L'IA dessine votre tête…",
-          "Pixelisation en cours…",
-          "Ajout des détails…",
-          "Presque fini…",
-        ]
-        _setState('loading', msgs[Math.min(Math.floor(attempts / 3), msgs.length - 1)])
+        const msgs = ["L'IA dessine ta tête…", "Pixelisation…", "Presque fini…", "Derniers pixels…"]
+        _setLoading(msgs[Math.min(Math.floor(attempts / 3), msgs.length - 1)])
         _pollResult(id, attempts + 1)
       }
-    } catch (err) {
-      _pollResult(id, attempts + 1)   // retry silencieux sur erreur réseau
-    }
+    } catch { _pollResult(id, attempts + 1) }
   }, POLL_MS)
 }
 
-// ─── Affichage du résultat ───────────────────────────────────────────────────
+// ─── Résultat ─────────────────────────────────────────────────────────────────
 
 function _showResult(url) {
   const root = document.getElementById('modal-root')
   if (!root) return
-
   root.innerHTML = `
     <div class="modal show">
       <div class="modal-box gen-result-box">
@@ -123,73 +96,63 @@ function _showResult(url) {
           </div>
           <div class="row mt">
             <button class="btn btn-cream btn-sm" id="gen-retry-btn">↺ Réessayer</button>
-            <button class="btn btn-red" id="gen-accept-btn">✓ Garder</button>
+            <button class="btn btn-red"          id="gen-accept-btn">✓ Garder</button>
           </div>
-          <button class="btn btn-ghost btn-sm mt" id="gen-sprites-btn">
-            Revenir aux sprites
-          </button>
+          <button class="btn btn-ghost btn-sm mt" id="gen-cancel-btn">Revenir aux sprites</button>
         </div>
       </div>
     </div>
   `
-
   document.getElementById('gen-accept-btn')?.addEventListener('click', () => {
     state.myAvatar.generatedImageUrl = url
     closeGeneratorModal()
-    show('avatar')      // re-render l'écran avatar avec le nouveau look
-    toast('Avatar mis à jour !')
+    navigate('avatar-pick')
   })
-
-  document.getElementById('gen-retry-btn')?.addEventListener('click', () => {
-    openGeneratorModal()
-  })
-
-  document.getElementById('gen-sprites-btn')?.addEventListener('click', () => {
+  document.getElementById('gen-retry-btn')?.addEventListener('click', openGeneratorModal)
+  document.getElementById('gen-cancel-btn')?.addEventListener('click', () => {
     delete state.myAvatar.generatedImageUrl
     closeGeneratorModal()
-    show('avatar')
   })
 }
 
-// ─── État de la modal ────────────────────────────────────────────────────────
+// ─── États modal ──────────────────────────────────────────────────────────────
 
-function _setState(state, msg) {
+function _setLoading(msg) {
   const root = document.getElementById('modal-root')
   if (!root) return
-
-  if (state === 'loading') {
-    root.innerHTML = `
-      <div class="modal show">
-        <div class="modal-box">
-          <div style="padding:24px;text-align:center;">
-            <div class="gen-pixel-spinner"></div>
-            <div class="gen-loading-msg">${msg}</div>
-            <div class="small" style="color:var(--ink-soft);margin-top:8px;">~15 secondes</div>
-          </div>
+  root.innerHTML = `
+    <div class="modal show">
+      <div class="modal-box">
+        <div style="padding:28px;text-align:center;">
+          <div class="gen-pixel-spinner"></div>
+          <div class="gen-loading-msg">${msg}</div>
+          <div class="small" style="color:var(--ink-soft);margin-top:10px;">~15 secondes</div>
         </div>
       </div>
-    `
-  } else if (state === 'error') {
-    root.innerHTML = `
-      <div class="modal show">
-        <div class="modal-box">
-          <div style="padding:20px;text-align:center;">
-            <div style="font-size:32px;margin-bottom:12px;">💥</div>
-            <div class="gen-loading-msg">${msg}</div>
-            <div class="row mt">
-              <button class="btn btn-cream btn-sm" id="gen-cancel-btn">Fermer</button>
-              <button class="btn btn-red btn-sm" id="gen-retry-btn">Réessayer</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    `
-    document.getElementById('gen-cancel-btn')?.addEventListener('click', closeGeneratorModal)
-    document.getElementById('gen-retry-btn')?.addEventListener('click', openGeneratorModal)
-  }
+    </div>
+  `
 }
 
-// ─── HTML de la modal initiale ────────────────────────────────────────────────
+function _setError(msg) {
+  const root = document.getElementById('modal-root')
+  if (!root) return
+  root.innerHTML = `
+    <div class="modal show">
+      <div class="modal-box">
+        <div style="padding:24px;text-align:center;">
+          <div style="font-size:36px;margin-bottom:12px;">💥</div>
+          <div class="gen-loading-msg" style="animation:none;">${msg}</div>
+          <div class="row mt">
+            <button class="btn btn-cream btn-sm" id="gen-cancel-btn">Fermer</button>
+            <button class="btn btn-red btn-sm"   id="gen-retry-btn">Réessayer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `
+  document.getElementById('gen-cancel-btn')?.addEventListener('click', closeGeneratorModal)
+  document.getElementById('gen-retry-btn')?.addEventListener('click', openGeneratorModal)
+}
 
 function _modalHtml() {
   return `
@@ -198,19 +161,17 @@ function _modalHtml() {
         <div style="padding:16px;">
           <h3 class="modal-title">📷 Ma tête en pixel art</h3>
           <div class="gen-camera-frame">
-            <div style="font-size:48px;margin-bottom:8px;">🤳</div>
-            <div style="font-family:'Press Start 2P',monospace;font-size:8px;color:var(--tram-yellow);text-align:center;line-height:1.6;">
+            <div style="font-size:52px;margin-bottom:10px;">🤳</div>
+            <div style="font-family:'Press Start 2P',monospace;font-size:8px;color:var(--tram-yellow);text-align:center;line-height:1.8;">
               PRENDS UN SELFIE<br>L'IA PIXELISE TA TÊTE
             </div>
           </div>
           <p class="small center mb" style="color:var(--ink-soft);">
-            Bonne lumière, face à la caméra, fond simple = meilleur résultat
+            Bonne lumière · Face caméra · Fond simple
           </p>
           <div class="row">
             <button class="btn btn-cream btn-sm" id="gen-cancel-btn">Annuler</button>
-            <button class="btn btn-red" id="gen-capture-btn">
-              📷 Selfie
-            </button>
+            <button class="btn btn-red" id="gen-capture-btn">📷 Selfie</button>
           </div>
         </div>
       </div>

@@ -12,7 +12,8 @@ import { renderLobby }   from './screens/lobby.js'
 import { renderSetup }   from './screens/setup.js'
 import { renderGame }    from './screens/game.js'
 import { renderEnd }     from './screens/end.js'
-import { renderAccount } from './screens/account.js'
+import { renderAccount }    from './screens/account.js'
+import { renderAvatarPick } from './screens/avatar-pick.js'
 
 const SCREENS = {
   home:    renderHome,
@@ -23,7 +24,8 @@ const SCREENS = {
   setup:   renderSetup,
   game:    renderGame,
   end:     renderEnd,
-  account: renderAccount,
+  account:      renderAccount,
+  'avatar-pick': renderAvatarPick,
 }
 
 let appRoot = null

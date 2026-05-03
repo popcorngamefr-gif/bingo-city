@@ -1,8 +1,6 @@
 /**
  * Modal appareil photo
- * Capture réelle via input file/camera.
- * Upload vers Firebase Storage en background.
- * Validation immédiate côté local.
+ * Fix iOS : input file appendé au DOM avant click.
  */
 
 import { state }          from '../state.js'
@@ -11,9 +9,6 @@ import { toast }          from './toast.js'
 import { icon }           from './icons.js'
 import { getObject }      from '../data/objects.js'
 import { handleValidation } from '../controllers/gameController.js'
-import { triggerHudAvatar } from '../controllers/avatarController.js'
-
-// ─── Ouverture ───────────────────────────────────────────────────────────────
 
 export function openCameraModal(cellIdx) {
   state.currentPickingObj = cellIdx
@@ -46,39 +41,20 @@ export function openCameraModal(cellIdx) {
     </div>
   `
 
-  // Input caméra caché
-  const input    = document.createElement('input')
-  input.type     = 'file'
-  input.accept   = 'image/*'
-  input.capture  = 'environment'
-
-  input.addEventListener('change', (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = (ev) => _process(cellIdx, ev.target.result)
-    reader.readAsDataURL(file)
+  document.getElementById('capture-btn')?.addEventListener('click', () => {
+    _openCamera('environment', (dataUrl) => _process(cellIdx, dataUrl))
   })
-
-  document.getElementById('capture-btn')?.addEventListener('click', () => input.click())
 }
 
-// ─── Traitement ───────────────────────────────────────────────────────────────
-
 function _process(cellIdx, dataUrl) {
-  // 1. Stockage local immédiat (base64 → visible tout de suite)
   state.myPhotos[cellIdx] = dataUrl
-
-  // 2. Ferme le modal, valide la cellule
   closeModal()
   state.currentPickingObj = null
   handleValidation(cellIdx)
 
-  // 3. Upload Firebase Storage en arrière-plan
-  //    Quand c'est prêt, on remplace le dataUrl par l'URL Storage
   if (state.gameCode && state.uid) {
-    const cell = state.myGrid[cellIdx]
     import('../firebase/storage.js').then(({ uploadPhoto }) => {
+      const cell = state.myGrid[cellIdx]
       uploadPhoto(state.gameCode, state.uid, cellIdx, dataUrl, cell?.objId)
         .then(url => { state.myPhotos[cellIdx] = url })
         .catch(err => console.warn('Photo upload failed:', err))
@@ -86,8 +62,34 @@ function _process(cellIdx, dataUrl) {
   }
 }
 
-// ─── Fermeture ────────────────────────────────────────────────────────────────
-
 export function closeModal() {
   document.getElementById('modal-root').innerHTML = ''
+}
+
+// ─── Helper iOS-safe file input ───────────────────────────────────────────────
+/**
+ * Crée un input file, l'ajoute au DOM (requis iOS), déclenche le clic.
+ * @param {'environment'|'user'|''} capture — caméra arrière, avant, ou choix
+ * @param {Function} onFile — appelé avec le dataUrl résultant
+ */
+export function _openCamera(capture, onFile) {
+  const input = document.createElement('input')
+  input.type  = 'file'
+  input.accept = 'image/*'
+  if (capture) input.capture = capture
+  // iOS exige que l'input soit dans le DOM pour que .click() fonctionne
+  input.style.cssText = 'position:fixed;top:0;left:0;opacity:0;width:1px;height:1px;'
+  document.body.appendChild(input)
+
+  input.addEventListener('change', (e) => {
+    document.body.removeChild(input)
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => onFile(ev.target.result)
+    reader.readAsDataURL(file)
+  })
+
+  // Petit délai requis sur iOS pour que le DOM soit prêt
+  setTimeout(() => input.click(), 80)
 }

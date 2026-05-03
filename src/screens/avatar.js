@@ -38,14 +38,10 @@ export function renderAvatar() {
           </div>
         </div>
 
-        <div class="row mt" style="position:relative;z-index:5;">
-          <button class="btn btn-yellow btn-sm" data-action="randomizeAvatar">
-            ${icon('dice', { size: 16 })} Randomise
-          </button>
-          <button class="btn btn-red btn-sm" id="gen-avatar-btn">
-            📷 Ma tête
-          </button>
-        </div>
+        <button class="btn btn-yellow btn-sm mt" data-action="randomizeAvatar">
+          ${icon('dice', { size: 16 })}
+          Randomise
+        </button>
       </div>
 
       <div class="char-categories">

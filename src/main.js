@@ -181,7 +181,7 @@ const ACTIONS = {
     state.gameName = gameName
     state.myName   = myName
     state.gameCode = generateCode()
-    navigate('avatar')
+    navigate('avatar-pick')
   },
 
   async joinGame() {
@@ -193,7 +193,7 @@ const ACTIONS = {
       await joinGame({ code, uid: state.uid, name: myName, avatar: state.myAvatar })
       state.gameCode = code
       state.myName   = myName
-      navigate('avatar')
+      navigate('avatar-pick')
     } catch (err) { toast(err.message || 'Impossible de rejoindre') }
   },
 
@@ -237,6 +237,16 @@ const ACTIONS = {
   cancelPhoto() { closeModal(); state.currentPickingObj = null },
 
   newGame() { unsubscribeAll(); resetGame(); navigate('home') },
+
+  resetGeneratedAvatar() {
+    delete state.myAvatar.generatedImageUrl
+    navigate('avatar-pick')
+  },
+
+  retryGeneration() {
+    delete state.myAvatar.generatedImageUrl
+    openGeneratorModal()
+  },
 
   logoutAccount() {
     state.accountKey  = null
@@ -307,8 +317,8 @@ function setupInputFilters() {
 /* ============================================================
    AVATAR SCREEN — bouton génération IA
    ============================================================ */
-function _setupAvatarScreen() {
-  document.getElementById('gen-avatar-btn')?.addEventListener('click', openGeneratorModal)
+function _setupAvatarPickScreen() {
+  document.getElementById('ap-ai-btn')?.addEventListener('click', openGeneratorModal)
 }
 
 /* ============================================================
@@ -322,7 +332,7 @@ function setupScreenHooks() {
       if (screen === 'game')    { updateHudConfidence(); checkHeartbeat() }
       if (screen === 'lobby')   _setupLobbySubscriptions()
       if (screen === 'account') _setupAccountScreen()
-      if (screen === 'avatar')  _setupAvatarScreen()
+      if (screen === 'avatar-pick')  _setupAvatarPickScreen()
       if (screen === 'home' || screen === 'end') unsubscribeAll()
     }, 50)
   })
