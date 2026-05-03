@@ -1,12 +1,14 @@
 /**
  * Écran : grille de bingo en cours de partie
+ * Avec avatar vivant dans le HUD qui marche, saute, danse selon les events
  */
 
 import { state } from '../state.js'
 import { getObject, objectSvg } from '../data/objects.js'
+import { avatarLayersHtml } from '../ui/avatar.js'
 
 export function renderGame() {
-  const me = state.players.find(p => p.isYou) || { score: 0 }
+  const me = state.players.find(p => p.isYou) || { score: 0, avatar: state.myAvatar }
   const sorted = [...state.players].sort((a, b) => (b.score || 0) - (a.score || 0))
   const rank = sorted.findIndex(p => p.isYou) + 1
   const totalPlayers = state.players.length
@@ -18,8 +20,15 @@ export function renderGame() {
 
   return `
     <section class="screen game-screen">
-      <!-- HUD haut -->
+      <!-- HUD haut avec avatar qui marche -->
       <div class="game-hud">
+        <div class="hud-avatar">
+          <div class="avatar sm mood-walk">
+            <div class="avatar-inner">
+              ${avatarLayersHtml(me.avatar || state.myAvatar)}
+            </div>
+          </div>
+        </div>
         <div class="hud-stat">
           <span class="hud-icon">🥟</span>
           <span class="hud-value">${me.score || 0}</span>
@@ -35,7 +44,7 @@ export function renderGame() {
       </div>
 
       <p class="small light center mb">
-        Repéré ? <strong style="color: var(--tram-red);">Tape</strong> et photo !
+        Repéré ? <strong style="color: var(--tram-red);">Tape</strong> et photo ! L'IA valide.
       </p>
 
       <!-- Grille de bingo -->
@@ -46,41 +55,44 @@ export function renderGame() {
           return `<div class="bingo-cell ${cell.status}" data-cell="${i}">
             <div class="bingo-cell-icon">${objectSvg(obj)}</div>
             <div class="bingo-cell-name">${obj.name}</div>
-            ${cell.status === 'pending' ? '<div class="bingo-cell-status">⏳</div>' : ''}
+            ${cell.status === 'pending' ? '<div class="bingo-cell-status">🤖</div>' : ''}
             ${cell.status === 'validated' ? '<div class="bingo-cell-status">✓</div>' : ''}
             ${cell.status === 'rejected' ? '<div class="bingo-cell-status">✗</div>' : ''}
           </div>`
         }).join('')}
       </div>
 
-      <div class="row mt">
-        ${state.isMJ ? '<button class="btn btn-yellow btn-sm" data-nav="validate">Validations MJ</button>' : ''}
-        <button class="btn btn-concrete btn-sm" data-nav="end">Classement</button>
-      </div>
+      <button class="btn btn-cream btn-sm mt" data-nav="end">Voir le classement</button>
     </section>
 
     <style>
       .game-hud {
         background: var(--ink);
         border: 3px solid var(--tram-yellow);
-        border-radius: 10px;
-        padding: 10px 14px;
+        border-radius: 12px;
+        padding: 8px 12px;
         display: flex;
-        justify-content: space-around;
+        justify-content: space-between;
         align-items: center;
+        gap: 8px;
         margin-bottom: 14px;
         box-shadow: 0 4px 0 var(--tram-red-dark);
+      }
+      .hud-avatar .avatar.sm {
+        width: 50px;
+        height: 50px;
+        border: 2px solid var(--tram-yellow);
       }
       .hud-stat {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 4px;
         font-family: 'Press Start 2P', monospace;
-        font-size: 11px;
+        font-size: 10px;
         color: var(--cream-cold);
         text-shadow: 1px 1px 0 var(--ink);
       }
-      .hud-icon { font-size: 16px; }
+      .hud-icon { font-size: 14px; }
       .hud-value.timer { color: var(--tram-yellow); }
 
       .bingo-grid {
@@ -118,11 +130,11 @@ export function renderGame() {
       }
       .bingo-cell.pending {
         background: linear-gradient(180deg, #fce080 0%, var(--tram-yellow) 100%);
-        animation: pendingPulse 1.5s steps(2) infinite;
+        animation: pendingPulse 1s steps(2) infinite;
       }
       @keyframes pendingPulse {
         0%, 100% { box-shadow: 2px 2px 0 var(--ink); }
-        50% { box-shadow: 0 0 0 3px var(--tram-yellow-warm), 2px 2px 0 var(--ink); }
+        50% { box-shadow: 0 0 0 4px var(--tram-yellow-warm), 2px 2px 0 var(--ink); }
       }
       .bingo-cell.validated {
         background: linear-gradient(180deg, #88a890 0%, var(--green-go) 100%);

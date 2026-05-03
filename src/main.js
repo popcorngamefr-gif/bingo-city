@@ -1,8 +1,6 @@
 /**
- * BINGO CITY — Entry point
- *
- * Charge les styles, init le router et configure la délégation d'événements globale.
- * Toute action utilisateur passe par data-action / data-nav / data-set / data-toggle-obj / data-cell / data-validate
+ * BINGO SANTÉ — Varsovie Édition
+ * Entry point : styles + router + délégation d'événements
  */
 
 import './styles/main.css'
@@ -13,7 +11,8 @@ import { initRouter, navigate, show } from './router.js'
 import { toast } from './ui/toast.js'
 import { PORTRAIT } from './data/portrait.js'
 import { getObjects, getObject } from './data/objects.js'
-import { renderTab } from './screens/avatar.js'
+import { avatarLayersHtml, triggerMood, startBlinkLoop } from './ui/avatar.js'
+import { validatePhotoAI } from './ui/ai-validator.js'
 
 /* ============================================================
    ACTIONS — toutes les actions custom déclenchées par les boutons
@@ -31,7 +30,7 @@ const ACTIONS = {
   },
 
   showHelp() {
-    toast('Bingo de groupe : le MJ choisit les objets, vous les trouvez en photo. Le premier à compléter sa grille gagne !', 4000)
+    toast('Le MJ choisit les objets, vous les trouvez en photo. L\'IA valide. Premier à compléter sa grille gagne !', 4000)
   },
 
   createGame() {
@@ -54,15 +53,21 @@ const ACTIONS = {
     navigate('avatar')
   },
 
+  /**
+   * Randomise l'avatar entier
+   */
+  randomizeAvatar() {
+    state.myAvatar = randomAvatar()
+    refreshAvatarUI({ mood: 'jump', sparkles: true, duration: 600 })
+  },
+
   confirmAvatar() {
-    // Récupère le nom modifié dans le champ
     const nameInput = document.getElementById('avatar-name-input')
     if (nameInput) {
       const newName = nameInput.value.trim()
       if (newName) state.myName = newName
     }
 
-    // Construit la liste de joueurs avec moi
     const me = {
       id: 'me',
       name: state.myName || 'Moi',
@@ -73,13 +78,11 @@ const ACTIONS = {
     }
     state.players = [me]
 
-    // Simulation : autres joueurs rejoignent progressivement
     if (state.isMJ) {
       setTimeout(() => simulateJoin('Marion'), 800)
       setTimeout(() => simulateJoin('Karim'), 2000)
       setTimeout(() => simulateJoin('Léa'), 3400)
     } else {
-      // Si je rejoins, le MJ est déjà là
       state.players.unshift({
         id: 'mj',
         name: 'Tristan',
@@ -106,27 +109,26 @@ const ACTIONS = {
     state.currentPickingObj = null
   },
 
-  submitPhoto() {
+  async submitPhoto() {
     if (state.currentPickingObj === null) return
-    const cell = state.myGrid[state.currentPickingObj]
-    cell.status = 'pending'
-    state.pendingValidations.push({
-      playerId: 'me',
-      playerName: state.myName,
-      objId: cell.objId,
-      cellIdx: state.currentPickingObj,
-      timestamp: Date.now(),
-    })
-    closeModal()
     const cellIdx = state.currentPickingObj
+    const cell = state.myGrid[cellIdx]
+    cell.status = 'pending'
+    closeModal()
     state.currentPickingObj = null
-    show('game') // re-render
-    toast('Photo envoyée au MJ !')
+    show('game')
+    triggerHudAvatar('excited', 1500)
+    toast('🤖 IA analyse la photo...')
 
-    // Si je ne suis pas MJ, simule la validation auto après 2.5s
-    if (!state.isMJ) {
-      setTimeout(() => simulateMJValidation(cellIdx), 2500)
-    }
+    // Validation par IA (mockée pour l'instant)
+    const obj = getObject(cell.objId)
+    const result = await validatePhotoAI({
+      objectId: cell.objId,
+      objectName: obj.name,
+      // photoBase64: ... (sera fourni quand on branchera la vraie caméra)
+    })
+
+    handleValidationResult(cellIdx, result)
   },
 
   newGame() {
@@ -138,7 +140,65 @@ const ACTIONS = {
 }
 
 /* ============================================================
-   SIMULATION — les "autres joueurs" du proto
+   AVATAR UI — refresh + animations
+   ============================================================ */
+
+/**
+ * Re-render l'écran avatar entier (preview + catégories)
+ * et redéclenche un mood passager + sparkles
+ */
+function refreshAvatarUI({ mood = 'hop', sparkles = true, duration = 500 } = {}) {
+  // Re-render le screen avatar (puisque les compteurs et value labels ont changé)
+  if (state.currentScreen === 'avatar') {
+    show('avatar')
+    // Re-déclencher le blink loop sur le nouvel élément
+    setupAvatarLoops()
+    // Trigger le mood sur le nouvel avatar
+    const previewEl = document.getElementById('avatar-preview')
+    if (previewEl) triggerMood(previewEl, mood, duration)
+  }
+}
+
+let blinkCleanup = null
+function setupAvatarLoops() {
+  if (blinkCleanup) blinkCleanup()
+  const previewEl = document.getElementById('avatar-preview')
+  if (previewEl) blinkCleanup = startBlinkLoop(previewEl)
+}
+
+/**
+ * Trigger un mood sur l'avatar dans le HUD (pendant le jeu)
+ */
+function triggerHudAvatar(mood, duration) {
+  const el = document.querySelector('.hud-avatar .avatar')
+  if (el) triggerMood(el, mood, duration)
+}
+
+/* ============================================================
+   VALIDATION RESULT HANDLER
+   ============================================================ */
+function handleValidationResult(cellIdx, result) {
+  const cell = state.myGrid[cellIdx]
+  const obj = getObject(cell.objId)
+
+  if (result.valid) {
+    cell.status = 'validated'
+    const me = state.players.find(p => p.isYou)
+    if (me) me.score = (me.score || 0) + (obj.points || 1)
+    toast(`✓ ${result.reason || 'Validé'} +${obj.points} pts`)
+    triggerHudAvatar('jump', 700)
+  } else {
+    cell.status = 'rejected'
+    toast(`✗ ${result.reason || 'Refusé'}`)
+    triggerHudAvatar('sad', 1200)
+  }
+
+  if (state.currentScreen === 'game') show('game')
+  checkBingo()
+}
+
+/* ============================================================
+   SIMULATION
    ============================================================ */
 function simulateJoin(name) {
   if (state.currentScreen !== 'lobby') return
@@ -155,31 +215,16 @@ function simulateJoin(name) {
   setTimeout(() => { newP.justJoined = false }, 600)
 }
 
-function simulateMJValidation(cellIdx) {
-  if (state.myGrid[cellIdx]?.status !== 'pending') return
-  const accept = Math.random() > 0.15
-  if (accept) {
-    state.myGrid[cellIdx].status = 'validated'
-    const obj = getObject(state.myGrid[cellIdx].objId)
-    toast(`✓ Validé ! +${obj.points} pts`)
-  } else {
-    state.myGrid[cellIdx].status = 'rejected'
-    toast('✗ MJ a refusé')
-  }
-  state.pendingValidations = state.pendingValidations.filter(v => v.cellIdx !== cellIdx)
-  if (state.currentScreen === 'game') show('game')
-  checkBingo()
-}
-
 function checkBingo() {
   const validated = state.myGrid.filter(c => c.status === 'validated').length
   if (validated === state.myGrid.length && state.myGrid.length > 0) {
     const me = state.players.find(p => p.isYou)
     if (me) me.hasBingo = true
+    triggerHudAvatar('dance', 2000)
     setTimeout(() => {
       toast('★ BINGO COMPLET ! ★')
       navigate('end')
-    }, 800)
+    }, 1800)
   }
 }
 
@@ -217,14 +262,14 @@ function openCameraModal(cellIdx) {
   const root = document.getElementById('modal-root')
   root.innerHTML = `
     <div class="modal show">
-      <div class="modal-box frame frame-wood">
-        <div class="content" style="padding: 16px;">
+      <div class="modal-box">
+        <div style="padding: 16px;">
           <h3 class="modal-title">📷 ${obj.name}</h3>
           <div class="camera-frame"><span>VISÉ → CAPTURÉ</span></div>
-          <p class="small center mb">La photo part chez le MJ pour validation.</p>
+          <p class="small center mb">L'IA va vérifier que la photo correspond.</p>
           <div class="row">
-            <button class="btn btn-ghost btn-sm" data-action="cancelPhoto">Annuler</button>
-            <button class="btn btn-orange btn-sm" data-action="submitPhoto">Envoyer</button>
+            <button class="btn btn-cream btn-sm" data-action="cancelPhoto">Annuler</button>
+            <button class="btn btn-red btn-sm" data-action="submitPhoto">Envoyer</button>
           </div>
         </div>
       </div>
@@ -232,31 +277,40 @@ function openCameraModal(cellIdx) {
     <style>
       .modal {
         position: fixed; inset: 0;
-        background: rgba(0,0,0,0.85);
+        background: rgba(42, 34, 40, 0.85);
         display: flex;
         align-items: center;
         justify-content: center;
         z-index: 100;
         padding: 20px;
       }
-      .modal-box { max-width: 360px; width: 100%; }
+      .modal-box {
+        max-width: 360px;
+        width: 100%;
+        background: var(--cream-cold);
+        border: 4px solid var(--ink);
+        border-radius: 14px;
+        box-shadow: 0 8px 0 var(--tram-red-dark);
+      }
       .modal-title {
         font-family: 'Press Start 2P', monospace;
         font-size: 12px;
-        color: var(--ink);
+        color: var(--tram-red);
         margin-bottom: 14px;
         text-align: center;
+        text-shadow: 1px 1px 0 var(--cream-warm);
       }
       .camera-frame {
         width: 100%;
         aspect-ratio: 1;
-        background: linear-gradient(135deg, var(--bg-mid), var(--bg-deep));
+        background: linear-gradient(135deg, var(--concrete-mid), var(--concrete-dark));
         border: 3px solid var(--ink);
+        border-radius: 8px;
         margin-bottom: 14px;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: var(--yellow);
+        color: var(--tram-yellow);
         font-family: 'Press Start 2P', monospace;
         font-size: 10px;
         position: relative;
@@ -265,7 +319,7 @@ function openCameraModal(cellIdx) {
         content: '';
         position: absolute;
         inset: 8px;
-        border: 2px dashed var(--yellow);
+        border: 2px dashed var(--tram-yellow);
         animation: scanline 2s linear infinite;
       }
       @keyframes scanline {
@@ -285,18 +339,14 @@ function closeModal() {
    ============================================================ */
 function setupEventDelegation() {
   document.addEventListener('click', (e) => {
-    // Trouve l'élément avec un data-* qui nous intéresse
     const target = e.target.closest(`
-      [data-action], [data-nav], [data-set],
-      [data-toggle-obj], [data-cell], [data-validate],
-      [data-tab]
+      [data-action], [data-nav], [data-cycle],
+      [data-toggle-obj], [data-cell], [data-validate]
     `.replace(/\s+/g, ''))
     if (!target) return
-
-    // Si bouton désactivé, ignore
     if (target.disabled) return
 
-    // 1. Action custom
+    // 1. Action
     const action = target.dataset.action
     if (action && ACTIONS[action]) {
       e.preventDefault()
@@ -304,7 +354,7 @@ function setupEventDelegation() {
       return
     }
 
-    // 2. Navigation directe
+    // 2. Navigation
     const nav = target.dataset.nav
     if (nav) {
       e.preventDefault()
@@ -312,41 +362,16 @@ function setupEventDelegation() {
       return
     }
 
-    // 3. Setter d'avatar (sur l'écran avatar)
-    const setExpr = target.dataset.set
-    if (setExpr) {
-      const [field, valStr] = setExpr.split(':')
-      const val = parseInt(valStr, 10)
-      state.myAvatar[field] = val
-
-      // Re-render uniquement la zone d'options + l'avatar preview
-      const optsEl = document.getElementById('char-options')
-      const previewEl = document.getElementById('avatar-preview')
-      if (optsEl) {
-        // Trouver l'onglet actif
-        const activeTab = document.querySelector('.char-tab.active')
-        const tabName = activeTab ? activeTab.dataset.tab : 'hair'
-        optsEl.innerHTML = renderTab(tabName)
-      }
-      if (previewEl) {
-        // Re-render la preview
-        import('./ui/avatar.js').then(mod => {
-          previewEl.innerHTML = mod.avatarLayersHtml(state.myAvatar)
-        })
-      }
+    // 3. Cycle de catégorie d'avatar (← / →)
+    const cycleExpr = target.dataset.cycle
+    if (cycleExpr) {
+      const [field, dirStr] = cycleExpr.split(':')
+      const dir = parseInt(dirStr, 10)
+      cycleAvatarField(field, dir)
       return
     }
 
-    // 4. Onglets de l'écran avatar
-    const tab = target.dataset.tab
-    if (tab) {
-      document.querySelectorAll('.char-tab').forEach(t => t.classList.toggle('active', t === target))
-      const optsEl = document.getElementById('char-options')
-      if (optsEl) optsEl.innerHTML = renderTab(tab)
-      return
-    }
-
-    // 5. Toggle objet (setup MJ)
+    // 4. Toggle objet
     const objId = target.dataset.toggleObj
     if (objId) {
       const idx = state.selectedObjects.indexOf(objId)
@@ -361,70 +386,58 @@ function setupEventDelegation() {
       return
     }
 
-    // 6. Cellule de bingo cliquée
+    // 5. Cellule de bingo
     const cellAttr = target.dataset.cell
     if (cellAttr !== undefined) {
       const idx = parseInt(cellAttr, 10)
       const cell = state.myGrid[idx]
       if (cell.status === 'validated') return toast('Déjà validé !')
-      if (cell.status === 'pending') return toast('En attente du MJ...')
+      if (cell.status === 'pending') return toast('IA en cours...')
       if (cell.status === 'rejected') return toast('Refusé. Essaie autre chose.')
       openCameraModal(idx)
-      return
-    }
-
-    // 7. Validation MJ
-    const v = target.dataset.validate
-    if (v) {
-      const [idx, accept] = v.split(':').map(x => parseInt(x, 10))
-      validatePhotoAction(idx, accept === 1)
       return
     }
   })
 }
 
-function validatePhotoAction(idx, accept) {
-  const v = state.pendingValidations[idx]
-  if (!v) return
-  if (v.playerId === 'me' && v.cellIdx >= 0) {
-    if (accept) {
-      state.myGrid[v.cellIdx].status = 'validated'
-      const obj = getObject(v.objId)
-      toast(`✓ +${obj.points} pts`)
-    } else {
-      state.myGrid[v.cellIdx].status = 'rejected'
-      toast('✗ Refusé')
-    }
-  } else {
-    const player = state.players.find(p => p.id === v.playerId)
-    if (player && accept) {
-      const obj = getObject(v.objId)
-      player.score = (player.score || 0) + (obj.points || 1)
-      toast(`✓ ${player.name}: +${obj.points} pts`)
-    } else if (player) {
-      toast(`✗ Refusé pour ${player.name}`)
-    }
+/**
+ * Cycle un champ d'avatar (skin/hairStyle/hairColor/eyes/acc)
+ */
+function cycleAvatarField(field, dir) {
+  let total
+  if (field === 'skin') total = PORTRAIT.skins.length
+  else if (field === 'eyes') total = PORTRAIT.eyes.length
+  else if (field === 'hairStyle') total = PORTRAIT.hairStyles.length
+  else if (field === 'hairColor') total = PORTRAIT.hairStyles[state.myAvatar.hairStyle].colors.length
+  else if (field === 'acc') total = PORTRAIT.accessories.length
+  else return
+
+  let cur = state.myAvatar[field] || 0
+  cur = (cur + dir + total) % total
+  state.myAvatar[field] = cur
+
+  // Si on change de hairStyle, vérifier que hairColor est dans la range
+  if (field === 'hairStyle') {
+    const newColors = PORTRAIT.hairStyles[cur].colors.length
+    if (state.myAvatar.hairColor >= newColors) state.myAvatar.hairColor = 0
   }
-  state.pendingValidations.splice(idx, 1)
-  show('validate')
-  checkBingo()
+
+  refreshAvatarUI({ mood: 'hop', sparkles: true, duration: 500 })
 }
 
 /* ============================================================
    DEBUG NAV
    ============================================================ */
 function setupDebugNav() {
-  // Toggle button
   const toggle = document.createElement('button')
   toggle.id = 'debug-toggle'
   toggle.textContent = '⚙'
   toggle.title = 'Debug nav'
   document.body.appendChild(toggle)
 
-  // Bar
   const bar = document.createElement('div')
   bar.id = 'debug-bar'
-  const screens = ['home', 'create', 'join', 'avatar', 'lobby', 'setup', 'game', 'validate', 'end']
+  const screens = ['home', 'create', 'join', 'avatar', 'lobby', 'setup', 'game', 'end']
   bar.innerHTML = screens.map(s => `<button data-nav="${s}" data-screen="${s}">${s}</button>`).join('')
   document.body.appendChild(bar)
 
@@ -432,21 +445,9 @@ function setupDebugNav() {
 }
 
 /* ============================================================
-   STARS BACKGROUND
-   ============================================================ */
-function setupStars() {
-  // Crée des étoiles dans #app
-  const app = document.getElementById('app')
-  if (!app) return
-  // Les étoiles sont injectées dans chaque screen via .stars-bg
-  // Mais on en met aussi un global au cas où
-}
-
-/* ============================================================
    INPUT FILTERS
    ============================================================ */
 function setupInputFilters() {
-  // Auto-uppercase pour les codes
   document.addEventListener('input', (e) => {
     if (e.target.id === 'join-code-input') {
       e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '')
@@ -459,12 +460,17 @@ function setupInputFilters() {
    ============================================================ */
 document.addEventListener('DOMContentLoaded', () => {
   setupDebugNav()
-  setupStars()
   setupInputFilters()
   setupEventDelegation()
   initRouter()
 
-  console.log('🎯 BINGO CITY ready', {
+  // Sur chaque show de screen, redémarrer les boucles d'animation
+  window.addEventListener('hashchange', () => {
+    setTimeout(setupAvatarLoops, 50)
+  })
+  setTimeout(setupAvatarLoops, 100)
+
+  console.log('🍻 Bingo Santé Varsovie ready', {
     skins: PORTRAIT.skins.length,
     eyes: PORTRAIT.eyes.length,
     hairStyles: PORTRAIT.hairStyles.length,

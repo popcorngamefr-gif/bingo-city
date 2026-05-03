@@ -636,3 +636,134 @@
   border: 2px solid var(--ink);
   border-radius: 4px;
 }
+
+/* ============================================
+   AVATAR ANIMATIONS — moods
+   ============================================ */
+
+/* IDLE : respire doucement */
+.avatar.mood-idle .avatar-inner {
+  animation: avatarBreathe 2.5s ease-in-out infinite;
+}
+@keyframes avatarBreathe {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-2px) scale(1.02); }
+}
+
+/* WALK : marche en place (bob + léger sway) */
+.avatar.mood-walk .avatar-inner {
+  animation: avatarWalk 0.6s steps(4) infinite;
+}
+@keyframes avatarWalk {
+  0% { transform: translateY(0) rotate(-2deg); }
+  25% { transform: translateY(-3px) rotate(2deg); }
+  50% { transform: translateY(0) rotate(-2deg); }
+  75% { transform: translateY(-3px) rotate(2deg); }
+  100% { transform: translateY(0) rotate(-2deg); }
+}
+
+/* HOP : petit saut (changement perso) */
+.avatar.mood-hop .avatar-inner {
+  animation: avatarHop 0.5s ease-out;
+}
+@keyframes avatarHop {
+  0% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(-12px) scale(1.05, 0.95); }
+  60% { transform: translateY(-6px) scale(0.95, 1.05); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+/* JUMP : saute haut (validation) */
+.avatar.mood-jump .avatar-inner {
+  animation: avatarJump 0.6s ease-out;
+}
+@keyframes avatarJump {
+  0% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(-22px) scale(0.9, 1.1); }
+  60% { transform: translateY(-8px) scale(1.1, 0.9); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+/* DANCE : danse (bingo gagné) */
+.avatar.mood-dance .avatar-inner {
+  animation: avatarDance 0.4s steps(2) infinite;
+}
+@keyframes avatarDance {
+  0%, 100% { transform: rotate(-8deg) translateY(-2px) scale(1); }
+  50% { transform: rotate(8deg) translateY(-6px) scale(1.05); }
+}
+
+/* SAD : triste (refus) */
+.avatar.mood-sad .avatar-inner {
+  animation: avatarSad 0.8s ease-in-out infinite;
+  filter: saturate(0.5) brightness(0.85);
+}
+@keyframes avatarSad {
+  0%, 100% { transform: translateY(2px) scale(0.95); }
+  50% { transform: translateY(4px) scale(0.93); }
+}
+
+/* EXCITED : excité (pending) */
+.avatar.mood-excited .avatar-inner {
+  animation: avatarExcited 0.25s steps(2) infinite;
+}
+@keyframes avatarExcited {
+  0% { transform: rotate(-5deg) translateY(-1px); }
+  50% { transform: rotate(5deg) translateY(-3px); }
+  100% { transform: rotate(-5deg) translateY(-1px); }
+}
+
+/* BLINK : on cache les yeux pendant un instant en superposant un masque */
+.avatar.blinking::before {
+  content: '';
+  position: absolute;
+  left: 26%;
+  right: 26%;
+  top: 38%;
+  height: 8%;
+  background: var(--ink);
+  border-radius: 2px;
+  z-index: 5;
+  animation: blinkClose 120ms steps(2);
+}
+@keyframes blinkClose {
+  0% { transform: scaleY(0); }
+  40%, 60% { transform: scaleY(1); }
+  100% { transform: scaleY(0); }
+}
+
+/* SPARKLES : étoiles qui apparaissent autour de l'avatar */
+.avatar.has-sparkles {
+  position: relative;
+  overflow: visible;
+}
+.avatar.has-sparkles .spark {
+  position: absolute;
+  font-size: 14px;
+  color: var(--tram-yellow);
+  pointer-events: none;
+  text-shadow: 0 0 6px var(--tram-yellow), 1px 1px 0 var(--ink);
+  z-index: 10;
+  animation: sparkPop 0.6s ease-out forwards;
+}
+.avatar.has-sparkles .spark-1 { top: -6px; left: -8px; animation-delay: 0s; }
+.avatar.has-sparkles .spark-2 { top: 30%; right: -12px; animation-delay: 0.1s; }
+.avatar.has-sparkles .spark-3 { bottom: 10%; left: -10px; animation-delay: 0.05s; }
+.avatar.has-sparkles .spark-4 { top: -4px; right: 20%; animation-delay: 0.15s; }
+@keyframes sparkPop {
+  0% { opacity: 0; transform: scale(0) rotate(0deg); }
+  40% { opacity: 1; transform: scale(1.4) rotate(180deg); }
+  100% { opacity: 0; transform: scale(0.6) rotate(360deg) translateY(-10px); }
+}
+
+/* L'avatar walk dans le HUD est plus petit et a un léger fond */
+.hud-avatar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.hud-avatar .avatar {
+  background: linear-gradient(180deg, var(--sky-cool) 0%, #d8c8b8 100%);
+  border-radius: 8px;
+  padding: 0;
+}

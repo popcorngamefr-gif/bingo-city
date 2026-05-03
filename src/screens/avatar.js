@@ -1,6 +1,11 @@
 /**
- * Écran : édition d'avatar — fiche perso style RPG
- * Cadre avatar avec mini-skyline Varsovie au fond
+ * Écran : édition d'avatar — version simplifiée
+ *
+ * UX : pas d'onglets, tout sur un seul écran scrollable
+ *  - Avatar central animé (respire, cligne, hop à chaque changement)
+ *  - Bouton 🎲 "Randomise" en haut
+ *  - 4 catégories en pile, chacune avec ← → pour cycler
+ *  - Compteur "n/total" pour chaque catégorie
  */
 
 import { state } from '../state.js'
@@ -30,7 +35,7 @@ export function renderAvatar() {
             />
           </div>
 
-          <div class="avatar lg idle" style="margin: 0 auto;">
+          <div class="avatar lg mood-idle" id="avatar-preview" style="margin: 0 auto;">
             ${miniSkylineHtml()}
             <div class="avatar-inner">
               ${avatarLayersHtml(state.myAvatar)}
@@ -38,119 +43,106 @@ export function renderAvatar() {
           </div>
         </div>
 
-        <!-- Stats -->
-        <div class="char-stats">
-          <div class="stat-row">
-            <span style="font-size: 14px;">⭐</span>
-            <span>Pierogi : 0</span>
-          </div>
-          <div class="stat-row">
-            <span style="font-size: 14px;">🏆</span>
-            <span>Sztampki : 0</span>
-          </div>
-        </div>
+        <button class="btn btn-yellow btn-sm mt" data-action="randomizeAvatar">
+          🎲 Randomise
+        </button>
       </div>
 
-      <!-- Onglets -->
-      <div class="tabs">
-        <button class="tab active" data-tab="hair">Cheveux</button>
-        <button class="tab" data-tab="hairColor">Couleur</button>
-        <button class="tab" data-tab="skin">Peau</button>
-        <button class="tab" data-tab="eyes">Yeux</button>
-        <button class="tab" data-tab="acc">Acc.</button>
-      </div>
-
-      <!-- Zone d'options -->
-      <div class="tab-content" id="char-options">
-        ${renderTab('hair')}
+      <!-- Catégories scrollables avec flèches -->
+      <div class="char-categories">
+        ${categoryRow('skin', 'Peau', state.myAvatar.skin, PORTRAIT.skins.length)}
+        ${categoryRow('hairStyle', 'Cheveux', state.myAvatar.hairStyle, PORTRAIT.hairStyles.length)}
+        ${categoryRow('hairColor', 'Couleur', state.myAvatar.hairColor, PORTRAIT.hairStyles[state.myAvatar.hairStyle].colors.length)}
+        ${categoryRow('eyes', 'Yeux', state.myAvatar.eyes, PORTRAIT.eyes.length)}
+        ${categoryRow('acc', 'Accessoire', state.myAvatar.acc, PORTRAIT.accessories.length, accessoryLabel(state.myAvatar.acc))}
       </div>
 
       <button class="btn btn-red mt" data-action="confirmAvatar" style="position: relative; z-index: 5;">
         ✓ Valider mon look
       </button>
+
+      <style>
+        .char-categories {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          position: relative;
+          z-index: 5;
+          margin-bottom: 16px;
+        }
+        .cat-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          background: var(--cream-cold);
+          border: 3px solid var(--ink);
+          border-radius: 10px;
+          padding: 10px 12px;
+          box-shadow: 0 3px 0 var(--ink);
+        }
+        .cat-row-label {
+          flex: 1;
+          font-family: 'Press Start 2P', monospace;
+          font-size: 9px;
+          color: var(--ink);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+        .cat-row-value {
+          font-family: 'VT323', monospace;
+          font-size: 14px;
+          color: var(--ink-soft);
+          margin-left: 6px;
+        }
+        .cat-arrow {
+          background: linear-gradient(180deg, var(--tram-yellow) 0%, var(--tram-yellow-warm) 100%);
+          border: 2px solid var(--ink);
+          border-radius: 6px;
+          width: 36px;
+          height: 36px;
+          font-family: 'Press Start 2P', monospace;
+          font-size: 14px;
+          color: var(--ink);
+          cursor: pointer;
+          box-shadow: 0 3px 0 var(--ink);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          padding: 0;
+          transition: transform 0.05s, box-shadow 0.05s;
+        }
+        .cat-arrow:active {
+          transform: translateY(2px);
+          box-shadow: 0 1px 0 var(--ink);
+        }
+        .cat-counter {
+          font-family: 'Press Start 2P', monospace;
+          font-size: 8px;
+          color: var(--tram-red);
+          min-width: 36px;
+          text-align: center;
+        }
+      </style>
     </section>
   `
 }
 
-/**
- * Rend la grille d'options pour un onglet donné
- */
-export function renderTab(tabName) {
-  switch (tabName) {
-    case 'hair': return renderHairTab()
-    case 'hairColor': return renderHairColorTab()
-    case 'skin': return renderSkinTab()
-    case 'eyes': return renderEyesTab()
-    case 'acc': return renderAccTab()
-    default: return ''
-  }
+function categoryRow(field, label, currentIdx, total, valueLabel = null) {
+  return `
+    <div class="cat-row">
+      <button class="cat-arrow" data-cycle="${field}:-1">◄</button>
+      <div class="cat-row-label">
+        ${label}
+        ${valueLabel ? `<span class="cat-row-value">${valueLabel}</span>` : ''}
+      </div>
+      <div class="cat-counter">${currentIdx + 1}/${total}</div>
+      <button class="cat-arrow" data-cycle="${field}:1">►</button>
+    </div>
+  `
 }
 
-function renderHairTab() {
-  const skin = PORTRAIT.skins[state.myAvatar.skin]
-  return `<div class="opts-grid">
-    ${PORTRAIT.hairStyles.map((h, i) => {
-      const hair = h.colors[state.myAvatar.hairColor] || h.colors[0]
-      const sel = state.myAvatar.hairStyle === i ? 'selected' : ''
-      return `<div class="opt ${sel}" data-set="hairStyle:${i}">
-        <div class="layer" style="background-image:url('${skin.src}')"></div>
-        <div class="layer" style="background-image:url('${hair.src}')"></div>
-      </div>`
-    }).join('')}
-  </div>`
-}
-
-function renderHairColorTab() {
-  const currentHair = PORTRAIT.hairStyles[state.myAvatar.hairStyle]
-  const skin = PORTRAIT.skins[state.myAvatar.skin]
-  return `<div class="opts-grid">
-    ${currentHair.colors.map((c, i) => {
-      const sel = state.myAvatar.hairColor === i ? 'selected' : ''
-      return `<div class="opt ${sel}" data-set="hairColor:${i}">
-        <div class="layer" style="background-image:url('${skin.src}')"></div>
-        <div class="layer" style="background-image:url('${c.src}')"></div>
-      </div>`
-    }).join('')}
-  </div>`
-}
-
-function renderSkinTab() {
-  return `<div class="opts-grid">
-    ${PORTRAIT.skins.map((s, i) => {
-      const sel = state.myAvatar.skin === i ? 'selected' : ''
-      return `<div class="opt ${sel}" data-set="skin:${i}">
-        <img src="${s.src}" alt="Peau ${i+1}" />
-      </div>`
-    }).join('')}
-  </div>`
-}
-
-function renderEyesTab() {
-  const skin = PORTRAIT.skins[state.myAvatar.skin]
-  return `<div class="opts-grid">
-    ${PORTRAIT.eyes.map((e, i) => {
-      const sel = state.myAvatar.eyes === i ? 'selected' : ''
-      return `<div class="opt ${sel}" data-set="eyes:${i}">
-        <div class="layer" style="background-image:url('${skin.src}')"></div>
-        <div class="layer" style="background-image:url('${e.src}')"></div>
-      </div>`
-    }).join('')}
-  </div>`
-}
-
-function renderAccTab() {
-  return `<div class="opts-grid">
-    ${PORTRAIT.accessories.map((a, i) => {
-      const sel = state.myAvatar.acc === i ? 'selected' : ''
-      if (!a.src) {
-        return `<div class="opt ${sel}" data-set="acc:${i}">
-          <div class="opt-empty">∅</div>
-        </div>`
-      }
-      return `<div class="opt ${sel}" data-set="acc:${i}">
-        <img src="${a.src}" alt="${a.name}" />
-        <div class="opt-label">${a.name}</div>
-      </div>`
-    }).join('')}
-  </div>`
+function accessoryLabel(idx) {
+  const a = PORTRAIT.accessories[idx]
+  return a ? a.name : ''
 }

@@ -12,7 +12,6 @@ import { renderAvatar } from './screens/avatar.js'
 import { renderLobby } from './screens/lobby.js'
 import { renderSetup } from './screens/setup.js'
 import { renderGame } from './screens/game.js'
-import { renderValidate } from './screens/validate.js'
 import { renderEnd } from './screens/end.js'
 
 const SCREENS = {
@@ -23,7 +22,6 @@ const SCREENS = {
   lobby: renderLobby,
   setup: renderSetup,
   game: renderGame,
-  validate: renderValidate,
   end: renderEnd,
 }
 
