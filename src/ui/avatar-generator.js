@@ -1,24 +1,20 @@
 /**
  * Avatar Generator — Selfie → Pixel Art via Replicate
- * Fix iOS : input appendé au DOM avant clic.
+ * Pas d'emojis, SVG partout. Fix iOS : clic synchrone.
  */
 
-import { state }           from '../state.js'
-import { navigate }        from '../router.js'
-import { toast }           from './toast.js'
-import { _openCamera }     from './modal.js'
+import { state }       from '../state.js'
+import { navigate }    from '../router.js'
+import { icon }        from './icons.js'
+import { openCamera }  from './modal.js'
 
 const MAX_SIZE = 512
 const POLL_MS  = 2000
 
-// ─── Entrée publique ─────────────────────────────────────────────────────────
-
 export function openGeneratorModal() {
-  const root = document.getElementById('modal-root')
-  root.innerHTML = _modalHtml()
-
+  document.getElementById('modal-root').innerHTML = _modalHtml()
   document.getElementById('gen-capture-btn')?.addEventListener('click', () => {
-    _openCamera('user', (dataUrl) => _resizeAndSend(dataUrl))
+    openCamera('user', (dataUrl) => _resizeAndSend(dataUrl))
   })
   document.getElementById('gen-cancel-btn')?.addEventListener('click', closeGeneratorModal)
 }
@@ -27,19 +23,18 @@ export function closeGeneratorModal() {
   document.getElementById('modal-root').innerHTML = ''
 }
 
-// ─── Redimensionnement ────────────────────────────────────────────────────────
+// ─── Resize ──────────────────────────────────────────────────────────────────
 
 function _resizeAndSend(dataUrl) {
-  _setLoading('Redimensionnement…')
-  const img = new Image()
+  _setLoading("Préparation de la photo…")
+  const img  = new Image()
   img.onload = () => {
     const canvas  = document.createElement('canvas')
     const ratio   = Math.min(MAX_SIZE / img.width, MAX_SIZE / img.height)
     canvas.width  = Math.round(img.width  * ratio)
     canvas.height = Math.round(img.height * ratio)
     canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
-    const base64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1]
-    _startGeneration(base64)
+    _startGeneration(canvas.toDataURL('image/jpeg', 0.85).split(',')[1])
   }
   img.src = dataUrl
 }
@@ -56,28 +51,25 @@ async function _startGeneration(base64) {
     })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const { id } = await res.json()
-    _pollResult(id)
-  } catch (err) {
+    _poll(id, 0)
+  } catch {
     _setError('Serveur injoignable')
   }
 }
 
-function _pollResult(id, attempts = 0) {
-  if (attempts > 30) { _setError('Délai dépassé, réessaie'); return }
+function _poll(id, n) {
+  if (n > 30) { _setError('Délai dépassé, réessaie'); return }
   setTimeout(async () => {
     try {
-      const res  = await fetch(`/api/check-generation?id=${id}`)
-      const data = await res.json()
-      if (data.status === 'succeeded' && data.url) {
-        _showResult(data.url)
-      } else if (data.status === 'failed') {
-        _setError(data.error || 'Génération échouée')
-      } else {
-        const msgs = ["L'IA dessine ta tête…", "Pixelisation…", "Presque fini…", "Derniers pixels…"]
-        _setLoading(msgs[Math.min(Math.floor(attempts / 3), msgs.length - 1)])
-        _pollResult(id, attempts + 1)
+      const data = await fetch(`/api/check-generation?id=${id}`).then(r => r.json())
+      if      (data.status === 'succeeded') _showResult(data.url)
+      else if (data.status === 'failed')    _setError(data.error || 'Génération échouée')
+      else {
+        const msgs = ["L'IA dessine ta tête…","Pixelisation…","Presque fini…","Derniers pixels…"]
+        _setLoading(msgs[Math.min(Math.floor(n / 4), msgs.length - 1)])
+        _poll(id, n + 1)
       }
-    } catch { _pollResult(id, attempts + 1) }
+    } catch { _poll(id, n + 1) }
   }, POLL_MS)
 }
 
@@ -90,15 +82,23 @@ function _showResult(url) {
     <div class="modal show">
       <div class="modal-box gen-result-box">
         <div style="padding:16px;">
-          <h3 class="modal-title">✦ Ton avatar pixel art ✦</h3>
+          <h3 class="modal-title">
+            ${icon('sparkle', { size: 18 })} Ton avatar pixel art
+          </h3>
           <div class="gen-result-img-wrap">
-            <img src="${url}" alt="Pixel art avatar" class="gen-result-img" />
+            <img src="${url}" alt="Avatar généré" class="gen-result-img" />
           </div>
           <div class="row mt">
-            <button class="btn btn-cream btn-sm" id="gen-retry-btn">↺ Réessayer</button>
-            <button class="btn btn-red"          id="gen-accept-btn">✓ Garder</button>
+            <button class="btn btn-cream btn-sm" id="gen-retry-btn">
+              ${icon('retry', { size: 14 })} Réessayer
+            </button>
+            <button class="btn btn-red" id="gen-accept-btn">
+              ${icon('check', { size: 16 })} Garder
+            </button>
           </div>
-          <button class="btn btn-ghost btn-sm mt" id="gen-cancel-btn">Revenir aux sprites</button>
+          <button class="btn btn-ghost btn-sm mt" id="gen-sprites-btn">
+            ${icon('arrow_left', { size: 14 })} Revenir aux sprites
+          </button>
         </div>
       </div>
     </div>
@@ -109,13 +109,13 @@ function _showResult(url) {
     navigate('avatar-pick')
   })
   document.getElementById('gen-retry-btn')?.addEventListener('click', openGeneratorModal)
-  document.getElementById('gen-cancel-btn')?.addEventListener('click', () => {
+  document.getElementById('gen-sprites-btn')?.addEventListener('click', () => {
     delete state.myAvatar.generatedImageUrl
     closeGeneratorModal()
   })
 }
 
-// ─── États modal ──────────────────────────────────────────────────────────────
+// ─── États ───────────────────────────────────────────────────────────────────
 
 function _setLoading(msg) {
   const root = document.getElementById('modal-root')
@@ -123,7 +123,7 @@ function _setLoading(msg) {
   root.innerHTML = `
     <div class="modal show">
       <div class="modal-box">
-        <div style="padding:28px;text-align:center;">
+        <div style="padding:32px;text-align:center;">
           <div class="gen-pixel-spinner"></div>
           <div class="gen-loading-msg">${msg}</div>
           <div class="small" style="color:var(--ink-soft);margin-top:10px;">~15 secondes</div>
@@ -140,11 +140,15 @@ function _setError(msg) {
     <div class="modal show">
       <div class="modal-box">
         <div style="padding:24px;text-align:center;">
-          <div style="font-size:36px;margin-bottom:12px;">💥</div>
+          <div style="width:48px;height:48px;margin:0 auto 14px;">
+            ${icon('alert', { size: 48 })}
+          </div>
           <div class="gen-loading-msg" style="animation:none;">${msg}</div>
           <div class="row mt">
             <button class="btn btn-cream btn-sm" id="gen-cancel-btn">Fermer</button>
-            <button class="btn btn-red btn-sm"   id="gen-retry-btn">Réessayer</button>
+            <button class="btn btn-red btn-sm"   id="gen-retry-btn">
+              ${icon('retry', { size: 14 })} Réessayer
+            </button>
           </div>
         </div>
       </div>
@@ -159,10 +163,14 @@ function _modalHtml() {
     <div class="modal show">
       <div class="modal-box">
         <div style="padding:16px;">
-          <h3 class="modal-title">📷 Ma tête en pixel art</h3>
+          <h3 class="modal-title">
+            ${icon('scan', { size: 20 })} Ma tête en pixel art
+          </h3>
           <div class="gen-camera-frame">
-            <div style="font-size:52px;margin-bottom:10px;">🤳</div>
-            <div style="font-family:'Press Start 2P',monospace;font-size:8px;color:var(--tram-yellow);text-align:center;line-height:1.8;">
+            <div class="gen-camera-icon">
+              ${icon('selfie', { size: 80 })}
+            </div>
+            <div class="gen-camera-label">
               PRENDS UN SELFIE<br>L'IA PIXELISE TA TÊTE
             </div>
           </div>
@@ -171,7 +179,9 @@ function _modalHtml() {
           </p>
           <div class="row">
             <button class="btn btn-cream btn-sm" id="gen-cancel-btn">Annuler</button>
-            <button class="btn btn-red" id="gen-capture-btn">📷 Selfie</button>
+            <button class="btn btn-red" id="gen-capture-btn">
+              ${icon('camera', { size: 18 })} Selfie
+            </button>
           </div>
         </div>
       </div>

@@ -489,6 +489,78 @@ const ICONS = {
     '................',
     '................',
   ], { k: PALETTE.yellowWarm, Y: PALETTE.yellow }),
+
+  // ── Utilisateur / profil ──────────────────────────────────────────────────
+  user: () => px([
+    '................',
+    '......RRRR......',
+    '.....RRRRRR.....',
+    '.....RRRRRR.....',
+    '......RRRR......',
+    '...RRRRRRRRRR...',
+    '..RRRRRRRRRRRR..',
+    '.RRRRRRRRRRRRRR.',
+    '................',
+  ], { R: PALETTE.ink }),
+
+  // ── Selfie / visage + caméra ──────────────────────────────────────────────
+  selfie: () => px([
+    'R.............R.',
+    'R.....GGGG....R.',
+    'R....GGGGGG...R.',
+    'R....GGGGGG...R.',
+    'R.....GGGG....R.',
+    'R.GGGGGGGGGG..R.',
+    'RGGGGGGGGGGGG.R.',
+    'R.............R.',
+    'RRRRRRRRRRRRRR..',
+  ], { R: PALETTE.ink, G: PALETTE.green }),
+
+  // ── Alerte / erreur ───────────────────────────────────────────────────────
+  alert: () => px([
+    '................',
+    '......RRR.......',
+    '.....RRRRR......',
+    '....RRkRRRR.....',
+    '...RRkkRRRRR....',
+    '..RRkkkkRRRRR...',
+    '.RRkRRRkRRRRR...',
+    'RRRkRRRkRRRRRR..',
+    'RRRkkkkkRRRRRR..',
+    'RRRRRRRRRRRRRR..',
+    '................',
+  ], { R: PALETTE.red, k: PALETTE.cream }),
+
+  // ── Scan / IA ─────────────────────────────────────────────────────────────
+  scan: () => px([
+    'RR..........RR..',
+    'R................',
+    'R...kkkkkk...R..',
+    '....k....k......',
+    '....k.GG.k......',
+    '....k.GG.k......',
+    '....k....k......',
+    'R...kkkkkk...R..',
+    'R................',
+    'RR..........RR..',
+  ], { R: PALETTE.yellow, k: PALETTE.ink, G: PALETTE.red }),
+
+  // ── Retour / undo ─────────────────────────────────────────────────────────
+  retry: () => px([
+    '................',
+    '....kkkkkk......',
+    '...kk....kk.....',
+    '..kk......kk....',
+    '.k..........k...',
+    '.k....kk....k...',
+    '.k...kkk....k...',
+    '.k..kkkkkk..k...',
+    '..kk...kkkkkk...',
+    '...kk...........', 
+    '....kkkkkk......',
+    '................',
+  ], { k: PALETTE.ink }),
+
 }
 
 /**

@@ -880,3 +880,17 @@
   z-index: 5;
   padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
 }
+
+/* ── Generator modal icon area ───────────────────────────────────────────── */
+.gen-camera-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 12px;
+}
+.gen-camera-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: var(--tram-yellow);
+  text-align: center;
+  line-height: 1.8;
+}

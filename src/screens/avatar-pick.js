@@ -1,7 +1,5 @@
 /**
  * Écran : choix du mode de création d'avatar
- * Intercalé entre create/join et l'éditeur d'avatar.
- * Styles dans src/styles/screens.css
  */
 
 import { state }          from '../state.js'
@@ -10,43 +8,52 @@ import { bgVarsovieHtml }  from '../ui/varsovie.js'
 import { icon }           from '../ui/icons.js'
 
 export function renderAvatarPick() {
-  const hasProfile  = !!(state.userProfile?.name && state.userProfile?.avatar)
+  const hasProfile   = !!(state.userProfile?.name && state.userProfile?.avatar)
   const hasGenerated = !!state.myAvatar?.generatedImageUrl
 
-  // ── Mode confirmation post-génération IA ────────────────────────────────
-  if (hasGenerated) {
-    return `
-      <section class="screen avatar-pick-screen">
-        ${bgVarsovieHtml({ withTram: false, withStorks: false, opacity: 0.25 })}
+  if (hasGenerated) return _renderConfirm()
+  return _renderChoice(hasProfile)
+}
 
-        <button class="btn-back" data-action="resetGeneratedAvatar">${icon('arrow_left', { size: 16 })}</button>
+// ─── Vue confirmation post-IA ─────────────────────────────────────────────────
 
-        <h2 class="title-screen">★ TON AVATAR IA ★</h2>
+function _renderConfirm() {
+  return `
+    <section class="screen avatar-pick-screen">
+      ${bgVarsovieHtml({ withTram: false, withStorks: false, opacity: 0.25 })}
 
-        <div class="ap-generated-preview">
-          <div class="avatar lg">
-            <div class="avatar-inner">
-              ${avatarLayersHtml(state.myAvatar, 'idle')}
-            </div>
+      <button class="btn-back" data-action="resetGeneratedAvatar">
+        ${icon('arrow_left', { size: 16 })}
+      </button>
+
+      <h2 class="title-screen">★ TON AVATAR IA ★</h2>
+
+      <div class="ap-generated-preview">
+        <div class="avatar lg">
+          <div class="avatar-inner">
+            ${avatarLayersHtml(state.myAvatar, 'idle')}
           </div>
-          <p class="small light center" style="margin-top:10px;">
-            Tu peux réessayer ou valider ce look.
-          </p>
         </div>
+        <p class="small light center" style="margin-top:12px;">
+          Satisfait de ton look pixel art ?
+        </p>
+      </div>
 
-        <div class="ap-actions">
-          <button class="btn btn-ghost btn-sm" data-action="retryGeneration">
-            ↺ Réessayer
-          </button>
-          <button class="btn btn-red" data-action="confirmAvatar">
-            ✓ Valider ce look
-          </button>
-        </div>
-      </section>
-    `
-  }
+      <div class="ap-actions">
+        <button class="btn btn-cream btn-sm" data-action="retryGeneration">
+          ${icon('retry', { size: 14 })} Réessayer
+        </button>
+        <button class="btn btn-red" data-action="confirmAvatar">
+          ${icon('check', { size: 16 })} Valider ce look
+        </button>
+      </div>
+    </section>
+  `
+}
 
-  // ── Mode choix ────────────────────────────────────────────────────────────
+// ─── Vue choix ────────────────────────────────────────────────────────────────
+
+function _renderChoice(hasProfile) {
   return `
     <section class="screen avatar-pick-screen">
       ${bgVarsovieHtml({ withTram: false, withStorks: false, opacity: 0.25 })}
@@ -60,27 +67,24 @@ export function renderAvatarPick() {
 
       <div class="ap-cards">
 
-        <!-- IA génération -->
         <div class="ap-card ap-card-ai" id="ap-ai-btn">
-          <div class="ap-card-icon">📷</div>
+          <div class="ap-card-icon">${icon('scan', { size: 32 })}</div>
           <div class="ap-card-body">
             <div class="ap-card-title">Scanne ma tête</div>
             <div class="ap-card-sub">L'IA pixelise ton visage en ~15 sec</div>
           </div>
-          <div class="ap-card-arrow">→</div>
+          <div class="ap-card-arrow">${icon('arrow_right', { size: 14 })}</div>
         </div>
 
-        <!-- Manuel -->
         <div class="ap-card ap-card-manual" data-nav="avatar">
-          <div class="ap-card-icon">🎲</div>
+          <div class="ap-card-icon">${icon('dice', { size: 32 })}</div>
           <div class="ap-card-body">
             <div class="ap-card-title">Créer manuellement</div>
             <div class="ap-card-sub">Choisis skin, cheveux, yeux, accessoires</div>
           </div>
-          <div class="ap-card-arrow">→</div>
+          <div class="ap-card-arrow">${icon('arrow_right', { size: 14 })}</div>
         </div>
 
-        <!-- Profil existant (conditionnel) -->
         ${hasProfile ? `
         <div class="ap-card ap-card-profile" data-action="confirmAvatar">
           <div class="ap-card-avatar">
@@ -94,7 +98,7 @@ export function renderAvatarPick() {
             <div class="ap-card-title">Garder mon look</div>
             <div class="ap-card-sub">Réutiliser l'avatar de ${state.userProfile.name}</div>
           </div>
-          <div class="ap-card-arrow">→</div>
+          <div class="ap-card-arrow">${icon('arrow_right', { size: 14 })}</div>
         </div>
         ` : ''}
 

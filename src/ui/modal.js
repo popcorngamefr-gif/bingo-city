@@ -1,13 +1,13 @@
 /**
  * Modal appareil photo
- * Fix iOS : input file appendé au DOM avant click.
+ * Fix iOS : input appendé au DOM, clic synchrone (pas de setTimeout).
  */
 
-import { state }          from '../state.js'
-import { show }           from '../router.js'
-import { toast }          from './toast.js'
-import { icon }           from './icons.js'
-import { getObject }      from '../data/objects.js'
+import { state }            from '../state.js'
+import { show }             from '../router.js'
+import { toast }            from './toast.js'
+import { icon }             from './icons.js'
+import { getObject }        from '../data/objects.js'
 import { handleValidation } from '../controllers/gameController.js'
 
 export function openCameraModal(cellIdx) {
@@ -26,7 +26,7 @@ export function openCameraModal(cellIdx) {
           <div class="camera-frame">
             <div class="camera-frame-inner">
               ${icon('camera', { size: 52 })}
-              <span>VISE → CAPTURE</span>
+              <span>VISE &rarr; CAPTURE</span>
             </div>
           </div>
           <p class="small center mb">La photo sera gardée pour le récap de fin.</p>
@@ -42,7 +42,7 @@ export function openCameraModal(cellIdx) {
   `
 
   document.getElementById('capture-btn')?.addEventListener('click', () => {
-    _openCamera('environment', (dataUrl) => _process(cellIdx, dataUrl))
+    openCamera('environment', (dataUrl) => _process(cellIdx, dataUrl))
   })
 }
 
@@ -66,30 +66,35 @@ export function closeModal() {
   document.getElementById('modal-root').innerHTML = ''
 }
 
-// ─── Helper iOS-safe file input ───────────────────────────────────────────────
 /**
- * Crée un input file, l'ajoute au DOM (requis iOS), déclenche le clic.
- * @param {'environment'|'user'|''} capture — caméra arrière, avant, ou choix
- * @param {Function} onFile — appelé avec le dataUrl résultant
+ * Ouvre la caméra de façon compatible iOS.
+ *
+ * Règle iOS : l'input DOIT être dans le DOM ET .click() doit être appelé
+ * de façon synchrone dans le handler du geste utilisateur (pas dans un
+ * setTimeout/Promise, sinon Safari refuse).
+ *
+ * @param {'environment'|'user'|''} capture
+ * @param {Function} onDataUrl — appelé avec le dataUrl une fois la photo prise
  */
-export function _openCamera(capture, onFile) {
-  const input = document.createElement('input')
-  input.type  = 'file'
-  input.accept = 'image/*'
+export function openCamera(capture, onDataUrl) {
+  const input    = document.createElement('input')
+  input.type     = 'file'
+  input.accept   = 'image/*'
   if (capture) input.capture = capture
-  // iOS exige que l'input soit dans le DOM pour que .click() fonctionne
-  input.style.cssText = 'position:fixed;top:0;left:0;opacity:0;width:1px;height:1px;'
+
+  // iOS : doit être dans le DOM, avec des dimensions non nulles
+  input.style.cssText = 'position:fixed;top:-200px;left:-200px;width:10px;height:10px;opacity:0;'
   document.body.appendChild(input)
 
   input.addEventListener('change', (e) => {
     document.body.removeChild(input)
     const file = e.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = (ev) => onFile(ev.target.result)
+    const reader  = new FileReader()
+    reader.onload = (ev) => onDataUrl(ev.target.result)
     reader.readAsDataURL(file)
   })
 
-  // Petit délai requis sur iOS pour que le DOM soit prêt
-  setTimeout(() => input.click(), 80)
+  // Synchrone — reste dans la chaîne du geste utilisateur
+  input.click()
 }
