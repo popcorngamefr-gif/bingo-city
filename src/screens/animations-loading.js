@@ -17,9 +17,9 @@ export function renderAnimationsLoading() {
       <h2 class="title-screen">★ DÉGLINGO IA ★</h2>
 
       <p class="anim-loading-msg ${ready ? 'done' : ''}">
-        ${ready  ? 'Tout est prêt !'
-        : error  ? 'Oups, une erreur est survenue'
-                 : 'L\\'IA donne vie à ton avatar…'}
+        ${ready  ? `Tout est prêt !`
+        : error  ? `Oups, une erreur est survenue`
+                 : `L'IA donne vie à ton avatar…`}
       </p>
 
       <!-- Preview vidéo grand format -->
