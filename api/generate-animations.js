@@ -7,8 +7,11 @@
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
 
-  const { imageUrl } = req.body ?? {}
+  const { imageUrl, prompt } = req.body ?? {}
   if (!imageUrl) return res.status(400).json({ error: 'imageUrl requis' })
+
+  // Prompt par défaut si non fourni
+  const finalPrompt = prompt || 'A pixel art character portrait that subtly comes to life. The face shifts naturally between expressions: a calm neutral look, a quick playful wink, then a wide joyful smile that becomes laughter. Subtle head movements. Pixel art style preserved throughout.'
 
   const token = process.env.REPLICATE_API_TOKEN
   if (!token) return res.status(500).json({ error: 'REPLICATE_API_TOKEN manquant' })
@@ -26,7 +29,7 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           input: {
             image:                  imageUrl,
-            prompt:                 'A pixel art character portrait that subtly comes to life. The face shifts naturally between expressions: a calm neutral look, a quick playful wink, then a wide joyful smile that becomes laughter, briefly turning into a frown of mock anger. Subtle head movements, slight body sway. Smooth transitions, looping feel. Pixel art style preserved throughout.',
+            prompt:                 finalPrompt,
             go_fast:                true,
             num_frames:             81,
             resolution:             '480p',

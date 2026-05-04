@@ -63,8 +63,12 @@ export function renderGame() {
           const obj = getObject(cell.objId)
           if (!obj) return ''
           const statusIcon = cell.status === 'validated' ? icon('check', { size: 20, cls: 'cell-status-icon' }) : ''
+          // Objets custom : on rend l'icône via icon() au lieu de objectSvg
+          const iconHtml = obj.icon && !obj.grid
+            ? icon(obj.icon, { size: 36 })
+            : objectSvg(obj)
           return `<div class="bingo-cell ${cell.status}" data-cell="${i}">
-            <div class="bingo-cell-icon">${objectSvg(obj)}</div>
+            <div class="bingo-cell-icon">${iconHtml}</div>
             <div class="bingo-cell-name">${obj.name}</div>
             ${statusIcon}
           </div>`

@@ -13,17 +13,18 @@ const MAX_ATTEMPTS = 100  // ~5 min max (génération wan ~40-80s)
 /**
  * Lance la génération à partir de l'URL de l'image pixel art déjà générée.
  * @param {string}   imageUrl     — URL de l'avatar généré par face-to-many
+ * @param {string?}  prompt       — prompt custom (optionnel, sinon prompt par défaut côté API)
  * @param {Function} onProgress   — appelé périodiquement
  * @param {Function} onComplete   — appelé quand la vidéo est prête
  */
-export async function generateAnimations(imageUrl, onProgress, onComplete) {
+export async function generateAnimations(imageUrl, prompt, onProgress, onComplete) {
   state.myAnimation = { url: null, _ready: false }
 
   try {
     const res = await fetch('/api/generate-animations', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ imageUrl }),
+      body:    JSON.stringify({ imageUrl, prompt }),
     })
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))

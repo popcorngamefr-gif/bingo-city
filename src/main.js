@@ -23,10 +23,12 @@ import { openCameraModal, closeModal }    from './ui/modal.js'
 window.__state = state
 
 import { initAuth, saveProfile }          from './firebase/auth.js'
-import { createGame, joinGame as fbJoinGame, startGame as fbStartGame, subscribeToPlayers, subscribeToGame, unsubscribeAll } from './firebase/game.js'
+import { createGame as fbCreateGame, joinGame as fbJoinGame, startGame as fbStartGame, subscribeToPlayers, subscribeToGame, unsubscribeAll } from './firebase/game.js'
 import { checkPseudoAvailable, createAccount, loginWithPin, updateAccountUID } from './firebase/account.js'
 import { openGeneratorModal }   from './ui/avatar-generator.js'
 import { openShooterPaywall } from './ui/shooter-paywall.js'
+import { openMoodPicker }     from './ui/mood-picker.js'
+import { openCustomObjPicker as openCustomObjPickerUI } from './ui/custom-obj-picker.js'
 import { generateAnimations }               from './ui/animations-generator.js'
 
 /* ============================================================
@@ -218,7 +220,7 @@ const ACTIONS = {
     if (state.isMJ) {
       state.players = [me]
       try {
-        await createGame({ code: state.gameCode, name: state.gameName, hostUid: state.uid, hostName: state.myName, hostAvatar: state.myAvatar })
+        await fbCreateGame({ code: state.gameCode, name: state.gameName, hostUid: state.uid, hostName: state.myName, hostAvatar: state.myAvatar })
       } catch (err) {
         console.warn('createGame failed:', err)
         // Pas de simulateJoin en prod — laisse l'utilisateur seul s'il n'y a pas de Firebase
@@ -269,8 +271,15 @@ const ACTIONS = {
     openShooterPaywall(
       'expressions',
       'Déglingo IA',
-      `Génère 3 animations de ta tête en pixel art : neutre+clin d'oeil, triste+furieux, mort de rire.`,
-      () => ACTIONS.openExpressionsGen()
+      `Donne vie à ton avatar avec une animation vidéo personnalisée.`,
+      () => {
+        // Après le shooter, on demande le vibe à l'utilisateur
+        openMoodPicker(({ moodKey, prompt }) => {
+          state.selectedMoodPrompt = prompt
+          state.selectedMoodKey    = moodKey
+          ACTIONS.openExpressionsGen()
+        })
+      }
     )
   },
 
@@ -288,9 +297,11 @@ const ACTIONS = {
     state.myAnimation = { url: null, _ready: false }
     navigate('animations-loading')
 
-    // Lance la génération vidéo — uniquement à la demande utilisateur
+    // Lance la génération vidéo avec le prompt choisi (ou prompt par défaut)
+    const prompt = state.selectedMoodPrompt || null
     generateAnimations(
       imgUrl,
+      prompt,
       () => { if (state.currentScreen === 'animations-loading') show('animations-loading') },
       () => { if (state.currentScreen === 'animations-loading') show('animations-loading') }
     ).catch(err => {
@@ -300,6 +311,21 @@ const ACTIONS = {
 
   validateAnimations() {
     navigate('avatar-pick')
+  },
+
+  openCustomObjPicker() {
+    openCustomObjPickerUI((obj) => {
+      // Ajoute à la liste custom
+      if (!state.customObjects) state.customObjects = []
+      state.customObjects.push(obj)
+      // Auto-sélectionne dans la grille
+      if (state.selectedObjects.length < 25) {
+        state.selectedObjects.push(obj.id)
+      }
+      // Re-render setup pour faire apparaître la nouvelle tuile
+      show('setup')
+      toast(`"${obj.name}" ajouté à ta liste !`)
+    })
   },
 
   logoutAccount() {
@@ -334,17 +360,40 @@ function setupEventDelegation() {
     const objId = target.dataset.toggleObj
     if (objId) {
       const idx = state.selectedObjects.indexOf(objId)
-      if (idx >= 0)                            state.selectedObjects.splice(idx, 1)
+      if (idx >= 0)                               state.selectedObjects.splice(idx, 1)
       else if (state.selectedObjects.length < 25) state.selectedObjects.push(objId)
       else return toast('Max 25 objets')
-      show('setup')
-      requestAnimationFrame(() => {
-        const counter = document.getElementById('obj-counter')
-        if (!counter) return
+
+      // Mise à jour chirurgicale — pas de re-render complet, scroll préservé
+      const tile = target
+      const isSelected = state.selectedObjects.includes(objId)
+      tile.classList.toggle('selected', isSelected)
+
+      // Ajoute / retire le check icon
+      const existingCheck = tile.querySelector('.obj-tile-check')
+      if (isSelected && !existingCheck) {
+        const checkDiv = document.createElement('div')
+        checkDiv.className = 'obj-tile-check'
+        checkDiv.innerHTML = '<svg width="18" height="18" viewBox="0 0 16 16"><path fill="currentColor" d="M3 8 L7 12 L13 4" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="square"/></svg>'
+        tile.appendChild(checkDiv)
+      } else if (!isSelected && existingCheck) {
+        existingCheck.remove()
+      }
+
+      // Mise à jour du compteur
+      const n = state.selectedObjects.length
+      const counter = document.getElementById('obj-counter')
+      if (counter) {
+        counter.textContent = `${n} / 25 sélectionnés (min. 6)`
+        counter.classList.toggle('warn', n < 6)
         counter.classList.remove('flash')
         void counter.offsetWidth
         counter.classList.add('flash')
-      })
+      }
+
+      // Activation/désactivation du CTA "Lancer"
+      const startBtn = document.querySelector('[data-action="startGame"]')
+      if (startBtn) startBtn.disabled = (n < 6 || n > 25)
       return
     }
 
