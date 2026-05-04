@@ -19,10 +19,15 @@ import { startTimer }                     from './controllers/timerController.js
 import { simulateJoin }                   from './controllers/gameController.js'
 import { openCameraModal, closeModal }    from './ui/modal.js'
 
+// Bridge état global pour avatar.js (accès aux animations sans circular import)
+window.__state = state
+
 import { initAuth, saveProfile }          from './firebase/auth.js'
-import { createGame, joinGame, startGame, subscribeToPlayers, subscribeToGame, unsubscribeAll } from './firebase/game.js'
+import { createGame, joinGame as fbJoinGame, startGame as fbStartGame, subscribeToPlayers, subscribeToGame, unsubscribeAll } from './firebase/game.js'
 import { checkPseudoAvailable, createAccount, loginWithPin, updateAccountUID } from './firebase/account.js'
-import { openGeneratorModal } from './ui/avatar-generator.js'
+import { openGeneratorModal }   from './ui/avatar-generator.js'
+import { openShooterPaywall, isUnlocked } from './ui/shooter-paywall.js'
+import { generateAnimations }               from './ui/animations-generator.js'
 
 /* ============================================================
    LOBBY — temps réel
@@ -190,7 +195,7 @@ const ACTIONS = {
     if (code.length < 4) return toast('Code à 4 caractères')
     if (!myName)          return toast('Entre ton pseudo')
     try {
-      await joinGame({ code, uid: state.uid, name: myName, avatar: state.myAvatar })
+      await fbJoinGame({ code, uid: state.uid, name: myName, avatar: state.myAvatar })
       state.gameCode = code
       state.myName   = myName
       navigate('avatar-pick')
@@ -222,21 +227,36 @@ const ACTIONS = {
       }
     } else {
       state.players = [me]
+      // Met à jour le doc Firestore avec l'avatar définitif choisi
+      if (state.gameCode && state.uid) {
+        import('./firebase/game.js').then(({ updatePlayerGrid }) => {
+          // On ne peut pas update avatar directement mais on peut patcher via setDoc
+          import('firebase/firestore').then(({ doc, updateDoc }) => {
+            import('./firebase/config.js').then(({ db }) => {
+              updateDoc(
+                doc(db, 'games', state.gameCode, 'players', state.uid),
+                { name: state.myName, avatar: state.myAvatar }
+              ).catch(console.error)
+            })
+          })
+        })
+      }
     }
     navigate('lobby')
+
   },
 
   startGame() {
     if (state.selectedObjects.length < 6) return toast('Min. 6 objets')
     state.myGrid = state.selectedObjects.map(id => ({ objId: id, status: 'empty' }))
-    if (state.gameCode) startGame(state.gameCode, state.selectedObjects).catch(console.error)
+    if (state.gameCode) fbStartGame(state.gameCode, state.selectedObjects).catch(console.error)
     startTimer()
     navigate('game')
   },
 
   cancelPhoto() { closeModal(); state.currentPickingObj = null },
 
-  newGame() { unsubscribeAll(); resetGame(); navigate('home') },
+  newGame() { unsubscribeAll(); _seenPlayerIds.clear(); resetGame(); navigate('home') },
 
   resetGeneratedAvatar() {
     delete state.myAvatar.generatedImageUrl
@@ -250,6 +270,46 @@ const ACTIONS = {
 
   openAvatarGenerator() {
     openGeneratorModal()
+  },
+
+  openExpressionsPaywall() {
+    openShooterPaywall(
+      'expressions',
+      'Déglingo IA',
+      'Génère 3 animations de ta tête en pixel art : neutre+clin d'œil, triste+furieux, mort de rire.',
+      () => ACTIONS.openExpressionsGen()
+    )
+  },
+
+  openExpressionsGen() {
+    if (!state.animationSourceImage) {
+      import('./ui/toast.js').then(({ toast }) => toast('Lance d'abord le scan de ta tête !'))
+      return
+    }
+    if (state.myAnimations?._ready) {
+      navigate('animations-loading')
+      return
+    }
+    // Navigue vers l'écran de chargement
+    state.myAnimations = {}
+    navigate('animations-loading')
+
+    // Lance la génération — uniquement à la demande utilisateur
+    generateAnimations(
+      state.animationSourceImage,
+      ({ done, total, key, url }) => {
+        if (state.currentScreen === 'animations-loading') show('animations-loading')
+      },
+      () => {
+        if (state.currentScreen === 'animations-loading') show('animations-loading')
+      }
+    ).catch(err => {
+      import('./ui/toast.js').then(({ toast }) => toast('Erreur : ' + err.message))
+    })
+  },
+
+  validateAnimations() {
+    navigate('avatar-pick')
   },
 
   logoutAccount() {
@@ -300,9 +360,11 @@ function setupEventDelegation() {
 
     const cellAttr = target.dataset.cell
     if (cellAttr !== undefined) {
-      const cell = state.myGrid[parseInt(cellAttr)]
+      const idx  = parseInt(cellAttr)
+      const cell = state.myGrid[idx]
+      if (!cell) return
       if (cell.status === 'validated') return toast('Déjà capturé !')
-      openCameraModal(parseInt(cellAttr))
+      openCameraModal(idx)
       return
     }
   })
@@ -321,6 +383,27 @@ function setupInputFilters() {
 /* ============================================================
    AVATAR SCREEN — bouton génération IA
    ============================================================ */
+function _setupAnimationsLoadingScreen() {
+  // Preview player — cycle automatique des 3 GIFs
+  const track  = document.getElementById('anim-preview-track')
+  if (!track) return
+
+  const frames = [...track.querySelectorAll('.anim-preview-frame')]
+  const dots   = [...document.querySelectorAll('.anim-dot')]
+  if (!frames.length) return
+
+  let current = 0
+  frames[0]?.classList.add('active')
+
+  setInterval(() => {
+    frames[current]?.classList.remove('active')
+    dots[current]?.classList.remove('active')
+    current = (current + 1) % frames.length
+    frames[current]?.classList.add('active')
+    dots[current]?.classList.add('active')
+  }, 2500)
+}
+
 /* ============================================================
    SCREEN HOOKS
    ============================================================ */
@@ -331,7 +414,8 @@ function setupScreenHooks() {
       setupAvatarLoops()
       if (screen === 'game')    { updateHudConfidence(); checkHeartbeat() }
       if (screen === 'lobby')   _setupLobbySubscriptions()
-      if (screen === 'account') _setupAccountScreen()
+      if (screen === 'account')            _setupAccountScreen()
+      if (screen === 'animations-loading') _setupAnimationsLoadingScreen()
       if (screen === 'home' || screen === 'end') unsubscribeAll()
     }, 50)
   })

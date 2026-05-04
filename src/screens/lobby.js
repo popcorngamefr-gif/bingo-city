@@ -7,14 +7,15 @@ import { state } from '../state.js'
 import { avatarLayersHtml } from '../ui/avatar.js'
 import { bgVarsovieHtml } from '../ui/varsovie.js'
 import { icon } from '../ui/icons.js'
-import { escapeHtml } from '../utils/html.js'
+import { escapeHtml }     from '../utils/html.js'
+import { isUnlocked }     from '../ui/shooter-paywall.js'
 
 export function renderLobby() {
   const isMJ = state.isMJ
 
   const playersHtml = state.players.map(p => `
     <div class="player-row ${p.isYou ? 'you' : ''} ${p.justJoined ? 'joining' : ''}">
-      <div class="avatar xs">
+      <div class="avatar xs" style="position:relative;">
         <div class="avatar-inner">
           ${avatarLayersHtml(p.avatar)}
         </div>
@@ -53,10 +54,9 @@ export function renderLobby() {
           ? `<button class="btn btn-red btn-block" data-nav="setup">
                Choisir les objets ${icon('arrow_right', { size: 16 })}
              </button>`
-          : `<p class="small light center mb">
-               ${icon('hourglass', { size: 14 })} Le MJ prépare la partie...
-             </p>
-             <button class="btn btn-yellow btn-block btn-sm" data-nav="game">[demo] Forcer démarrage</button>`
+          : `<p class="small light center mb" style="padding:16px 0;">
+               ${icon('hourglass', { size: 16 })} En attente du MJ…
+             </p>`
         }
       </div>
     </section>

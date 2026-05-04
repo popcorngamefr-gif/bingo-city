@@ -29,9 +29,10 @@ export function renderCreate() {
         <input class="input" id="creator-name-input" placeholder="ex: Marek" maxlength="15" value="${savedName}" />
       </div>
 
-      <div class="row mt" style="position: relative; z-index: 5;">
-        <button class="btn btn-ghost btn-sm" data-nav="home">← Retour</button>
-        <button class="btn btn-red" data-action="createGame">Créer →</button>
+      <div class="sticky-cta">
+        <button class="btn btn-red" data-action="createGame">
+          ${icon('arrow_right', { size: 16 })} Créer la partie
+        </button>
       </div>
     </section>
   `

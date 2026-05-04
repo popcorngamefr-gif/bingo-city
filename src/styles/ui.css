@@ -906,3 +906,68 @@
 .avatar { overflow: visible; }
 .avatar .avatar-inner { overflow: hidden; border-radius: inherit; }
 
+
+/* ============================================
+   AVATAR — nouvelles expressions laugh/wink/rage
+   ============================================ */
+
+/* Laugh : corps qui secoue de gauche à droite */
+.avatar.mood-laugh .avatar-inner {
+  animation: avatarLaugh 0.3s steps(2) infinite;
+}
+@keyframes avatarLaugh {
+  0%   { transform: rotate(-4deg) translateY(-2px); }
+  50%  { transform: rotate(4deg)  translateY(-2px); }
+  100% { transform: rotate(-4deg) translateY(-2px); }
+}
+
+/* Wink : petit saut asymétrique + légère rotation */
+.avatar.mood-wink .avatar-inner {
+  animation: avatarWink 0.6s steps(3) 1;
+}
+@keyframes avatarWink {
+  0%   { transform: rotate(0deg)   translateY(0); }
+  40%  { transform: rotate(-6deg)  translateY(-4px); }
+  70%  { transform: rotate(4deg)   translateY(-2px); }
+  100% { transform: rotate(0deg)   translateY(0); }
+}
+
+/* Rage : tremblement rapide + flash rouge */
+.avatar.mood-rage .avatar-inner {
+  animation: avatarRage 0.08s steps(2) infinite;
+}
+@keyframes avatarRage {
+  0%   { transform: translateX(-3px); filter: brightness(1.1) hue-rotate(-10deg); }
+  100% { transform: translateX(3px);  filter: brightness(1.2) hue-rotate(-20deg); }
+}
+/* Halo rouge autour de l'avatar en rage */
+.avatar.mood-rage {
+  box-shadow: 0 0 0 4px rgba(208, 72, 72, 0.6), 0 0 12px rgba(208, 72, 72, 0.4);
+}
+
+/* Expression image : cross-fade entre les états */
+.layer.generated-img {
+  transition: opacity 0.3s steps(3);
+}
+.layer.generated-img.expr-neutral   { }
+.layer.generated-img.expr-laugh     { }
+.layer.generated-img.expr-angry     { }
+.layer.generated-img.expr-wink      { }
+.layer.generated-img.expr-surprised { }
+
+/* Indicateur de chargement expressions (petit badge dans le coin de l'avatar) */
+.avatar-expr-loading {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--tram-yellow);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: exprSpin 0.6s linear infinite;
+  z-index: 10;
+}
+@keyframes exprSpin {
+  to { transform: rotate(360deg); }
+}

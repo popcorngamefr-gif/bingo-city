@@ -13,7 +13,9 @@ import { renderSetup }   from './screens/setup.js'
 import { renderGame }    from './screens/game.js'
 import { renderEnd }     from './screens/end.js'
 import { renderAccount }    from './screens/account.js'
-import { renderAvatarPick } from './screens/avatar-pick.js'
+import { renderAvatarPick }        from './screens/avatar-pick.js'
+import { renderExpressionsLoading }  from './screens/expressions-loading.js'
+import { renderAnimationsLoading }   from './screens/animations-loading.js'
 
 const SCREENS = {
   home:    renderHome,
@@ -25,7 +27,9 @@ const SCREENS = {
   game:    renderGame,
   end:     renderEnd,
   account:      renderAccount,
-  'avatar-pick': renderAvatarPick,
+  'avatar-pick':          renderAvatarPick,
+  'expressions-loading':  renderExpressionsLoading,
+  'animations-loading':   renderAnimationsLoading,
 }
 
 let appRoot = null

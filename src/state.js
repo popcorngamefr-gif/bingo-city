@@ -24,11 +24,16 @@ export const state = {
   // Photos capturées : { [cellIdx]: url (Storage) ou dataUrl (avant upload) }
   myPhotos: {},
 
+  // Animations GIF générées par rd-animation (mode premium Déglingo IA)
+  // { idle, sad, laugh, _ready }
+  myAnimations: null,
+  animationSourceImage: null,  // base64 de l'avatar pixel art utilisé
+
   // En cours
   currentPickingObj: null,
 
   // Timer
-  timer:         1800,
+  timer:         1200,
   timerInterval: null,
 
   // Routing
@@ -59,8 +64,10 @@ export function resetGame() {
   state.selectedObjects = []
   state.myGrid          = []
   state.myPhotos        = {}
+  state.myAnimations     = null
+  state.animationSourceImage = null
   state.currentPickingObj = null
-  state.timer           = 1800
+  state.timer           = 1200
   if (state.timerInterval) {
     clearInterval(state.timerInterval)
     state.timerInterval = null

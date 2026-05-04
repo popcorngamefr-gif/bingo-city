@@ -14,7 +14,7 @@ export function renderAvatar() {
     <section class="screen avatar-screen">
       ${bgVarsovieHtml({ withTram: false, withStorks: false, opacity: 0.35 })}
 
-      <button class="btn-back" data-nav="home">${icon('arrow_left', { size: 16 })}</button>
+      <button class="btn-back" data-nav="avatar-pick">${icon('arrow_left', { size: 16 })}</button>
 
       <h2 class="title-screen">★ TON AVATAR ★</h2>
 

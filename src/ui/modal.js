@@ -52,7 +52,7 @@ function _process(cellIdx, dataUrl) {
   state.currentPickingObj = null
   handleValidation(cellIdx)
 
-  if (state.gameCode && state.uid) {
+  if (state.gameCode && state.uid && state.uid !== 'me') {
     import('../firebase/storage.js').then(({ uploadPhoto }) => {
       const cell = state.myGrid[cellIdx]
       uploadPhoto(state.gameCode, state.uid, cellIdx, dataUrl, cell?.objId)

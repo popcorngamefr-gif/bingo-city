@@ -32,7 +32,7 @@ export function renderEnd() {
   const photoEntries = Object.entries(state.myPhotos || {})
   const photosSection = photoEntries.length > 0 ? `
     <div class="card mb photos-recap" style="position: relative; z-index: 5;">
-      <div class="section-title">📷 Vos captures (${photoEntries.length})</div>
+      <div class="section-title">${icon('camera', { size: 14 })} Vos captures (${photoEntries.length})</div>
       <div class="photos-grid">
         ${photoEntries.map(([idx, dataUrl]) => {
           const cell = state.myGrid[parseInt(idx)]
@@ -76,7 +76,7 @@ export function renderEnd() {
       ${photosSection}
 
       <div class="row mt" style="position: relative; z-index: 5;">
-        <button class="btn btn-ghost btn-sm" data-nav="game">← Continuer</button>
+        
         <button class="btn btn-red" data-action="newGame">Nouvelle partie</button>
       </div>
     </section>

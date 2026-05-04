@@ -29,9 +29,10 @@ export function renderJoin() {
         <input class="input" id="joiner-name-input" placeholder="ex: Marek" maxlength="15" value="${savedName}" />
       </div>
 
-      <div class="row mt" style="position: relative; z-index: 5;">
-        <button class="btn btn-ghost btn-sm" data-nav="home">← Retour</button>
-        <button class="btn btn-yellow" data-action="joinGame">Rejoindre →</button>
+      <div class="sticky-cta">
+        <button class="btn btn-yellow" data-action="joinGame">
+          ${icon('arrow_right', { size: 16 })} Rejoindre
+        </button>
       </div>
     </section>
   `

@@ -905,3 +905,413 @@
   text-align: center;
   line-height: 1.8;
 }
+
+/* ============================================
+   PREMIUM / SHOOTER PAYWALL
+   ============================================ */
+.ap-card-premium {
+  opacity: 0.75;
+  position: relative;
+}
+.ap-card-premium .ap-card-stripe {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--ink) 0px, var(--ink) 4px,
+    var(--concrete) 4px, var(--concrete) 8px
+  );
+}
+.ap-card-lock {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--ink);
+  border: 2px solid var(--tram-yellow);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  color: var(--tram-yellow);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Modal shooter */
+.shooter-modal-box {
+  max-width: 340px;
+  width: 100%;
+  background: var(--ink);
+  border: 4px solid var(--tram-yellow);
+  border-radius: 16px;
+  box-shadow: 0 8px 0 rgba(0,0,0,0.4);
+  overflow: hidden;
+}
+.shooter-header {
+  background: var(--tram-red);
+  padding: 16px;
+  text-align: center;
+  border-bottom: 3px solid var(--tram-yellow);
+}
+.shooter-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  color: white;
+  text-shadow: 1px 1px 0 var(--tram-red-dark);
+  line-height: 1.6;
+}
+.shooter-body {
+  padding: 20px 16px;
+  text-align: center;
+}
+.shooter-icon {
+  font-size: 56px;
+  margin-bottom: 12px;
+  display: block;
+  animation: bottleSway 2s ease-in-out infinite;
+}
+@keyframes bottleSway {
+  0%, 100% { transform: rotate(-8deg); }
+  50%       { transform: rotate(8deg); }
+}
+.shooter-desc {
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+  color: var(--cream-cold);
+  line-height: 1.4;
+  margin-bottom: 16px;
+}
+.shooter-cta {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--tram-yellow);
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+.shooter-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 16px 20px;
+}
+
+/* ============================================
+   EXPRESSIONS LOADING SCREEN
+   ============================================ */
+.expr-loading-screen {
+  gap: 16px;
+  align-items: center;
+}
+
+.expr-avatar-preview {
+  position: relative;
+  z-index: 5;
+}
+
+.expr-loading-msg {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--ink);
+  text-align: center;
+  line-height: 1.8;
+  animation: textBlink 1.2s steps(2) infinite;
+  position: relative;
+  z-index: 5;
+}
+
+/* Grille 5 expressions */
+.expr-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  width: 100%;
+  position: relative;
+  z-index: 5;
+}
+
+.expr-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.expr-tile-img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: 3px solid var(--ink);
+  border-radius: 8px;
+  box-shadow: 0 3px 0 var(--ink);
+  image-rendering: pixelated;
+}
+
+.expr-tile-placeholder {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 3px dashed var(--ink-soft);
+  border-radius: 8px;
+  background: var(--cream-warm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.expr-tile.ready .expr-tile-img {
+  border-color: var(--tram-red);
+  box-shadow: 0 3px 0 var(--tram-red-dark);
+  animation: exprPop 0.3s steps(3) 1;
+}
+
+@keyframes exprPop {
+  0%   { transform: scale(0.8); }
+  50%  { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.expr-tile-label {
+  font-family: 'VT323', monospace;
+  font-size: 13px;
+  color: var(--ink-soft);
+  text-align: center;
+  line-height: 1;
+}
+
+/* Barre de progression */
+.expr-progress-wrap {
+  width: 100%;
+  position: relative;
+  z-index: 5;
+}
+
+.expr-progress-bar {
+  height: 10px;
+  background: var(--concrete);
+  border: 2px solid var(--ink);
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.expr-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--tram-red), var(--tram-yellow));
+  transition: width 0.4s steps(4);
+  border-radius: 3px;
+}
+
+.expr-progress-text {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+/* Option expressions dans avatar-pick confirm */
+.ap-expr-option {
+  width: 100%;
+  position: relative;
+  z-index: 5;
+}
+
+.ap-expr-ready {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  color: var(--green-go);
+  padding: 10px;
+  background: rgba(106, 144, 112, 0.12);
+  border: 2px solid var(--green-go);
+  border-radius: 10px;
+}
+
+/* ============================================
+   ANIMATIONS LOADING SCREEN
+   ============================================ */
+.anim-loading-screen {
+  gap: 16px;
+}
+
+.anim-loading-msg {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--ink);
+  text-align: center;
+  line-height: 1.8;
+  animation: textBlink 1.2s steps(2) infinite;
+  position: relative;
+  z-index: 5;
+}
+.anim-loading-msg.done {
+  animation: none;
+  color: var(--green-go);
+}
+
+/* Grille 3 animations */
+.anim-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+  position: relative;
+  z-index: 5;
+}
+
+.anim-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.anim-tile-preview {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--cream-warm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 0 var(--ink);
+}
+
+.anim-tile--ready .anim-tile-preview {
+  border-color: var(--tram-red);
+  box-shadow: 0 4px 0 var(--tram-red-dark);
+  animation: exprPop 0.3s steps(3) 1;
+}
+
+.anim-tile--error .anim-tile-preview {
+  border-color: var(--ink-soft);
+  opacity: 0.5;
+}
+
+.anim-tile-gif {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+}
+
+.anim-tile-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.anim-tile-label {
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  color: var(--ink-soft);
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* Barre de progression */
+.anim-progress-wrap {
+  width: 100%;
+  position: relative;
+  z-index: 5;
+}
+
+.anim-progress-bar {
+  height: 10px;
+  background: var(--concrete);
+  border: 2px solid var(--ink);
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.anim-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--tram-red), var(--tram-yellow));
+  transition: width 0.5s steps(5);
+}
+
+.anim-progress-text {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+/* Preview player — enchainement des 3 GIFs */
+.anim-preview-section {
+  width: 100%;
+  position: relative;
+  z-index: 5;
+}
+
+.anim-preview-player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: var(--ink);
+  border: 3px solid var(--tram-yellow);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 5px 0 rgba(0,0,0,0.3);
+}
+
+.anim-preview-track {
+  position: relative;
+  width: 96px;
+  height: 96px;
+}
+
+.anim-preview-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  opacity: 0;
+  transition: opacity 0.3s steps(2);
+  border-radius: 6px;
+}
+.anim-preview-frame.active {
+  opacity: 1;
+}
+
+.anim-preview-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.anim-dot {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--tram-yellow);
+  border-radius: 2px;
+  background: transparent;
+  transition: background 0.2s;
+}
+.anim-dot.active {
+  background: var(--tram-yellow);
+}
+
+/* ── HUD stat block (label + valeur empilés) ────────────────────────────── */
+.hud-stat-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+.hud-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 6px;
+  color: var(--concrete);
+  letter-spacing: 0.05em;
+  opacity: 0.8;
+}

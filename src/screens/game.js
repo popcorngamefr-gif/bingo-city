@@ -31,21 +31,30 @@ export function renderGame() {
           </div>
         </div>
         <div class="hud-stat">
-          ${icon('pierogi', { size: 18 })}
-          <span class="hud-value">${me.score || 0}</span>
+          ${icon('pierogi', { size: 16 })}
+          <div class="hud-stat-block">
+            <span class="hud-label">PTS</span>
+            <span class="hud-value">${me.score || 0}</span>
+          </div>
         </div>
         <div class="hud-stat">
-          ${icon('star', { size: 18 })}
-          <span class="hud-value">${rank || '?'}/${totalPlayers}</span>
+          ${icon('star', { size: 16 })}
+          <div class="hud-stat-block">
+            <span class="hud-label">RANG</span>
+            <span class="hud-value">${rank || '?'}/${totalPlayers}</span>
+          </div>
         </div>
         <div class="hud-stat">
-          ${icon('hourglass', { size: 18 })}
-          <span class="hud-value timer" id="game-timer">30:00</span>
+          ${icon('hourglass', { size: 16 })}
+          <div class="hud-stat-block">
+            <span class="hud-label">TEMPS</span>
+            <span class="hud-value timer" id="game-timer">30:00</span>
+          </div>
         </div>
       </div>
 
       <p class="small light center mb">
-        Repéré ? <strong style="color: var(--tram-red);">Tape</strong> et photo. L'IA valide.
+        Repéré ? <strong style="color: var(--tram-red);">Tape</strong> pour prendre la photo.
       </p>
 
       <!-- Grille de bingo -->
@@ -53,11 +62,7 @@ export function renderGame() {
         ${state.myGrid.map((cell, i) => {
           const obj = getObject(cell.objId)
           if (!obj) return ''
-          const statusIcon =
-            cell.status === 'pending'   ? icon('robot', { size: 18, cls: 'cell-status-icon' }) :
-            cell.status === 'validated' ? icon('check', { size: 20, cls: 'cell-status-icon' }) :
-            cell.status === 'rejected'  ? icon('cross', { size: 18, cls: 'cell-status-icon' }) :
-            ''
+          const statusIcon = cell.status === 'validated' ? icon('check', { size: 20, cls: 'cell-status-icon' }) : ''
           return `<div class="bingo-cell ${cell.status}" data-cell="${i}">
             <div class="bingo-cell-icon">${objectSvg(obj)}</div>
             <div class="bingo-cell-name">${obj.name}</div>
@@ -66,7 +71,11 @@ export function renderGame() {
         }).join('')}
       </div>
 
-      <button class="btn btn-cream btn-sm mt" data-nav="end">Voir le classement</button>
+      <div class="sticky-cta">
+        <button class="btn btn-cream btn-sm" data-nav="end">
+          ${icon('trophy', { size: 16 })} Classement
+        </button>
+      </div>
     </section>
   `
 }

@@ -7,7 +7,7 @@ import { onTimerEnd } from './gameController.js'
 
 export function startTimer() {
   if (state.timerInterval) clearInterval(state.timerInterval)
-  state.timer = 1800
+  state.timer = 1200
   updateTimer()
   state.timerInterval = setInterval(() => {
     state.timer--

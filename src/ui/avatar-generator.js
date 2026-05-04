@@ -22,6 +22,8 @@ export function closeGeneratorModal() {
   document.getElementById('modal-root').innerHTML = ''
 }
 
+let _lastBase64 = null
+
 function _resizeAndSend(dataUrl) {
   _setLoading('Préparation de la photo…')
   const img = new Image()
@@ -32,13 +34,14 @@ function _resizeAndSend(dataUrl) {
     canvas.width  = Math.round(img.width  * ratio)
     canvas.height = Math.round(img.height * ratio)
     canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
-    _start(canvas.toDataURL('image/jpeg', 0.85).split(',')[1])
+    _lastBase64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1]
+    _start(_lastBase64)
   }
   img.src = dataUrl
 }
 
 async function _start(base64) {
-  _setLoading("L'IA pixelise ta tête…")
+  _setLoading("Patiente… dans quelques secondes tu auras un visage de déglingo !")
   try {
     const res = await fetch('/api/start-generation', {
       method:  'POST',
@@ -64,7 +67,12 @@ function _poll(id, n) {
       if      (data.status === 'succeeded') _showResult(data.url)
       else if (data.status === 'failed')    _setError(data.error || 'Génération échouée')
       else {
-        const msgs = ["L'IA pixelise ta tête…", "Rendu pixel art…", "Presque fini…", "Derniers pixels…"]
+        const msgs = [
+        "Patiente… dans quelques secondes tu auras un visage de déglingo !",
+        "L'IA retravaille tes pixels…",
+        "Dernière couche de pixels…",
+        "C'est presque toi… mais en mieux !",
+      ]
         _setLoading(msgs[Math.min(Math.floor(n / 5), msgs.length - 1)])
         _poll(id, n + 1)
       }
@@ -102,6 +110,8 @@ function _showResult(url) {
   `
   document.getElementById('gen-accept-btn')?.addEventListener('click', () => {
     state.myAvatar.generatedImageUrl = url
+    // Garde l'avatar pixel art pour la génération d'animations (premium Déglingo IA)
+    if (_lastBase64) state.animationSourceImage = _lastBase64
     closeGeneratorModal()
     navigate('avatar-pick')
   })
