@@ -61,10 +61,11 @@ export async function joinGame({ code, uid, name, avatar }) {
 
 // ─── Démarrer ────────────────────────────────────────────────────────────────
 
-export async function startGame(code, selectedObjects) {
+export async function startGame(code, selectedObjects, customObjects = []) {
   await updateDoc(doc(db, 'games', code), {
     status:          'playing',
     selectedObjects,
+    customObjects,                  // synchronisé pour que les joueurs aient les défs
     startedAt:       serverTimestamp(),
   })
 }
@@ -133,10 +134,11 @@ export function unsubscribeAll() {
 /**
  * Patch le doc joueur (name, avatar) après que l'utilisateur ait fini son choix.
  */
-export async function updatePlayerProfile(gameCode, uid, { name, avatar }) {
+export async function updatePlayerProfile(gameCode, uid, { name, avatar, animationUrl }) {
   const playerRef = doc(db, 'games', gameCode, 'players', uid)
   const data = {}
-  if (name)   data.name   = name
-  if (avatar) data.avatar = avatar
+  if (name)         data.name         = name
+  if (avatar)       data.avatar       = avatar
+  if (animationUrl) data.animationUrl = animationUrl
   return updateDoc(playerRef, data)
 }

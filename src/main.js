@@ -58,6 +58,9 @@ function _onPlayersUpdate(players) {
 function _onGameUpdate(gameData) {
   if (gameData.status === 'playing' && state.currentScreen === 'lobby' && !state.isMJ) {
     state.selectedObjects = gameData.selectedObjects || []
+    // Hydrate les objets custom envoyés par le MJ pour que les joueurs
+    // puissent les afficher dans leur grille (nom, icône, points)
+    state.customObjects   = gameData.customObjects || []
     state.myGrid = state.selectedObjects.map(id => ({ objId: id, status: 'empty' }))
     startTimer()
     navigate('game')
@@ -244,7 +247,7 @@ const ACTIONS = {
   startGame() {
     if (state.selectedObjects.length < 6) return toast('Min. 6 objets')
     state.myGrid = state.selectedObjects.map(id => ({ objId: id, status: 'empty' }))
-    if (state.gameCode) fbStartGame(state.gameCode, state.selectedObjects).catch(console.error)
+    if (state.gameCode) fbStartGame(state.gameCode, state.selectedObjects, state.customObjects || []).catch(console.error)
     startTimer()
     navigate('game')
   },

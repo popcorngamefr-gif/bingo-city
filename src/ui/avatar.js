@@ -33,9 +33,10 @@ export function avatarHtml(av, opts = {}) {
 }
 
 export function avatarLayersHtml(av, mood = 'idle', confidence = 'neutral') {
-  // 1. Vidéo Déglingo IA (mode premium) — prioritaire
-  const videoUrl = window.__state?.myAnimation?.url
-  if (videoUrl && av?.generatedImageUrl) {
+  // 1. Vidéo Déglingo IA — priorise animationUrl (joueur en cours de partie),
+  //    sinon myAnimation.url (mon propre avatar dans l'éditeur)
+  const videoUrl = av?.animationUrl || window.__state?.myAnimation?.url
+  if (videoUrl && (av?.generatedImageUrl || av?.animationUrl)) {
     return `
       <div class="layer generated-video">
         <video src="${videoUrl}" autoplay loop muted playsinline

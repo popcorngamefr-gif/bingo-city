@@ -59,6 +59,13 @@ function _poll(id, attempt, onProgress, onComplete) {
       if (data.status === 'succeeded' && data.url) {
         state.myAnimation = { url: data.url, _ready: true }
         console.log('Animation ready:', data.url)
+        // Sync à Firestore pour que les autres joueurs la voient (best-effort)
+        if (state.gameCode && state.uid && state.uid !== 'me') {
+          import('../firebase/game.js').then(({ updatePlayerProfile }) => {
+            updatePlayerProfile(state.gameCode, state.uid, { animationUrl: data.url })
+              .catch(err => console.warn('Sync animation failed:', err))
+          })
+        }
         onComplete?.(null)
       } else if (data.status === 'failed') {
         state.myAnimation = { url: null, _ready: true, error: data.error || 'failed' }
