@@ -276,14 +276,14 @@ const ACTIONS = {
     openShooterPaywall(
       'expressions',
       'Déglingo IA',
-      'Génère 3 animations de ta tête en pixel art : neutre+clin d'œil, triste+furieux, mort de rire.',
+      `Génère 3 animations de ta tête en pixel art : neutre+clin d'oeil, triste+furieux, mort de rire.`,
       () => ACTIONS.openExpressionsGen()
     )
   },
 
   openExpressionsGen() {
     if (!state.animationSourceImage) {
-      import('./ui/toast.js').then(({ toast }) => toast('Lance d'abord le scan de ta tête !'))
+      import('./ui/toast.js').then(({ toast }) => toast(`Lance d'abord le scan de ta tête !`))
       return
     }
     if (state.myAnimations?._ready) {
