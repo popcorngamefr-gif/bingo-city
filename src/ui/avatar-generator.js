@@ -11,6 +11,7 @@ import { openCamera } from './modal.js'
 const POLL_MS = 2500
 
 export function openGeneratorModal() {
+  _lastBase64 = null  // reset à chaque ouverture
   document.getElementById('modal-root').innerHTML = _modalHtml()
   document.getElementById('gen-capture-btn')?.addEventListener('click', () => {
     openCamera('user', (dataUrl) => _resizeAndSend(dataUrl))

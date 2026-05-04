@@ -8,7 +8,6 @@ import { avatarLayersHtml } from '../ui/avatar.js'
 import { bgVarsovieHtml } from '../ui/varsovie.js'
 import { icon } from '../ui/icons.js'
 import { escapeHtml }     from '../utils/html.js'
-import { isUnlocked }     from '../ui/shooter-paywall.js'
 
 export function renderLobby() {
   const isMJ = state.isMJ

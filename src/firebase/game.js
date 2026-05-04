@@ -128,3 +128,15 @@ export function unsubscribeAll() {
   if (_unsubPlayers) { _unsubPlayers(); _unsubPlayers = null }
   if (_unsubGame)    { _unsubGame();    _unsubGame    = null }
 }
+
+
+/**
+ * Patch le doc joueur (name, avatar) après que l'utilisateur ait fini son choix.
+ */
+export async function updatePlayerProfile(gameCode, uid, { name, avatar }) {
+  const playerRef = doc(db, 'games', gameCode, 'players', uid)
+  const data = {}
+  if (name)   data.name   = name
+  if (avatar) data.avatar = avatar
+  return updateDoc(playerRef, data)
+}

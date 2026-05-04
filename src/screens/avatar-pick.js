@@ -47,7 +47,7 @@ function _renderConfirm() {
           : expressionsUnlocked
             ? `<div class="ap-expr-loading-bar" data-nav="animations-loading">
                  <div class="ap-expr-loading-label">
-                   ${icon('star', { size: 12 })} Génération des expressions en cours…
+                   ${icon('star', { size: 12 })} Génération des animations en cours…
                  </div>
                  <div class="ap-expr-progress" id="expr-progress-bar">
                    <div class="ap-expr-progress-fill" id="expr-progress-fill" style="width:0%"></div>
@@ -58,7 +58,7 @@ function _renderConfirm() {
                  <div class="ap-card-icon">${icon('heart', { size: 28 })}</div>
                  <div class="ap-card-body">
                    <div class="ap-card-title">Déglingo IA</div>
-                   <div class="ap-card-sub">Génère 5 expressions animées de ta tête</div>
+                   <div class="ap-card-sub">3 animations : neutre, triste, hilare</div>
                  </div>
                  <div class="ap-card-lock">${icon('star', { size: 10 })} 1 SHOOTER</div>
                </div>`

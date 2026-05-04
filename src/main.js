@@ -26,7 +26,7 @@ import { initAuth, saveProfile }          from './firebase/auth.js'
 import { createGame, joinGame as fbJoinGame, startGame as fbStartGame, subscribeToPlayers, subscribeToGame, unsubscribeAll } from './firebase/game.js'
 import { checkPseudoAvailable, createAccount, loginWithPin, updateAccountUID } from './firebase/account.js'
 import { openGeneratorModal }   from './ui/avatar-generator.js'
-import { openShooterPaywall, isUnlocked } from './ui/shooter-paywall.js'
+import { openShooterPaywall } from './ui/shooter-paywall.js'
 import { generateAnimations }               from './ui/animations-generator.js'
 
 /* ============================================================
@@ -227,19 +227,14 @@ const ACTIONS = {
       }
     } else {
       state.players = [me]
-      // Met à jour le doc Firestore avec l'avatar définitif choisi
-      if (state.gameCode && state.uid) {
-        import('./firebase/game.js').then(({ updatePlayerGrid }) => {
-          // On ne peut pas update avatar directement mais on peut patcher via setDoc
-          import('firebase/firestore').then(({ doc, updateDoc }) => {
-            import('./firebase/config.js').then(({ db }) => {
-              updateDoc(
-                doc(db, 'games', state.gameCode, 'players', state.uid),
-                { name: state.myName, avatar: state.myAvatar }
-              ).catch(console.error)
-            })
-          })
-        })
+      // Met à jour le doc Firestore avec l'avatar définitif (best-effort)
+      if (state.gameCode && state.uid && state.uid !== 'me') {
+        import('./firebase/game.js').then(({ updatePlayerProfile }) => {
+          updatePlayerProfile?.(state.gameCode, state.uid, {
+            name: state.myName,
+            avatar: state.myAvatar,
+          }).catch(err => console.warn('updatePlayerProfile failed:', err))
+        }).catch(err => console.warn('firebase/game import failed:', err))
       }
     }
     navigate('lobby')
