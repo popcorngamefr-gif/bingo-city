@@ -1,6 +1,6 @@
 /**
  * Écran d'accueil
- * Hiérarchie : titre → identité → action principale → secondaire → discret
+ * Hiérarchie : titre → identité (avec avatar Déglingo) → actions → liens discrets
  */
 
 import { state }        from '../state.js'
@@ -24,54 +24,58 @@ export function renderHome() {
   const active     = _getActiveGame()
   const myAvatar   = state.myAvatar || profile?.avatar
   const displayName = profile?.name || state.myName || state.accountKey || ''
+  const hasDeglingoVideo = !!(myAvatar?.animationUrl)
 
   return `
-    <section class="screen home-screen home-v2">
+    <section class="screen home-screen home-v3">
       ${bgVarsovieHtml()}
       ${floatingItemsHtml()}
 
-      <!-- Compte mini top-right -->
-      ${hasAccount ? `
-        <button class="account-mini-btn" data-nav="account" title="Mon compte">
-          ${icon('user', { size: 12 })}
-          <span>@${state.accountKey}</span>
-        </button>
-      ` : `
-        <button class="account-mini-btn account-mini-btn-cta" data-nav="account">
-          ${icon('user', { size: 12 })}
-          <span>Se connecter</span>
-        </button>
-      `}
-
-      <!-- ZONE 1 : TITRE -->
-      <div class="home-hero">
+      <!-- ZONE 1 : TITRE compact -->
+      <div class="home-v3-title">
         <div class="title-game-stack">
           <div class="title-bingo">BINGO</div>
           <div class="title-sante">SANTÉ!</div>
           <div class="subtitle-banner">VARSOVIE ÉDITION</div>
         </div>
-
-        ${hasAccount && myAvatar ? `
-          <div class="home-identity-card" data-action="editHomeAvatar" title="Modifier mon avatar">
-            <div class="home-identity-avatar">
-              <div class="avatar md mood-idle">
-                <div class="avatar-inner">
-                  ${avatarLayersHtml(myAvatar, 'idle')}
-                </div>
-              </div>
-            </div>
-            <div class="home-identity-info">
-              <div class="home-identity-name">${displayName}</div>
-              <div class="home-identity-edit">
-                ${icon('dice', { size: 10 })} modifier mon avatar
-              </div>
-            </div>
-          </div>
-        ` : ''}
       </div>
 
-      <!-- ZONE 2 : ACTION PRINCIPALE -->
-      <div class="home-actions-primary">
+      <!-- ZONE 2 : IDENTITÉ — au-dessus de Créer comme demandé -->
+      ${hasAccount && myAvatar ? `
+        <div class="home-v3-identity ${hasDeglingoVideo ? 'has-video' : ''}" data-action="editHomeAvatar" title="Modifier mon avatar">
+          <div class="home-v3-avatar-wrap">
+            <div class="avatar md mood-idle">
+              <div class="avatar-inner">
+                ${avatarLayersHtml(myAvatar, 'idle')}
+              </div>
+            </div>
+            ${hasDeglingoVideo ? `<span class="home-v3-deglingo-badge">DÉGLINGO</span>` : ''}
+          </div>
+          <div class="home-v3-identity-info">
+            <div class="home-v3-name">${displayName}</div>
+            <div class="home-v3-edit">
+              ${icon('dice', { size: 10 })} <span>modifier</span>
+            </div>
+          </div>
+          <div class="home-v3-account-link">
+            <button class="home-v3-mini-account" data-nav="account" onclick="event.stopPropagation()">
+              ${icon('user', { size: 12 })}
+            </button>
+          </div>
+        </div>
+      ` : `
+        <div class="home-v3-identity home-v3-identity-empty" data-nav="account">
+          <div class="home-v3-empty-icon">${icon('user', { size: 28 })}</div>
+          <div class="home-v3-identity-info">
+            <div class="home-v3-name">Crée ton compte</div>
+            <div class="home-v3-edit">Avatar persistant entre tes parties</div>
+          </div>
+          <div class="active-game-arrow">${icon('arrow_right', { size: 18 })}</div>
+        </div>
+      `}
+
+      <!-- ZONE 3 : ACTIONS -->
+      <div class="home-v3-actions">
         ${active ? `
           <div class="active-game-banner" data-action="resumeActiveGame">
             <div class="active-game-content">
@@ -83,37 +87,53 @@ export function renderHome() {
             </div>
             <div class="active-game-arrow">${icon('arrow_right', { size: 18 })}</div>
           </div>
-          <div class="home-active-secondary">
-            <button class="link-discreet" data-action="forgetActiveGame">
-              Oublier cette partie
-            </button>
-          </div>
-        ` : `
-          <button class="btn btn-red home-cta-main" data-action="goCreate">
-            ${icon('bingo_card', { size: 24 })}
-            Créer une partie
+          <button class="link-discreet" data-action="forgetActiveGame" style="align-self:center;">
+            Oublier cette partie
           </button>
-          <button class="btn btn-yellow home-cta-second" data-action="goJoin">
-            ${icon('link', { size: 20 })}
-            Rejoindre
+        ` : `
+          <button class="btn btn-red home-v3-cta-main" data-action="goCreate">
+            <span class="home-v3-cta-icon home-v3-cta-icon-red">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
+                <circle cx="16" cy="8" r="1.5" fill="currentColor"/>
+                <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+                <circle cx="8" cy="16" r="1.5" fill="currentColor"/>
+                <circle cx="16" cy="16" r="1.5" fill="currentColor"/>
+              </svg>
+            </span>
+            <span class="home-v3-cta-label">
+              <span class="home-v3-cta-title">Créer une partie</span>
+              <span class="home-v3-cta-sub">Tu seras le maître du jeu</span>
+            </span>
+            ${icon('arrow_right', { size: 18 })}
+          </button>
+
+          <button class="btn btn-yellow home-v3-cta-second" data-action="goJoin">
+            <span class="home-v3-cta-icon home-v3-cta-icon-yellow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+                <path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/>
+                <path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>
+              </svg>
+            </span>
+            <span class="home-v3-cta-label">
+              <span class="home-v3-cta-title">Rejoindre</span>
+              <span class="home-v3-cta-sub">Avec un code partagé</span>
+            </span>
+            ${icon('arrow_right', { size: 18 })}
           </button>
         `}
       </div>
 
-      <!-- ZONE 3 : LIENS DISCRETS -->
-      <div class="home-bottom">
-        <button class="link-discreet" data-action="showHelp">
+      <!-- ZONE 4 : Help mini-CTA -->
+      <div class="home-v3-help">
+        <button class="home-v3-help-btn" data-action="showHelp">
           ${icon('question', { size: 12 })} Comment jouer ?
         </button>
-        ${!hasAccount ? `
-          <button class="link-discreet link-emphasis" data-nav="account">
-            ${icon('user', { size: 12 })} Créer un compte pour sauvegarder
-          </button>
-        ` : ''}
       </div>
 
-      <p class="footer-info">
-        v0.8 · ${icon('bottle', { size: 12 })} Na zdrowie !
+      <p class="footer-info home-v3-footer">
+        v0.9 · ${icon('bottle', { size: 12 })} Na zdrowie !
       </p>
 
       <div class="polska-sticker"></div>

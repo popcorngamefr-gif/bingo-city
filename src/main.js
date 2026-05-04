@@ -33,6 +33,15 @@ import { openShareModal as openShareModalUI } from './ui/share-modal.js'
 import { generateAnimations }               from './ui/animations-generator.js'
 
 
+function _showAdblockBanner() {
+  if (document.getElementById('adblock-banner')) return
+  const b = document.createElement('div')
+  b.id = 'adblock-banner'
+  b.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#cf3a3a;color:#fff;padding:10px 16px;font-family:system-ui,sans-serif;font-size:13px;text-align:center;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,0.3);'
+  b.innerHTML = `⚠️ Bloqueur de pub détecté — désactive-le sur ce site sinon le jeu ne fonctionnera pas correctement <span style="opacity:0.7;cursor:pointer;margin-left:8px;" onclick="this.parentElement.remove()">✕</span>`
+  document.body.appendChild(b)
+}
+
 // ─── Persistance partie en cours ─────────────────────────────────────────────
 const ACTIVE_GAME_KEY = 'bingo_active_game'
 
@@ -691,6 +700,21 @@ function _setupGamePhotosSubscription() {
 /* ============================================================
    INIT
    ============================================================ */
+// Global error handler — affiche toute erreur uncaught en plein écran
+window.addEventListener('error', (e) => {
+  console.error('[GLOBAL ERROR]', e.error || e.message)
+  if (document.getElementById('global-err')) return
+  const div = document.createElement('div')
+  div.id = 'global-err'
+  div.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#fce080;color:#2a2228;padding:14px;font-family:monospace;font-size:11px;z-index:9999;border-top:3px solid #cf3a3a;max-height:40vh;overflow:auto;'
+  div.innerHTML = `<strong>Erreur :</strong> ${e.message || e.error}<br><small>${(e.error?.stack || '').slice(0, 300)}</small><br><button onclick="this.parentElement.remove()" style="margin-top:6px;padding:4px 10px;background:#cf3a3a;color:#fff;border:none;border-radius:4px;">Fermer</button>`
+  document.body.appendChild(div)
+})
+
+window.addEventListener('unhandledrejection', (e) => {
+  console.error('[UNHANDLED PROMISE]', e.reason)
+})
+
 document.addEventListener('DOMContentLoaded', async () => {
   setupInputFilters()
   setupEventDelegation()
@@ -702,7 +726,28 @@ document.addEventListener('DOMContentLoaded', async () => {
       <div style="font-family:'VT323',monospace;font-size:18px;color:var(--ink-soft);">Connexion...</div>
     </section>`
 
-  try { await initAuth() } catch (err) { console.warn('Auth failed, running offline:', err) }
+  try { await initAuth() } catch (err) {
+    console.warn('Auth failed, running offline:', err)
+    if (err?.code?.includes('network') || err?.message?.includes('network') || err?.message?.includes('blocked')) {
+      _showAdblockBanner()
+    }
+  }
+
+  // Test rapide : si Firebase est bloqué par adblock, prévenir l'user
+  setTimeout(async () => {
+    try {
+      // Test simple en faisant un getDoc inutile
+      await new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => reject(new Error('timeout')), 3000)
+        fetch('https://firestore.googleapis.com/', { mode: 'no-cors' })
+          .then(() => { clearTimeout(timeoutId); resolve() })
+          .catch(err => { clearTimeout(timeoutId); reject(err) })
+      })
+    } catch (err) {
+      console.warn('[adblock] firestore appears blocked:', err.message)
+      _showAdblockBanner()
+    }
+  }, 2000)
 
   // Restauration partie en cours si le hash pointe vers un écran de partie
   const hash = (location.hash.slice(1) || 'home').split('/')[0]
