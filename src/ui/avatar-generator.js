@@ -1,15 +1,14 @@
 /**
- * Avatar Generator — Selfie → Pixel Art via Replicate
- * Pas d'emojis, SVG partout. Fix iOS : clic synchrone.
+ * Avatar Generator — Selfie → Pixel Art via Replicate fofr/face-to-many
+ * Fix iOS : clic synchrone via openCamera()
  */
 
-import { state }       from '../state.js'
-import { navigate }    from '../router.js'
-import { icon }        from './icons.js'
-import { openCamera }  from './modal.js'
+import { state }      from '../state.js'
+import { navigate }   from '../router.js'
+import { icon }       from './icons.js'
+import { openCamera } from './modal.js'
 
-const MAX_SIZE = 512
-const POLL_MS  = 2000
+const POLL_MS = 2500
 
 export function openGeneratorModal() {
   document.getElementById('modal-root').innerHTML = _modalHtml()
@@ -23,57 +22,55 @@ export function closeGeneratorModal() {
   document.getElementById('modal-root').innerHTML = ''
 }
 
-// ─── Resize ──────────────────────────────────────────────────────────────────
-
 function _resizeAndSend(dataUrl) {
-  _setLoading("Préparation de la photo…")
-  const img  = new Image()
+  _setLoading('Préparation de la photo…')
+  const img = new Image()
   img.onload = () => {
-    const canvas  = document.createElement('canvas')
-    const ratio   = Math.min(MAX_SIZE / img.width, MAX_SIZE / img.height)
+    const MAX    = 512
+    const canvas = document.createElement('canvas')
+    const ratio  = Math.min(MAX / img.width, MAX / img.height)
     canvas.width  = Math.round(img.width  * ratio)
     canvas.height = Math.round(img.height * ratio)
     canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
-    _startGeneration(canvas.toDataURL('image/jpeg', 0.85).split(',')[1])
+    _start(canvas.toDataURL('image/jpeg', 0.85).split(',')[1])
   }
   img.src = dataUrl
 }
 
-// ─── API ─────────────────────────────────────────────────────────────────────
-
-async function _startGeneration(base64) {
-  _setLoading("L'IA dessine ta tête…")
+async function _start(base64) {
+  _setLoading("L'IA pixelise ta tête…")
   try {
     const res = await fetch('/api/start-generation', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ imageBase64: base64 }),
     })
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail || err.error || `HTTP ${res.status}`)
+    }
     const { id } = await res.json()
     _poll(id, 0)
-  } catch {
-    _setError('Serveur injoignable')
+  } catch (err) {
+    _setError(err.message)
   }
 }
 
 function _poll(id, n) {
-  if (n > 30) { _setError('Délai dépassé, réessaie'); return }
+  if (n > 40) { _setError('Délai dépassé, réessaie'); return }
   setTimeout(async () => {
     try {
       const data = await fetch(`/api/check-generation?id=${id}`).then(r => r.json())
       if      (data.status === 'succeeded') _showResult(data.url)
       else if (data.status === 'failed')    _setError(data.error || 'Génération échouée')
       else {
-        const msgs = ["L'IA dessine ta tête…","Pixelisation…","Presque fini…","Derniers pixels…"]
-        _setLoading(msgs[Math.min(Math.floor(n / 4), msgs.length - 1)])
+        const msgs = ["L'IA pixelise ta tête…", "Rendu pixel art…", "Presque fini…", "Derniers pixels…"]
+        _setLoading(msgs[Math.min(Math.floor(n / 5), msgs.length - 1)])
         _poll(id, n + 1)
       }
     } catch { _poll(id, n + 1) }
   }, POLL_MS)
 }
-
-// ─── Résultat ─────────────────────────────────────────────────────────────────
 
 function _showResult(url) {
   const root = document.getElementById('modal-root')
@@ -115,8 +112,6 @@ function _showResult(url) {
   })
 }
 
-// ─── États ───────────────────────────────────────────────────────────────────
-
 function _setLoading(msg) {
   const root = document.getElementById('modal-root')
   if (!root) return
@@ -126,7 +121,7 @@ function _setLoading(msg) {
         <div style="padding:32px;text-align:center;">
           <div class="gen-pixel-spinner"></div>
           <div class="gen-loading-msg">${msg}</div>
-          <div class="small" style="color:var(--ink-soft);margin-top:10px;">~15 secondes</div>
+          <div class="small" style="color:var(--ink-soft);margin-top:10px;">~20 secondes</div>
         </div>
       </div>
     </div>
@@ -143,10 +138,10 @@ function _setError(msg) {
           <div style="width:48px;height:48px;margin:0 auto 14px;">
             ${icon('alert', { size: 48 })}
           </div>
-          <div class="gen-loading-msg" style="animation:none;">${msg}</div>
+          <div class="gen-loading-msg" style="animation:none;font-size:9px;">${msg}</div>
           <div class="row mt">
             <button class="btn btn-cream btn-sm" id="gen-cancel-btn">Fermer</button>
-            <button class="btn btn-red btn-sm"   id="gen-retry-btn">
+            <button class="btn btn-red btn-sm" id="gen-retry-btn">
               ${icon('retry', { size: 14 })} Réessayer
             </button>
           </div>
@@ -167,9 +162,7 @@ function _modalHtml() {
             ${icon('scan', { size: 20 })} Ma tête en pixel art
           </h3>
           <div class="gen-camera-frame">
-            <div class="gen-camera-icon">
-              ${icon('selfie', { size: 80 })}
-            </div>
+            <div class="gen-camera-icon">${icon('selfie', { size: 80 })}</div>
             <div class="gen-camera-label">
               PRENDS UN SELFIE<br>L'IA PIXELISE TA TÊTE
             </div>
