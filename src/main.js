@@ -146,9 +146,15 @@ function _setupAccountScreen() {
       if (val.length < 3) { el.textContent = ''; el.className = 'pseudo-status'; return }
       el.textContent = '…'; el.className = 'pseudo-status'
       _pseudoTimer = setTimeout(async () => {
-        const ok = await checkPseudoAvailable(val).catch(() => true)
-        el.textContent = ok ? '✓ Disponible' : '✗ Déjà pris'
-        el.className   = ok ? 'pseudo-status ok' : 'pseudo-status err'
+        try {
+          const ok = await checkPseudoAvailable(val)
+          el.textContent = ok ? '✓ Disponible' : '✗ Déjà pris'
+          el.className   = ok ? 'pseudo-status ok' : 'pseudo-status err'
+        } catch (err) {
+          console.warn('[pseudo-check] failed:', err)
+          el.textContent = '? vérification impossible'
+          el.className   = 'pseudo-status'
+        }
       }, 500)
     }
   }
@@ -212,22 +218,29 @@ function _setupAccountScreen() {
     }
 
     try {
+      console.log('[login] attempting:', pseudo)
       const data = await loginWithPin({ pseudo, pin })
+      console.log('[login] success:', data.key, 'avatar:', data.avatar)
       // Mettre à jour l'UID dans le compte
       await updateAccountUID(data.key, state.uid)
-      // Hydrate le state
+      // Hydrate le state — important : on ÉCRASE l'avatar local par celui du compte
       state.accountKey  = data.key
       state.myName      = data.name
-      state.myAvatar    = { ...state.myAvatar, ...(data.avatar || {}) }
+      state.myAvatar    = { ...(data.avatar || { skin: 0, eyes: 0, hairStyle: 0, hairColor: 0, acc: 0 }) }
       state.userProfile = { ...state.userProfile, ...data }
       // Sync avec /users/{uid} (inclut accountKey via saveProfile)
-      await saveProfile({ name: data.name, avatar: data.avatar }).catch(() => {})
-      toast(`Bienvenue, ${data.name} !`)
+      await saveProfile({ name: data.name, avatar: state.myAvatar }).catch(console.warn)
+      toast(`Bienvenue, ${data.name} !`, 3000)
       // Si pas d'avatar custom → propose la création
       const hasCustomAvatar = data.avatar && (data.avatar.generatedImageUrl || data.avatar.skin > 0 || data.avatar.hairStyle > 0)
       navigate(hasCustomAvatar ? 'home' : 'avatar-pick')
     } catch (err) {
-      toast(err.message || 'Erreur de connexion')
+      console.error('[login] error:', err)
+      const msg = err.message === 'Pseudo introuvable' ? '❌ Pseudo introuvable'
+                : err.message === 'PIN incorrect'      ? '❌ PIN incorrect'
+                : err.code === 'permission-denied'    ? 'Permissions Firestore'
+                : (err.message || 'Erreur de connexion')
+      toast(msg, 4000)
     }
   }
 

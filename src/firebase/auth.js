@@ -93,6 +93,17 @@ export async function saveProfile({ name, avatar }) {
   }
   state.myAvatar = { ...state.myAvatar, ...cleanAvatar }
 
+  // Si compte PIN actif → sync l'avatar dans /accounts/{key} aussi
+  // pour qu'il soit récupéré au login depuis un autre device
+  if (state.accountKey) {
+    try {
+      const accRef = doc(db, 'accounts', state.accountKey)
+      await updateDoc(accRef, { avatar: cleanAvatar, name: name || 'Anonyme', updatedAt: now })
+    } catch (err) {
+      console.warn('[saveProfile] sync to accounts failed:', err)
+    }
+  }
+
   state.myName      = name
   state.myAvatar    = { ...avatar }
   state.userProfile = { ...(state.userProfile || {}), name, avatar }

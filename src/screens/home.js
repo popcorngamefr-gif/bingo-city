@@ -1,5 +1,6 @@
 /**
  * Écran d'accueil
+ * Hiérarchie : titre → identité → action principale → secondaire → discret
  */
 
 import { state }        from '../state.js'
@@ -7,7 +8,6 @@ import { bgVarsovieHtml, floatingItemsHtml } from '../ui/varsovie.js'
 import { icon }         from '../ui/icons.js'
 import { avatarLayersHtml } from '../ui/avatar.js'
 
-// Lit le localStorage directement (évite circular import avec main.js)
 function _getActiveGame() {
   try {
     const raw = localStorage.getItem('bingo_active_game')
@@ -23,86 +23,97 @@ export function renderHome() {
   const hasAccount = !!state.accountKey
   const active     = _getActiveGame()
   const myAvatar   = state.myAvatar || profile?.avatar
+  const displayName = profile?.name || state.myName || state.accountKey || ''
 
   return `
-    <section class="screen home-screen" style="padding-top: 20px;">
+    <section class="screen home-screen home-v2">
       ${bgVarsovieHtml()}
       ${floatingItemsHtml()}
 
+      <!-- Compte mini top-right -->
       ${hasAccount ? `
         <button class="account-mini-btn" data-nav="account" title="Mon compte">
-          ${icon('user', { size: 14 })}
+          ${icon('user', { size: 12 })}
           <span>@${state.accountKey}</span>
         </button>
-      ` : ''}
+      ` : `
+        <button class="account-mini-btn account-mini-btn-cta" data-nav="account">
+          ${icon('user', { size: 12 })}
+          <span>Se connecter</span>
+        </button>
+      `}
 
-      <div class="title-game-stack">
-        <div class="title-bingo">BINGO</div>
-        <div class="title-sante">SANTÉ!</div>
-        <div class="subtitle-banner">VARSOVIE ÉDITION</div>
+      <!-- ZONE 1 : TITRE -->
+      <div class="home-hero">
+        <div class="title-game-stack">
+          <div class="title-bingo">BINGO</div>
+          <div class="title-sante">SANTÉ!</div>
+          <div class="subtitle-banner">VARSOVIE ÉDITION</div>
+        </div>
+
+        ${hasAccount && myAvatar ? `
+          <div class="home-identity-card" data-action="editHomeAvatar" title="Modifier mon avatar">
+            <div class="home-identity-avatar">
+              <div class="avatar md mood-idle">
+                <div class="avatar-inner">
+                  ${avatarLayersHtml(myAvatar, 'idle')}
+                </div>
+              </div>
+            </div>
+            <div class="home-identity-info">
+              <div class="home-identity-name">${displayName}</div>
+              <div class="home-identity-edit">
+                ${icon('dice', { size: 10 })} modifier mon avatar
+              </div>
+            </div>
+          </div>
+        ` : ''}
       </div>
 
-      <div class="home-spacer"></div>
-
-      <div class="stack home-actions">
-
+      <!-- ZONE 2 : ACTION PRINCIPALE -->
+      <div class="home-actions-primary">
         ${active ? `
           <div class="active-game-banner" data-action="resumeActiveGame">
             <div class="active-game-content">
               <div class="active-game-label">${icon('hourglass', { size: 12 })} PARTIE EN COURS</div>
               <div class="active-game-name">${active.name || 'Sans nom'}</div>
-              <div class="active-game-code">Code : <strong>${active.code}</strong>${active.isMJ ? ' · Tu es MJ' : ''}</div>
+              <div class="active-game-code">
+                Code <strong>${active.code}</strong>${active.isMJ ? ' · Tu es MJ' : ''}
+              </div>
             </div>
             <div class="active-game-arrow">${icon('arrow_right', { size: 18 })}</div>
           </div>
-          <button class="btn btn-ghost btn-sm" data-action="forgetActiveGame" style="margin-top:-8px;font-size:11px;">
-            Oublier cette partie
-          </button>
-        ` : ''}
-
-        <button class="btn btn-red" data-action="goCreate">
-          ${icon('bingo_card', { size: 22 })}
-          Créer une partie
-        </button>
-
-        <button class="btn btn-yellow" data-action="goJoin">
-          ${icon('link', { size: 22 })}
-          Rejoindre
-        </button>
-
-        <button class="btn btn-cream btn-sm" data-action="showHelp">
-          ${icon('question', { size: 16 })}
-          Comment jouer
-        </button>
-
-        ${hasAccount && myAvatar ? `
-          <div class="home-avatar-signature" data-action="editHomeAvatar" title="Modifier mon avatar">
-            <div class="avatar md mood-idle">
-              <div class="avatar-inner">
-                ${avatarLayersHtml(myAvatar, 'idle')}
-              </div>
-            </div>
-            <div class="home-avatar-name">
-              ${profile?.name || state.myName || ''}
-              <span class="home-avatar-edit-hint">${icon('dice', { size: 10 })} modifier</span>
-            </div>
+          <div class="home-active-secondary">
+            <button class="link-discreet" data-action="forgetActiveGame">
+              Oublier cette partie
+            </button>
           </div>
-        ` : ''}
-
+        ` : `
+          <button class="btn btn-red home-cta-main" data-action="goCreate">
+            ${icon('bingo_card', { size: 24 })}
+            Créer une partie
+          </button>
+          <button class="btn btn-yellow home-cta-second" data-action="goJoin">
+            ${icon('link', { size: 20 })}
+            Rejoindre
+          </button>
+        `}
       </div>
 
-      ${!hasAccount ? `
-        <div class="home-bottom-cta">
-          <button class="btn btn-cream account-create-cta" data-nav="account">
-            ${icon('user', { size: 18 })}
-            Créer mon compte
-            <span class="account-create-cta-sub">Avatar persistant, jouer plus vite</span>
+      <!-- ZONE 3 : LIENS DISCRETS -->
+      <div class="home-bottom">
+        <button class="link-discreet" data-action="showHelp">
+          ${icon('question', { size: 12 })} Comment jouer ?
+        </button>
+        ${!hasAccount ? `
+          <button class="link-discreet link-emphasis" data-nav="account">
+            ${icon('user', { size: 12 })} Créer un compte pour sauvegarder
           </button>
-        </div>
-      ` : ''}
+        ` : ''}
+      </div>
 
       <p class="footer-info">
-        v0.8 · ${icon('bottle', { size: 14 })} Na zdrowie !
+        v0.8 · ${icon('bottle', { size: 12 })} Na zdrowie !
       </p>
 
       <div class="polska-sticker"></div>
