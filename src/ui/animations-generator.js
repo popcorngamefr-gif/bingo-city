@@ -18,7 +18,21 @@ const MAX_ATTEMPTS = 100  // ~5 min max (génération wan ~40-80s)
  * @param {Function} onComplete   — appelé quand la vidéo est prête
  */
 export async function generateAnimations(imageUrl, prompt, onProgress, onComplete) {
+  // Reset complet : on lance une NOUVELLE génération, on jette tout ce qui
+  // concerne l'ancienne vidéo (état + promesse de mirror précédente).
+  // Backup de l'ancienne animationUrl au cas où la nouvelle gen échoue
+  // (on pourra restaurer pour ne pas afficher un avatar sans vidéo)
+  if (state.myAvatar?.animationUrl) {
+    state._previousAnimationUrl = state.myAvatar.animationUrl
+  }
   state.myAnimation = { url: null, _ready: false }
+  // Purge l'ancienne promesse de mirror : si elle tourne encore en arrière-plan,
+  // elle continuera à vivre via sa closure mais ne polluera pas confirmAvatar
+  // qui ne doit attendre que la NOUVELLE génération en cours.
+  delete state._animationStorageUploadPromise
+  // On retire aussi l'ancienne URL du state local pour que l'UI montre
+  // bien le loader pendant la génération (sinon on verrait l'ancienne vidéo)
+  delete state.myAvatar.animationUrl
 
   try {
     const res = await fetch('/api/generate-animations', {
@@ -37,6 +51,12 @@ export async function generateAnimations(imageUrl, prompt, onProgress, onComplet
   } catch (err) {
     console.error('generateAnimations failed:', err)
     state.myAnimation = { url: null, _ready: true, error: err.message }
+    // En cas d'échec direct (pas de polling), restaure l'ancienne URL
+    // si elle existait (l'user gardait sa vidéo précédente)
+    if (state._previousAnimationUrl) {
+      state.myAvatar.animationUrl = state._previousAnimationUrl
+      delete state._previousAnimationUrl
+    }
     onComplete?.(err)
     throw err
   }
@@ -60,6 +80,9 @@ function _poll(id, attempt, onProgress, onComplete) {
         // 1. Pose tout de suite l'URL Replicate pour la fluidité (vidéo lit même pendant l'upload)
         state.myAnimation = { url: data.url, _ready: true }
         state.myAvatar.animationUrl = data.url
+        // Cleanup du backup : la nouvelle vidéo a réussi, on n'a plus besoin
+        // de pouvoir restaurer l'ancienne
+        delete state._previousAnimationUrl
         console.log('Animation ready:', data.url)
         onComplete?.(null)
 
@@ -100,6 +123,12 @@ function _poll(id, attempt, onProgress, onComplete) {
         // confirmAvatar pourra la await pour attendre la fin.
       } else if (data.status === 'failed') {
         state.myAnimation = { url: null, _ready: true, error: data.error || 'failed' }
+        // Restaure l'ancienne URL animationUrl si elle existait
+        // (sinon l'avatar perdrait sa vidéo Déglingo précédente après un échec)
+        if (state._previousAnimationUrl) {
+          state.myAvatar.animationUrl = state._previousAnimationUrl
+          delete state._previousAnimationUrl
+        }
         onComplete?.(new Error(data.error || 'Generation failed'))
       } else {
         _poll(id, attempt + 1, onProgress, onComplete)
