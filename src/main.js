@@ -18,9 +18,10 @@ import { saveActiveGame, clearActiveGame, getActiveGame } from './activeGame.js'
 import { refreshAvatarUI, cycleAvatarField, setupAvatarLoops, updateHudConfidence, checkHeartbeat } from './controllers/avatarController.js'
 import { startTimer }                     from './controllers/timerController.js'
 import { openCameraModal, closeModal }    from './ui/modal.js'
+import { openHowToPlay }                  from './ui/how-to-play.js'
 
 import { initAuth, saveProfile }          from './firebase/auth.js'
-import { createGame as fbCreateGame, joinGame as fbJoinGame, startGame as fbStartGame, subscribeToPlayers, subscribeToGame, subscribeToPhotos, unsubscribeAll, getGameOnce } from './firebase/game.js'
+import { createGame as fbCreateGame, joinGame as fbJoinGame, startGame as fbStartGame, subscribeToPlayers, subscribeToGame, subscribeToPhotos, unsubscribeAll, getGameOnce, getPlayersOnce, getPhotosOnce } from './firebase/game.js'
 import { checkPseudoAvailable, createAccount, loginWithPin, updateAccountUID } from './firebase/account.js'
 import { openGeneratorModal }   from './ui/avatar-generator.js'
 import { openShooterPaywall } from './ui/shooter-paywall.js'
@@ -64,11 +65,15 @@ function _onPlayersUpdate(players) {
     justJoined: newIds.includes(p.id),
   }))
 
+  // Rafraîchir l'écran courant si concerné par les data joueurs
   if (state.currentScreen === 'lobby') {
     show('lobby')
     if (newIds.length) setTimeout(() => {
       state.players = state.players.map(p => ({ ...p, justJoined: false }))
     }, 600)
+  } else if (state.currentScreen === 'game' || state.currentScreen === 'end') {
+    // En partie / fin de partie : rafraîchir HUD scores + classement
+    show(state.currentScreen)
   }
 }
 
@@ -269,7 +274,7 @@ const ACTIONS = {
   goJoin()   { state.isMJ = false; navigate('join')   },
 
   showHelp() {
-    toast("Le MJ choisit les objets, vous les trouvez en photo. Premier à compléter sa grille gagne !", 4000)
+    openHowToPlay()
   },
 
   async createGame() {
@@ -672,11 +677,11 @@ function setupScreenHooks() {
   window.addEventListener('screen:rendered', (e) => {
     const screen = e.detail?.screen || state.currentScreen
     setupAvatarLoops()
-    if (screen === 'game')               { updateHudConfidence(); checkHeartbeat(); _setupGamePhotosSubscription() }
+    if (screen === 'game')               { updateHudConfidence(); checkHeartbeat(); _setupGamePhotosSubscription(); _setupLobbySubscriptions() }
     if (screen === 'lobby')              _setupLobbySubscriptions()
     if (screen === 'account')            _setupAccountScreen()
     if (screen === 'animations-loading') _setupAnimationsLoadingScreen()
-    if (screen === 'end')                _setupGamePhotosSubscription()
+    if (screen === 'end')                { _setupGamePhotosSubscription(); _setupLobbySubscriptions() }
     if (screen === 'home')               { unsubscribeAll(); _lobbySubscribedFor = null; _photosSubscribedFor = null }
   })
 }
@@ -763,12 +768,59 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (typeof game.duration === 'number') state.gameDuration = game.duration
           state.selectedObjects = game.selectedObjects || []
           state.customObjects   = game.customObjects   || []
-          if (game.status === 'playing' && hash === 'game') {
+
+          // Hydrate les joueurs (noms, avatars, scores)
+          // Sans ça, le classement preview affiche "Joueur" anonymes après reload.
+          try {
+            const players = await getPlayersOnce(active.code)
+            state.players = players.map(p => ({
+              ...p,
+              isYou:      p.id === state.uid,
+              justJoined: false,
+            }))
+          } catch (err) {
+            console.warn('[boot] getPlayersOnce failed:', err)
+          }
+
+          // Helper local : recharge photos + reconstitue myGrid + myPhotos
+          // utilisé pour les deux cas reload (game ou end-preview)
+          const _hydratePhotos = async () => {
             state.myGrid = state.selectedObjects.map(id => ({ objId: id, status: 'empty' }))
+            state.myPhotos = {}
+            try {
+              const photos = await getPhotosOnce(active.code)
+              state.gamePhotos = photos
+              const mine = photos.filter(p => p.uid === state.uid)
+              for (const photo of mine) {
+                if (!photo.objId) continue
+                const idx = state.selectedObjects.indexOf(photo.objId)
+                if (idx >= 0) {
+                  state.myGrid[idx].status = 'validated'
+                  state.myPhotos[idx]      = photo.url
+                }
+              }
+            } catch (err) {
+              console.warn('[boot] getPhotosOnce failed:', err)
+            }
+          }
+
+          if (game.status === 'playing' && hash === 'game') {
+            await _hydratePhotos()
+            startTimer()
+          }
+          // Si on reload sur #end alors que la partie est ENCORE en cours
+          // → c'est forcément un preview de classement, pas une fin réelle
+          if (game.status === 'playing' && hash === 'end') {
+            state._previewClassement = true
+            await _hydratePhotos()
             startTimer()
           }
           if (game.status === 'ended' && hash !== 'end') {
             location.hash = 'end'
+          }
+          if (game.status === 'ended' && hash === 'end') {
+            // Charger les photos pour la galerie de fin
+            await _hydratePhotos()
           }
         } else {
           console.warn('[boot] active game not found in Firestore, clearing')

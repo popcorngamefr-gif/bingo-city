@@ -119,7 +119,7 @@ export function renderHome() {
       <!-- ZONE 4 : Help mini-CTA -->
       <div class="home-v3-help">
         <button class="home-v3-help-btn" data-action="showHelp">
-          ${icon('question', { size: 12 })} Comment jouer ?
+          ${icon('question', { size: 14 })} Comment jouer ?
         </button>
       </div>
 
