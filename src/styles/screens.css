@@ -2734,10 +2734,10 @@
 }
 .hof-row {
   display: grid;
-  grid-template-columns: 28px 32px 1fr auto;
-  gap: 8px;
+  grid-template-columns: 28px 52px 1fr auto;
+  gap: 10px;
   align-items: center;
-  padding: 6px 8px;
+  padding: 8px 10px;
   background: var(--cream-warm);
   border: 2px solid var(--ink);
   border-radius: 8px;
@@ -2757,8 +2757,9 @@
   color: var(--ink-soft);
 }
 .hof-avatar {
-  width: 32px;
-  height: 32px;
+  width: 48px !important;
+  height: 48px !important;
+  flex-shrink: 0;
 }
 .hof-info {
   min-width: 0;
