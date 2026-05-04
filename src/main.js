@@ -16,10 +16,13 @@ import { PORTRAIT }                       from './data/portrait.js'
 import { saveActiveGame, clearActiveGame, getActiveGame } from './activeGame.js'
 
 import { refreshAvatarUI, cycleAvatarField, setupAvatarLoops, updateHudConfidence, checkHeartbeat } from './controllers/avatarController.js'
+import { recordGameStats }                from './controllers/gameController.js'
 import { startTimer }                     from './controllers/timerController.js'
 import { openCameraModal, closeModal }    from './ui/modal.js'
 import { openHowToPlay }                  from './ui/how-to-play.js'
 import { openHallOfFameModal }            from './ui/hall-of-fame.js'
+import { openSouvenirsModal }             from './ui/souvenirs-modal.js'
+import { openConfirmModal }               from './ui/confirm-modal.js'
 
 import { initAuth, saveProfile }          from './firebase/auth.js'
 import { createGame as fbCreateGame, joinGame as fbJoinGame, startGame as fbStartGame, subscribeToPlayers, subscribeToGame, subscribeToPhotos, unsubscribeAll, getGameOnce, getPlayersOnce, getPhotosOnce } from './firebase/game.js'
@@ -94,6 +97,9 @@ function _onGameUpdate(gameData) {
     // et on bascule sur le classement final
     if (state.currentScreen === 'game' || state.currentScreen === 'end') {
       state._previewClassement = false
+      // Enregistre les stats pour TOUS les joueurs (MJ + invités)
+      // Idempotent : si déjà appelé via bingo/timer/endGameByMJ, no-op
+      recordGameStats('ended')
       if (state.currentScreen === 'end') show('end')
       else navigate('end')
     }
@@ -308,6 +314,10 @@ const ACTIONS = {
     openHallOfFameModal()
   },
 
+  showSouvenirs() {
+    openSouvenirsModal()
+  },
+
   async createGame() {
     const gameName = (document.getElementById('game-name-input')?.value || '').trim() || 'Sans nom'
     const myName   = (document.getElementById('creator-name-input')?.value || '').trim()
@@ -429,9 +439,15 @@ const ACTIONS = {
 
   newGame() { unsubscribeAll(); _seenPlayerIds.clear(); _lobbySubscribedFor = null; _photosSubscribedFor = null; clearActiveGame(); resetGame(); navigate('home') },
 
-  endGameByMJ() {
+  async endGameByMJ() {
     if (!state.isMJ) return
-    const ok = confirm('Terminer la partie maintenant ? Les joueurs seront envoyés au classement.')
+    const ok = await openConfirmModal({
+      title:        'Terminer la partie ?',
+      body:         'Les joueurs seront envoyés au classement final.',
+      confirmLabel: 'Terminer',
+      cancelLabel:  'Annuler',
+      destructive:  true,
+    })
     if (!ok) return
     // Stop le timer local
     if (state.timerInterval) { clearInterval(state.timerInterval); state.timerInterval = null }
@@ -441,6 +457,8 @@ const ACTIONS = {
         endGame(state.gameCode).catch(console.error)
       })
     }
+    // Enregistre les stats (idempotent — couvre le cas du MJ qui termine sans bingo)
+    recordGameStats('mj-ended')
     navigate('end')
   },
 
@@ -553,7 +571,41 @@ const ACTIONS = {
     // Voir la délégation pour le branchement custom
   },
 
-  logoutAccount() {
+  // ── Souvenirs (page compte) ─────────────────────────────────────────────
+  async downloadProfilePhoto() {
+    const url = state.myAvatar?.generatedImageUrl
+    if (!url) return toast("Pas de photo générée")
+    const filename = `${state.accountKey || 'avatar'}-photo.png`
+    return _downloadFile(url, filename, 'image/png')
+  },
+
+  async downloadProfileVideo() {
+    const url = state.myAvatar?.animationUrl
+    if (!url) return toast("Pas de vidéo générée")
+    const filename = `${state.accountKey || 'avatar'}-deglingo.mp4`
+    return _downloadFile(url, filename, 'video/mp4')
+  },
+
+  generateProfilePhoto() {
+    // Ouvre direct la modale scan visage (= le flow IA)
+    openGeneratorModal()
+  },
+
+  generateProfileVideo() {
+    // Pas de flow direct simple — on renvoie vers avatar-pick qui a la logique paywall + génération
+    // (l'image IA doit exister d'abord, sinon avatar-pick affichera la création de l'image)
+    navigate('avatar-pick')
+  },
+
+  async logoutAccount() {
+    const ok = await openConfirmModal({
+      title:        'Déconnexion',
+      body:         'Te déconnecter de cet appareil ? Tes données restent sauvegardées sur ton compte.',
+      confirmLabel: 'Déconnecter',
+      cancelLabel:  'Annuler',
+      destructive:  true,
+    })
+    if (!ok) return
     state.accountKey  = null
     state.userProfile = { ...state.userProfile, accountKey: null }
     try { localStorage.removeItem('bingo_account_key') } catch {}
@@ -565,6 +617,33 @@ const ACTIONS = {
 /* ============================================================
    DÉLÉGATION D'ÉVÉNEMENTS
    ============================================================ */
+/**
+ * Télécharge un fichier distant via blob (compatible cross-origin et mobile).
+ * Sans cette astuce, l'attribut `download` est ignoré pour les fichiers Firebase
+ * Storage (domaine différent) et le fichier s'ouvre dans le navigateur au lieu
+ * de se télécharger.
+ */
+async function _downloadFile(url, filename) {
+  try {
+    toast('Téléchargement en cours…', 1500)
+    const res = await fetch(url)
+    if (!res.ok) throw new Error('HTTP ' + res.status)
+    const blob = await res.blob()
+    const blobUrl = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = blobUrl
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    // Libère la mémoire après que le navigateur ait pris la main
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
+  } catch (err) {
+    console.warn('[download]', err)
+    toast('Téléchargement impossible. Réessaie ?')
+  }
+}
+
 /**
  * Si l'utilisateur avait une intention en attente (créer/rejoindre),
  * on l'y redirige après création/connexion de compte.

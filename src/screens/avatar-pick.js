@@ -134,6 +134,16 @@ function _renderChoice(hasProfile) {
           </div>
           <div class="ap-card-arrow">${icon('arrow_right', { size: 18 })}</div>
         </div>
+
+        <div class="ap-card ap-card-souvenirs" data-action="showSouvenirs">
+          <div class="ap-card-stripe"></div>
+          <div class="ap-card-icon">${icon('download', { size: 28 })}</div>
+          <div class="ap-card-body">
+            <div class="ap-card-title">Mes souvenirs</div>
+            <div class="ap-card-sub">Télécharge ta photo ou ta vidéo</div>
+          </div>
+          <div class="ap-card-arrow">${icon('arrow_right', { size: 18 })}</div>
+        </div>
         ` : ''}
 
       </div>

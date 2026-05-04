@@ -510,6 +510,46 @@ const ICONS = {
     '................',
   ], { R: PALETTE.ink }),
 
+  // ── Download (flèche vers le bas + base) ─────────────────────────────────
+  download: () => px([
+    '................',
+    '................',
+    '......RRRR......',
+    '......RRRR......',
+    '......RRRR......',
+    '......RRRR......',
+    '...RRRRRRRRRR...',
+    '....RRRRRRRR....',
+    '.....RRRRRR.....',
+    '......RRRR......',
+    '.......RR.......',
+    '................',
+    '................',
+    '.RRRRRRRRRRRRRR.',
+    '.RRRRRRRRRRRRRR.',
+    '................',
+  ], { R: PALETTE.ink }),
+
+  // ── Gear / roue crantée (paramètres) ─────────────────────────────────────
+  gear: () => px([
+    '................',
+    '......RRRR......',
+    '..R...RRRR...R..',
+    '..RR.RRRRRR.RR..',
+    '...RRRR..RRRR...',
+    '...RRR....RRR...',
+    '.RRRR..RR..RRRR.',
+    '.RRRR.RRRR.RRRR.',
+    '.RRRR.RRRR.RRRR.',
+    '.RRRR..RR..RRRR.',
+    '...RRR....RRR...',
+    '...RRRR..RRRR...',
+    '..RR.RRRRRR.RR..',
+    '..R...RRRR...R..',
+    '......RRRR......',
+    '................',
+  ], { R: PALETTE.ink }),
+
   // ── Selfie / visage + caméra ──────────────────────────────────────────────
   selfie: () => px([
     'R.............R.',

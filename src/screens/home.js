@@ -49,8 +49,8 @@ export function renderHome() {
             </div>
           </div>
           <div class="home-v3-account-link">
-            <button class="home-v3-mini-account" data-nav="account" onclick="event.stopPropagation()">
-              ${icon('user', { size: 12 })}
+            <button class="home-v3-mini-account home-v3-mini-souvenirs" data-action="showSouvenirs" onclick="event.stopPropagation()" title="Souvenirs">
+              ${icon('download', { size: 14 })}
             </button>
           </div>
         </div>
@@ -116,8 +116,8 @@ export function renderHome() {
         `}
       </div>
 
-      <!-- ZONE 4 : Help + Hall of Fame mini-CTAs -->
-      <div class="home-v3-help">
+      <!-- ZONE 4 : Help + Hall of Fame mini-CTAs (au-dessus du skyline) -->
+      <div class="home-v3-help home-v3-help-top">
         <button class="home-v3-help-btn" data-action="showHelp">
           ${icon('question', { size: 14 })} Comment jouer ?
         </button>
@@ -129,6 +129,12 @@ export function renderHome() {
       <p class="footer-info home-v3-footer">
         v0.9 · ${icon('bottle', { size: 12 })} Na zdrowie !
       </p>
+
+      ${hasAccount ? `
+        <button class="home-v3-account-corner" data-nav="account" title="Mon compte">
+          ${icon('user', { size: 16 })}
+        </button>
+      ` : ''}
 
       <div class="polska-sticker"></div>
     </section>

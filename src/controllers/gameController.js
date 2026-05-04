@@ -13,6 +13,38 @@ import { triggerHudAvatar, updateHudConfidence, checkHeartbeat } from './avatarC
 async function fbGame() { return import('../firebase/game.js') }
 async function fbAuth() { return import('../firebase/auth.js') }
 
+/**
+ * Enregistre les stats de la partie courante (idempotent par gameCode).
+ * Appelé depuis toutes les voies de fin : bingo perso, timer écoulé,
+ * MJ qui termine manuellement, ou invité notifié via Firestore.
+ *
+ * @param {string} reason - pour les logs ('bingo' | 'timer' | 'ended')
+ */
+export async function recordGameStats(reason = 'ended') {
+  if (!state.uid || !state.gameCode) return
+  if (state._statsRecordedFor === state.gameCode) {
+    console.log('[stats] already recorded for', state.gameCode, '(skipped)')
+    return
+  }
+  state._statsRecordedFor = state.gameCode
+
+  const me       = state.players.find(p => p.isYou)
+  const score    = me?.score || 0
+  const hasBingo = me?.hasBingo || false
+  const sorted   = [...state.players].sort((a, b) => (b.score || 0) - (a.score || 0))
+  const isWinner = sorted[0]?.isYou ?? false
+
+  console.log('[stats] recording', { reason, score, hasBingo, isWinner })
+  try {
+    const { updateStats } = await fbAuth()
+    await updateStats({ score, hasBingo, isWinner })
+  } catch (err) {
+    // Reset le lock pour permettre une nouvelle tentative
+    delete state._statsRecordedFor
+    console.error('[stats] updateStats failed:', err)
+  }
+}
+
 // ─── Validation photo ─────────────────────────────────────────────────────────
 
 export function handleValidation(cellIdx) {
@@ -59,39 +91,23 @@ export function checkBingo() {
     navigate('end')
   }, 2200)
 
-  // Firestore + stats async
+  // Firestore : update score + termine la partie
   if (state.gameCode && state.uid) {
     fbGame().then(({ updatePlayerScore, endGame }) => {
       updatePlayerScore(state.gameCode, state.uid, me?.score || 0, true).catch(console.error)
       endGame(state.gameCode).catch(console.error)
     })
   }
-  if (state.uid) {
-    const sorted  = [...state.players].sort((a, b) => (b.score || 0) - (a.score || 0))
-    const isWinner = sorted[0]?.isYou ?? false
-    fbAuth().then(({ updateStats }) => {
-      updateStats({ score: me?.score || 0, hasBingo: true, isWinner }).catch(console.error)
-    })
-  }
+  // Stats persistantes (idempotent — pas de double si un autre trigger arrive après)
+  recordGameStats('bingo')
 }
 
 // ─── Fin de partie (timer écoulé) ────────────────────────────────────────────
 
 export function onTimerEnd() {
-  const me       = state.players.find(p => p.isYou)
-  const score    = me?.score || 0
-  const hasBingo = me?.hasBingo || false
-  const sorted   = [...state.players].sort((a, b) => (b.score || 0) - (a.score || 0))
-  const isWinner = sorted[0]?.isYou ?? false
-
   if (state.gameCode && state.uid && state.isMJ) {
     fbGame().then(({ endGame }) => endGame(state.gameCode).catch(console.error))
   }
-  if (state.uid) {
-    fbAuth().then(({ updateStats }) => {
-      updateStats({ score, hasBingo, isWinner }).catch(console.error)
-    })
-  }
-
+  recordGameStats('timer')
   navigate('end')
 }
