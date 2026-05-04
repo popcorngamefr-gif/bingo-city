@@ -11,10 +11,12 @@ import { icon } from '../ui/icons.js'
 import { escapeHtml } from '../utils/html.js'
 
 export function renderEnd() {
+  const isPreview = !!state._previewClassement
   const sorted = [...state.players].sort((a, b) => (b.score || 0) - (a.score || 0))
   const winner = sorted[0]
   const hasScores = sorted.some(p => (p.score || 0) > 0)
-  const title  = !winner ? 'PARTIE TERMINÉE'
+  const title  = isPreview ? 'CLASSEMENT EN COURS'
+                : !winner ? 'PARTIE TERMINÉE'
                 : !hasScores ? 'PARTIE TERMINÉE'
                 : winner.isYou ? 'TU AS GAGNÉ !'
                 : `${winner.name.toUpperCase()} GAGNE !`
@@ -109,8 +111,12 @@ export function renderEnd() {
       ${photosSection}
 
       <div class="row mt" style="position: relative; z-index: 5;">
-        
-        <button class="btn btn-red" data-action="newGame">Nouvelle partie</button>
+        ${isPreview
+          ? `<button class="btn btn-red" data-action="closeClassement">
+               ${icon('arrow_left', { size: 14 })} Retour à ma partie
+             </button>`
+          : `<button class="btn btn-red" data-action="newGame">Nouvelle partie</button>`
+        }
       </div>
     </section>
   `

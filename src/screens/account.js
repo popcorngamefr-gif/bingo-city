@@ -16,6 +16,17 @@ export function renderAccount() {
 // ─── Pas encore de compte ────────────────────────────────────────────────────
 
 function _renderAuthForm() {
+  // Si l'user a été redirigé suite à une tentative de create/join, on l'explique
+  const intent = state._pendingIntent
+  const intentBanner = intent
+    ? `<div class="account-intent-banner">
+         ${icon('star', { size: 12 })}
+         <span>${intent.kind === 'create'
+           ? 'Crée ton compte pour lancer une partie'
+           : 'Crée ton compte pour rejoindre la partie'}</span>
+       </div>`
+    : ''
+
   return `
     <section class="screen account-screen">
       ${bgVarsovieHtml({ withTram: false, withStorks: false, opacity: 0.3 })}
@@ -23,6 +34,8 @@ function _renderAuthForm() {
       <button class="btn-back" data-nav="home">${icon('arrow_left', { size: 16 })}</button>
 
       <h2 class="title-screen">★ MON COMPTE ★</h2>
+
+      ${intentBanner}
 
       <!-- Tabs -->
       <div class="account-tabs" id="account-tabs">

@@ -776,6 +776,11 @@
   border-radius: 8px;
   padding: 0;
 }
+/* Désactive l'animation walk dans le HUD pour éviter l'effet tremblement
+   permanent qui distrait pendant la partie. L'avatar reste fixe. */
+.hud-avatar .avatar.mood-walk .avatar-inner {
+  animation: none;
+}
 
 /* ============================================
    AVATAR — couche bouche expressive
@@ -970,4 +975,26 @@
 }
 @keyframes exprSpin {
   to { transform: rotate(360deg); }
+}
+
+/* ── BUTTON LOADER (anti double-clic auto) ─────────────────────────────── */
+.btn-loader {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 3px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: btnSpin 0.8s linear infinite;
+  vertical-align: middle;
+}
+@keyframes btnSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* État loading : opacité légèrement réduite + cursor */
+button[data-loading="true"],
+.btn[data-loading="true"] {
+  cursor: wait;
+  opacity: 0.85;
 }

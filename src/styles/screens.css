@@ -1519,16 +1519,20 @@
   flex-shrink: 0;
 }
 .mood-actions .btn {
+  /* Override le width:100% du .btn par défaut sinon les enfants débordent du flex */
+  width: auto;
   min-width: 0;
+  /* Padding plus serré pour tenir dans une modale étroite */
+  padding-left: 12px;
+  padding-right: 12px;
 }
 .mood-actions .btn-ghost {
   flex: 0 0 auto;
   white-space: nowrap;
-  padding-left: 14px;
-  padding-right: 14px;
 }
 .mood-actions .btn-red {
   flex: 1 1 0;
+  min-width: 0;
   white-space: nowrap;
 }
 
@@ -1784,17 +1788,24 @@
   top: 18px;
   right: 18px;
   z-index: 20;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 18px;
   background: var(--ink);
   border: 2px solid var(--tram-yellow);
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   color: var(--tram-yellow);
   cursor: pointer;
   box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3);
+}
+.game-share-code {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--tram-yellow);
 }
 .game-share-btn:active {
   transform: translateY(1px);
@@ -2369,14 +2380,15 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--ink);
-  color: var(--tram-yellow);
-  border: 2px solid var(--tram-yellow);
+  background: var(--tram-yellow);
+  color: var(--ink);
+  border: 2px solid var(--ink);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: transform 0.1s steps(2);
+  box-shadow: 0 2px 0 var(--ink);
 }
 .home-v3-mini-account:active {
   transform: translateY(1px);
@@ -2472,20 +2484,25 @@
 .home-v3-help-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  background: rgba(255, 255, 255, 0.4);
-  border: 1px solid var(--ink-soft);
+  gap: 8px;
+  padding: 10px 18px;
+  background: var(--cream-cold);
+  border: 2px solid var(--ink);
   border-radius: 999px;
-  font-family: 'VT323', monospace;
-  font-size: 13px;
-  color: var(--ink-soft);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--ink);
   cursor: pointer;
-  transition: all 0.15s;
+  box-shadow: 0 3px 0 var(--ink);
+  transition: transform 0.08s, box-shadow 0.08s;
+}
+.home-v3-help-btn:hover {
+  background: var(--tram-yellow);
 }
 .home-v3-help-btn:active {
-  background: var(--cream-cold);
-  color: var(--ink);
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--ink);
 }
 
 .home-v3-footer {
@@ -2497,4 +2514,294 @@
   position: relative;
   z-index: 5;
   opacity: 0.5;
+}
+
+/* ── HOW TO PLAY MODAL ──────────────────────────────────────────────────── */
+.how-modal {
+  align-items: center;
+  padding: 20px;
+}
+.how-box {
+  background: var(--cream-warm);
+  border: 4px solid var(--ink);
+  border-radius: 16px;
+  max-width: 380px;
+  width: 100%;
+  margin: auto;
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  box-shadow: 0 8px 0 var(--tram-red-dark);
+  -webkit-overflow-scrolling: touch;
+}
+.how-header {
+  background: var(--ink);
+  color: var(--cream-cold);
+  padding: 16px;
+  text-align: center;
+  border-bottom: 3px solid var(--tram-red);
+}
+.how-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  color: var(--tram-yellow);
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.how-subtitle {
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  color: var(--cream-cold);
+  opacity: 0.8;
+  margin: 0;
+}
+
+.how-steps {
+  padding: 18px 16px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.how-step {
+  display: grid;
+  grid-template-columns: 36px 44px 1fr;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--cream-cold);
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  padding: 12px 12px 14px;
+  box-shadow: 0 3px 0 var(--ink);
+  position: relative;
+}
+.how-step--tram-red {
+  border-left: 6px solid var(--tram-red);
+}
+.how-step--tram-yellow {
+  border-left: 6px solid var(--tram-yellow);
+}
+.how-step-num {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 18px;
+  color: var(--tram-red);
+  text-align: center;
+  text-shadow: 2px 2px 0 var(--cream-warm);
+  line-height: 1;
+  padding-top: 4px;
+}
+.how-step-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: var(--ink);
+  border-radius: 8px;
+  color: var(--tram-yellow);
+  flex-shrink: 0;
+}
+.how-step-content {
+  min-width: 0;
+}
+.how-step-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: var(--ink);
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+.how-step-body {
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.how-tip {
+  margin: 8px 16px 0;
+  padding: 10px 12px;
+  background: var(--tram-yellow);
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-family: 'VT323', monospace;
+  font-size: 13px;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.how-tip > .ico {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.how-actions {
+  padding: 16px;
+  display: flex;
+}
+.how-actions .btn {
+  width: 100%;
+}
+
+/* ── HALL OF FAME (home page) ───────────────────────────────────────────── */
+.home-v3-hof {
+  margin: 18px 0 12px;
+  padding: 14px 14px 12px;
+  background: var(--cream-cold);
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 0 4px 0 var(--ink);
+  position: relative;
+  z-index: 5;
+}
+
+.hof-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 2px dashed var(--ink-soft);
+}
+.hof-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  color: var(--tram-red);
+  letter-spacing: 0.06em;
+  text-shadow: 1px 1px 0 var(--cream-warm);
+}
+.hof-deco {
+  display: inline-flex;
+  align-items: center;
+  color: var(--tram-yellow);
+}
+
+.hof-loading,
+.hof-empty {
+  text-align: center;
+  padding: 18px 8px;
+  color: var(--ink-soft);
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+}
+.hof-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.hof-empty-text {
+  margin: 0;
+  line-height: 1.3;
+}
+
+.hof-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.hof-row {
+  display: grid;
+  grid-template-columns: 28px 32px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  background: var(--cream-warm);
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+}
+.hof-row.is-me {
+  background: var(--tram-yellow);
+  border-color: var(--tram-red);
+}
+.hof-rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hof-rank-num {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: var(--ink-soft);
+}
+.hof-avatar {
+  width: 32px;
+  height: 32px;
+}
+.hof-info {
+  min-width: 0;
+}
+.hof-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--ink);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hof-meta {
+  font-family: 'VT323', monospace;
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hof-score {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px;
+  color: var(--tram-red);
+  text-shadow: 1px 1px 0 var(--cream-warm);
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+.hof-score-unit {
+  font-size: 8px;
+  color: var(--ink-soft);
+  text-shadow: none;
+}
+
+.hof-footnote {
+  margin-top: 10px;
+  text-align: center;
+  font-family: 'VT323', monospace;
+  font-size: 11px;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  opacity: 0.75;
+}
+
+/* ── ACCOUNT INTENT BANNER (contexte redirection) ───────────────────────── */
+.account-intent-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: -8px 0 14px;
+  padding: 10px 14px;
+  background: var(--tram-yellow);
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  color: var(--ink);
+  position: relative;
+  z-index: 5;
+  box-shadow: 0 2px 0 var(--ink);
+}
+.account-intent-banner .ico {
+  flex-shrink: 0;
 }

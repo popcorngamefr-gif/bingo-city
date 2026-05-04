@@ -1,6 +1,11 @@
 /**
  * Écran : édition d'avatar — version simplifiée + update chirurgical
  * Styles dans src/styles/screens.css
+ *
+ * IMPORTANT : si l'utilisateur revient en arrière sans valider,
+ * on restaure l'état initial pour ne pas perdre l'avatar IA précédent
+ * ou les choix précédents. Le snapshot est pris au render et restauré
+ * via l'action `cancelAvatarEdit` (bouton retour).
  */
 
 import { state } from '../state.js'
@@ -10,11 +15,16 @@ import { bgVarsovieHtml, miniSkylineHtml } from '../ui/varsovie.js'
 import { icon } from '../ui/icons.js'
 
 export function renderAvatar() {
+  // Snapshot de l'avatar tel qu'il était à l'entrée (deep copy simple suffisante)
+  // Restauré dans main.js / cancelAvatarEdit si l'user fait "retour"
+  state._avatarSnapshot = JSON.parse(JSON.stringify(state.myAvatar || {}))
+  state._myNameSnapshot = state.myName || ''
+
   return `
     <section class="screen avatar-screen">
       ${bgVarsovieHtml({ withTram: false, withStorks: false, opacity: 0.35 })}
 
-      <button class="btn-back" data-nav="avatar-pick">${icon('arrow_left', { size: 16 })}</button>
+      <button class="btn-back" data-action="cancelAvatarEdit">${icon('arrow_left', { size: 16 })}</button>
 
       <h2 class="title-screen">★ TON AVATAR ★</h2>
 

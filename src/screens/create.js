@@ -8,6 +8,22 @@ import { icon }         from '../ui/icons.js'
 
 export function renderCreate() {
   const savedName = state.myName || state.userProfile?.name || ''
+
+  // Garde : si l'utilisateur n'a pas de compte, on bascule sur account
+  if (!state.accountKey) {
+    state._pendingIntent = { kind: 'create' }
+    setTimeout(() => {
+      import('../router.js').then(({ navigate }) => navigate('account'))
+    }, 0)
+    return `
+      <section class="screen" style="display:flex;align-items:center;justify-content:center;">
+        <p class="small light center" style="padding:20px;">
+          ${icon('hourglass', { size: 16 })} Redirection vers la connexion…
+        </p>
+      </section>
+    `
+  }
+
   return `
     <section class="screen">
       ${bgVarsovieHtml({ withTram: false, opacity: 0.4 })}

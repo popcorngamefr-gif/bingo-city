@@ -91,7 +91,6 @@ export async function saveProfile({ name, avatar }) {
       createdAt: now,
     })
   }
-  state.myAvatar = { ...state.myAvatar, ...cleanAvatar }
 
   // Si compte PIN actif → sync l'avatar dans /accounts/{key} aussi
   // pour qu'il soit récupéré au login depuis un autre device
@@ -104,13 +103,16 @@ export async function saveProfile({ name, avatar }) {
     }
   }
 
-  state.myName      = name
-  state.myAvatar    = { ...avatar }
-  state.userProfile = { ...(state.userProfile || {}), name, avatar }
+  // Sync state local — merge propre, ne touche aux champs que si fournis
+  state.myAvatar    = { ...state.myAvatar, ...cleanAvatar }
+  if (name) state.myName = name
+  state.userProfile = { ...(state.userProfile || {}), name: state.myName, avatar: state.myAvatar }
 }
 
 /**
  * Incrémente les stats du joueur à la fin d'une partie.
+ * Sync aussi sur /accounts/{key} si l'user a un compte PIN
+ * (nécessaire pour le Hall of Fame mondial).
  */
 export async function updateStats({ score, hasBingo, isWinner }) {
   const uid = state.uid
@@ -120,11 +122,29 @@ export async function updateStats({ score, hasBingo, isWinner }) {
   if (!snap.exists()) return
 
   const s = snap.data().stats || {}
+  const newStats = {
+    totalGames: (s.totalGames || 0) + 1,
+    totalScore: (s.totalScore || 0) + score,
+    bingos:     (s.bingos     || 0) + (hasBingo ? 1 : 0),
+    wins:       (s.wins       || 0) + (isWinner ? 1 : 0),
+  }
+
   await updateDoc(ref, {
-    'stats.totalGames': (s.totalGames || 0) + 1,
-    'stats.totalScore': (s.totalScore || 0) + score,
-    'stats.bingos':     (s.bingos     || 0) + (hasBingo  ? 1 : 0),
-    'stats.wins':       (s.wins       || 0) + (isWinner  ? 1 : 0),
+    'stats.totalGames': newStats.totalGames,
+    'stats.totalScore': newStats.totalScore,
+    'stats.bingos':     newStats.bingos,
+    'stats.wins':       newStats.wins,
     updatedAt: serverTimestamp(),
   })
+
+  // Hall of Fame : on duplique sur /accounts/{key} (qui contient le pseudo)
+  // Seuls les comptes PIN apparaissent dans le classement mondial.
+  if (state.accountKey) {
+    try {
+      const { syncAccountStats } = await import('./account.js')
+      await syncAccountStats(state.accountKey, newStats)
+    } catch (err) {
+      console.warn('[updateStats] syncAccountStats failed:', err)
+    }
+  }
 }

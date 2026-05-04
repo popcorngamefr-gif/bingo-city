@@ -18,6 +18,24 @@ export function renderJoin() {
     const queryCode = params.get('code')
     if (queryCode) prefilledCode = queryCode.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4)
   }
+
+  // Garde : si l'utilisateur n'a pas de compte, on bascule sur account
+  // en mémorisant l'intention (et le code de partie si fourni en deeplink)
+  if (!state.accountKey) {
+    state._pendingIntent = { kind: 'join', code: prefilledCode || null }
+    // Fallback de rendu (très bref, le router va re-router juste après)
+    setTimeout(() => {
+      import('../router.js').then(({ navigate }) => navigate('account'))
+    }, 0)
+    return `
+      <section class="screen" style="display:flex;align-items:center;justify-content:center;">
+        <p class="small light center" style="padding:20px;">
+          ${icon('hourglass', { size: 16 })} Redirection vers la connexion…
+        </p>
+      </section>
+    `
+  }
+
   return `
     <section class="screen">
       ${bgVarsovieHtml({ withTram: false, opacity: 0.4 })}

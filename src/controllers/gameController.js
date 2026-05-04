@@ -1,14 +1,12 @@
 /**
  * Game Controller
- * Validation, bingo, simulation joueurs.
- * Met à jour Firestore en parallèle des mises à jour locales.
+ * Validation, bingo. Met à jour Firestore en parallèle des mises à jour locales.
  */
 
 import { state }     from '../state.js'
 import { show, navigate } from '../router.js'
 import { toast }     from '../ui/toast.js'
 import { getObject } from '../data/objects.js'
-import { randomAvatar } from '../utils/random.js'
 import { triggerHudAvatar, updateHudConfidence, checkHeartbeat } from './avatarController.js'
 
 // Firebase (lazy — évite l'import si Firebase n'est pas encore prêt)
@@ -96,21 +94,4 @@ export function onTimerEnd() {
   }
 
   navigate('end')
-}
-
-// ─── Simulation joueurs (demo / fallback) ────────────────────────────────────
-
-export function simulateJoin(name) {
-  if (state.currentScreen !== 'lobby') return
-  const newP = {
-    id:         'p' + Date.now(),
-    name,
-    avatar:     randomAvatar(),
-    score:      0,
-    isMJ:       false,
-    justJoined: true,
-  }
-  state.players.push(newP)
-  show('lobby')
-  setTimeout(() => { newP.justJoined = false }, 600)
 }

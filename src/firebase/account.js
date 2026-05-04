@@ -6,7 +6,7 @@
  *   name, pin, uid, avatar, stats, createdAt, updatedAt
  */
 
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore'
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, orderBy, limit, getDocs } from 'firebase/firestore'
 import { db } from './config.js'
 
 /** Normalise un pseudo pour l'utiliser comme clé Firestore. */
@@ -78,4 +78,31 @@ export async function syncAccountStats(key, stats) {
  */
 export async function updateAccountAvatar(key, avatar) {
   await updateDoc(doc(db, 'accounts', key), { avatar, updatedAt: serverTimestamp() })
+}
+
+/**
+ * Récupère le Hall of Fame mondial : top N joueurs par totalScore.
+ * Renvoie un tableau de { key, name, avatar, stats } ou [] si vide.
+ *
+ * Note : nécessite un index Firestore composite sur stats.totalScore desc
+ * (Firebase le proposera automatiquement à la première requête).
+ */
+export async function getHallOfFame(top = 10) {
+  try {
+    const q = query(
+      collection(db, 'accounts'),
+      orderBy('stats.totalScore', 'desc'),
+      limit(top)
+    )
+    const snap = await getDocs(q)
+    return snap.docs
+      .map(d => ({ key: d.id, ...d.data() }))
+      // Filtre : on n'affiche que les joueurs qui ont au moins joué une partie
+      .filter(p => (p.stats?.totalGames || 0) > 0)
+      // On ne renvoie pas le PIN — sécurité élémentaire
+      .map(({ pin, ...rest }) => rest)
+  } catch (err) {
+    console.warn('[getHallOfFame] failed:', err)
+    return []
+  }
 }

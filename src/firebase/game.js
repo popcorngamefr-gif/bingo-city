@@ -9,7 +9,7 @@
  */
 
 import {
-  doc, setDoc, getDoc, updateDoc,
+  doc, setDoc, getDoc, getDocs, updateDoc,
   collection, onSnapshot, serverTimestamp,
 } from 'firebase/firestore'
 import { db } from './config.js'
@@ -50,6 +50,24 @@ export async function getGameOnce(code) {
   const snap = await getDoc(doc(db, 'games', code))
   if (!snap.exists()) return null
   return snap.data()
+}
+
+/**
+ * Récupère tous les joueurs d'une partie (one-shot).
+ * Utilisé pour hydrater state.players à la restauration après reload.
+ */
+export async function getPlayersOnce(code) {
+  const qs = await getDocs(collection(db, 'games', code, 'players'))
+  return qs.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+/**
+ * Récupère toutes les photos d'une partie (one-shot).
+ * Utilisé pour reconstituer state.myGrid + state.myPhotos après reload.
+ */
+export async function getPhotosOnce(code) {
+  const qs = await getDocs(collection(db, 'games', code, 'photos'))
+  return qs.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
 // ─── Rejoindre ────────────────────────────────────────────────────────────────

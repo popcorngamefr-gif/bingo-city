@@ -7,21 +7,12 @@ import { state }        from '../state.js'
 import { bgVarsovieHtml, floatingItemsHtml } from '../ui/varsovie.js'
 import { icon }         from '../ui/icons.js'
 import { avatarLayersHtml } from '../ui/avatar.js'
-
-function _getActiveGame() {
-  try {
-    const raw = localStorage.getItem('bingo_active_game')
-    if (!raw) return null
-    const data = JSON.parse(raw)
-    if (Date.now() - data.savedAt > 4 * 24 * 3600 * 1000) return null
-    return data
-  } catch { return null }
-}
+import { getActiveGame } from '../activeGame.js'
 
 export function renderHome() {
   const profile    = state.userProfile
   const hasAccount = !!state.accountKey
-  const active     = _getActiveGame()
+  const active     = getActiveGame()
   const myAvatar   = state.myAvatar || profile?.avatar
   const displayName = profile?.name || state.myName || state.accountKey || ''
   const hasDeglingoVideo = !!(myAvatar?.animationUrl)
@@ -128,8 +119,18 @@ export function renderHome() {
       <!-- ZONE 4 : Help mini-CTA -->
       <div class="home-v3-help">
         <button class="home-v3-help-btn" data-action="showHelp">
-          ${icon('question', { size: 12 })} Comment jouer ?
+          ${icon('question', { size: 14 })} Comment jouer ?
         </button>
+      </div>
+
+      <!-- ZONE 5 : Hall of Fame (injecté dynamiquement) -->
+      <div class="home-v3-hof" id="home-hof" data-loaded="false">
+        <div class="hof-header">
+          <span class="hof-deco">${icon('trophy', { size: 14 })}</span>
+          <span class="hof-title">HALL OF FAME</span>
+          <span class="hof-deco">${icon('trophy', { size: 14 })}</span>
+        </div>
+        <div class="hof-loading">Chargement…</div>
       </div>
 
       <p class="footer-info home-v3-footer">

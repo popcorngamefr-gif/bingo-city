@@ -13,17 +13,16 @@ import { toast }                          from './ui/toast.js'
 import { randomAvatar }                   from './utils/random.js'
 import { getObjects }                     from './data/objects.js'
 import { PORTRAIT }                       from './data/portrait.js'
+import { saveActiveGame, clearActiveGame, getActiveGame } from './activeGame.js'
 
 import { refreshAvatarUI, cycleAvatarField, setupAvatarLoops, updateHudConfidence, checkHeartbeat } from './controllers/avatarController.js'
 import { startTimer }                     from './controllers/timerController.js'
-import { simulateJoin }                   from './controllers/gameController.js'
 import { openCameraModal, closeModal }    from './ui/modal.js'
-
-// Bridge état global pour avatar.js (accès aux animations sans circular import)
-window.__state = state
+import { openHowToPlay }                  from './ui/how-to-play.js'
+import { loadHallOfFame }                 from './ui/hall-of-fame.js'
 
 import { initAuth, saveProfile }          from './firebase/auth.js'
-import { createGame as fbCreateGame, joinGame as fbJoinGame, startGame as fbStartGame, subscribeToPlayers, subscribeToGame, subscribeToPhotos, unsubscribeAll, getGameOnce } from './firebase/game.js'
+import { createGame as fbCreateGame, joinGame as fbJoinGame, startGame as fbStartGame, subscribeToPlayers, subscribeToGame, subscribeToPhotos, unsubscribeAll, getGameOnce, getPlayersOnce, getPhotosOnce } from './firebase/game.js'
 import { checkPseudoAvailable, createAccount, loginWithPin, updateAccountUID } from './firebase/account.js'
 import { openGeneratorModal }   from './ui/avatar-generator.js'
 import { openShooterPaywall } from './ui/shooter-paywall.js'
@@ -43,45 +42,18 @@ function _showAdblockBanner() {
 }
 
 // ─── Persistance partie en cours ─────────────────────────────────────────────
-const ACTIVE_GAME_KEY = 'bingo_active_game'
-
-function saveActiveGame() {
-  if (!state.gameCode) return
-  try {
-    localStorage.setItem(ACTIVE_GAME_KEY, JSON.stringify({
-      code:     state.gameCode,
-      name:     state.gameName,
-      isMJ:     state.isMJ,
-      myName:   state.myName,
-      savedAt:  Date.now(),
-    }))
-  } catch {}
-}
-
-function clearActiveGame() {
-  try { localStorage.removeItem(ACTIVE_GAME_KEY) } catch {}
-}
-
-export function getActiveGame() {
-  try {
-    const raw = localStorage.getItem(ACTIVE_GAME_KEY)
-    if (!raw) return null
-    const data = JSON.parse(raw)
-    // Expire après 4 jours (max durée + marge)
-    if (Date.now() - data.savedAt > 4 * 24 * 3600 * 1000) {
-      clearActiveGame()
-      return null
-    }
-    return data
-  } catch {
-    return null
-  }
-}
+// Voir ./activeGame.js pour saveActiveGame, clearActiveGame, getActiveGame
 
 /* ============================================================
    LOBBY — temps réel
    ============================================================ */
 const _seenPlayerIds = new Set()
+// Code de la partie pour laquelle on a actuellement des listeners lobby actifs.
+// Évite la boucle de re-render : sans ça, screen:rendered retrigger _setupLobbySubscriptions
+// qui réinstalle le listener, qui reçoit le snapshot initial, qui re-render, etc.
+let _lobbySubscribedFor = null
+// Même mécanisme pour la subscription photos (game + end)
+let _photosSubscribedFor = null
 
 function _onPlayersUpdate(players) {
   const newIds = players
@@ -94,11 +66,15 @@ function _onPlayersUpdate(players) {
     justJoined: newIds.includes(p.id),
   }))
 
+  // Rafraîchir l'écran courant si concerné par les data joueurs
   if (state.currentScreen === 'lobby') {
     show('lobby')
     if (newIds.length) setTimeout(() => {
       state.players = state.players.map(p => ({ ...p, justJoined: false }))
     }, 600)
+  } else if (state.currentScreen === 'game' || state.currentScreen === 'end') {
+    // En partie / fin de partie : rafraîchir HUD scores + classement
+    show(state.currentScreen)
   }
 }
 
@@ -113,12 +89,24 @@ function _onGameUpdate(gameData) {
     startTimer()
     navigate('game')
   }
-  if (gameData.status === 'ended' && state.currentScreen === 'game') navigate('end')
+  if (gameData.status === 'ended') {
+    // Partie réellement terminée → on quitte le mode preview s'il était actif
+    // et on bascule sur le classement final
+    if (state.currentScreen === 'game' || state.currentScreen === 'end') {
+      state._previewClassement = false
+      if (state.currentScreen === 'end') show('end')
+      else navigate('end')
+    }
+  }
 }
 
 function _setupLobbySubscriptions() {
-  _seenPlayerIds.clear()
   if (!state.gameCode) return
+  // Évite de ré-installer les listeners à chaque re-render du lobby
+  // (sinon Firestore renvoie un snapshot initial → re-render → réinstall → boucle)
+  if (_lobbySubscribedFor === state.gameCode) return
+  _lobbySubscribedFor = state.gameCode
+  _seenPlayerIds.clear()
   subscribeToPlayers(state.gameCode, _onPlayersUpdate)
   subscribeToGame(state.gameCode, _onGameUpdate)
 }
@@ -199,6 +187,7 @@ function _setupAccountScreen() {
       })
       console.log('[create-account] success, key:', key)
       state.accountKey = key
+      try { localStorage.setItem('bingo_account_key', key) } catch {}
       // Persiste accountKey dans /users/{uid} pour qu'il soit restauré au reload
       await saveProfile({ name: state.myName, avatar: state.myAvatar }).catch(console.warn)
       toast('Compte créé ! Crée ton avatar')
@@ -234,6 +223,7 @@ function _setupAccountScreen() {
       await updateAccountUID(data.key, state.uid)
       // Hydrate le state — important : on ÉCRASE l'avatar local par celui du compte
       state.accountKey  = data.key
+      try { localStorage.setItem('bingo_account_key', data.key) } catch {}
       state.myName      = data.name
       state.myAvatar    = { ...(data.avatar || { skin: 0, eyes: 0, hairStyle: 0, hairColor: 0, acc: 0 }) }
       state.userProfile = { ...state.userProfile, ...data }
@@ -242,7 +232,13 @@ function _setupAccountScreen() {
       toast(`Bienvenue, ${data.name} !`, 3000)
       // Si pas d'avatar custom → propose la création
       const hasCustomAvatar = data.avatar && (data.avatar.generatedImageUrl || data.avatar.skin > 0 || data.avatar.hairStyle > 0)
-      navigate(hasCustomAvatar ? 'home' : 'avatar-pick')
+      if (hasCustomAvatar) {
+        // Avatar prêt → reprendre l'intention si existe (create/join), sinon home
+        _resolvePendingIntent('home')
+      } else {
+        // Pas d'avatar → l'intention est conservée, on y reviendra après confirmAvatar
+        navigate('avatar-pick')
+      }
     } catch (err) {
       console.error('[login] error:', err)
       const msg = err.message === 'Pseudo introuvable' ? '❌ Pseudo introuvable'
@@ -283,11 +279,29 @@ function _wirePinDigits() {
    ============================================================ */
 const ACTIONS = {
 
-  goCreate() { state.isMJ = true;  navigate('create') },
-  goJoin()   { state.isMJ = false; navigate('join')   },
+  goCreate() {
+    if (!state.accountKey) {
+      state._pendingIntent = { kind: 'create' }
+      toast('Crée ou connecte ton compte pour lancer une partie', 3000)
+      navigate('account')
+      return
+    }
+    state.isMJ = true
+    navigate('create')
+  },
+  goJoin() {
+    if (!state.accountKey) {
+      state._pendingIntent = { kind: 'join' }
+      toast('Crée ou connecte ton compte pour rejoindre', 3000)
+      navigate('account')
+      return
+    }
+    state.isMJ = false
+    navigate('join')
+  },
 
   showHelp() {
-    toast("Le MJ choisit les objets, vous les trouvez en photo. Premier à compléter sa grille gagne !", 4000)
+    openHowToPlay()
   },
 
   async createGame() {
@@ -319,8 +333,25 @@ const ACTIONS = {
     refreshAvatarUI({ mood: 'jump', sparkles: true, duration: 600 })
   },
 
+  cancelAvatarEdit() {
+    // Restaure l'avatar tel qu'il était en entrant sur l'écran avatar
+    // (annule toutes les modifs de skin/eyes/etc. faites sans validation)
+    if (state._avatarSnapshot) {
+      state.myAvatar = state._avatarSnapshot
+      delete state._avatarSnapshot
+    }
+    if (state._myNameSnapshot !== undefined) {
+      state.myName = state._myNameSnapshot
+      delete state._myNameSnapshot
+    }
+    navigate('avatar-pick')
+  },
+
   async confirmAvatar() {
     console.log('[confirmAvatar] start', { isMJ: state.isMJ, gameCode: state.gameCode, myName: state.myName, hasAvatar: !!state.myAvatar })
+    // L'utilisateur valide → on jette le snapshot d'annulation (modif gardée)
+    delete state._avatarSnapshot
+    delete state._myNameSnapshot
     const nameInput = document.getElementById('avatar-name-input')
     if (nameInput) { const v = nameInput.value.trim(); if (v) state.myName = v }
 
@@ -336,7 +367,9 @@ const ACTIONS = {
         }).catch(() => {})
       }
       toast('Avatar mis à jour !')
-      navigate('home')
+      // Si l'user venait de créer son compte avec une intention create/join,
+      // on le redirige maintenant vers la bonne destination
+      _resolvePendingIntent('home')
       return
     }
 
@@ -379,7 +412,18 @@ const ACTIONS = {
 
   cancelPhoto() { closeModal(); state.currentPickingObj = null },
 
-  newGame() { unsubscribeAll(); _seenPlayerIds.clear(); clearActiveGame(); resetGame(); navigate('home') },
+  openClassement() {
+    // Vue temporaire du classement pendant la partie (ne termine pas la partie)
+    state._previewClassement = true
+    navigate('end')
+  },
+
+  closeClassement() {
+    state._previewClassement = false
+    navigate('game')
+  },
+
+  newGame() { unsubscribeAll(); _seenPlayerIds.clear(); _lobbySubscribedFor = null; _photosSubscribedFor = null; clearActiveGame(); resetGame(); navigate('home') },
 
   endGameByMJ() {
     if (!state.isMJ) return
@@ -508,6 +552,7 @@ const ACTIONS = {
   logoutAccount() {
     state.accountKey  = null
     state.userProfile = { ...state.userProfile, accountKey: null }
+    try { localStorage.removeItem('bingo_account_key') } catch {}
     toast('Compte déconnecté de cet appareil')
     navigate('home')
   },
@@ -516,6 +561,51 @@ const ACTIONS = {
 /* ============================================================
    DÉLÉGATION D'ÉVÉNEMENTS
    ============================================================ */
+/**
+ * Si l'utilisateur avait une intention en attente (créer/rejoindre),
+ * on l'y redirige après création/connexion de compte.
+ * Sinon, fallback sur la destination par défaut passée en paramètre.
+ */
+function _resolvePendingIntent(fallback = 'home') {
+  const intent = state._pendingIntent
+  delete state._pendingIntent
+  if (!intent) { navigate(fallback); return }
+  if (intent.kind === 'create') {
+    state.isMJ = true
+    navigate('create')
+  } else if (intent.kind === 'join') {
+    state.isMJ = false
+    // Si un code était partagé via deeplink, le re-pousser dans l'URL
+    if (intent.code) {
+      window.location.hash = `join/${intent.code}`
+    } else {
+      navigate('join')
+    }
+  } else {
+    navigate(fallback)
+  }
+}
+
+/**
+ * Affiche un spinner de chargement sur un bouton pendant une promesse.
+ * Le contenu original est restauré (succès ou échec).
+ * Empêche aussi le double-clic via `disabled`.
+ */
+function _withButtonLoader(btn, promise) {
+  const originalHTML = btn.innerHTML
+  btn.disabled = true
+  btn.dataset.loading = 'true'
+  btn.innerHTML = `<span class="btn-loader"></span>`
+
+  const cleanup = () => {
+    btn.disabled = false
+    delete btn.dataset.loading
+    btn.innerHTML = originalHTML
+  }
+
+  promise.then(cleanup, (err) => { cleanup(); console.warn('[action]', err) })
+}
+
 function setupEventDelegation() {
   document.addEventListener('click', (e) => {
     const target = e.target.closest('[data-action],[data-nav],[data-cycle],[data-toggle-obj],[data-cell],[data-duration],[data-photo-url]')
@@ -539,7 +629,18 @@ function setupEventDelegation() {
         }
         return
       }
-      ACTIONS[action]()
+
+      // Anti double-clic : on désactive immédiatement le bouton.
+      // Pour les actions async, on affiche un spinner jusqu'à résolution.
+      const isButton = target.tagName === 'BUTTON' || target.classList.contains('btn')
+      const result = ACTIONS[action]()
+      if (result && typeof result.then === 'function' && isButton) {
+        _withButtonLoader(target, result)
+      } else if (isButton) {
+        // Action synchrone : petit lock anti double-clic de 300ms
+        target.disabled = true
+        setTimeout(() => { target.disabled = false }, 300)
+      }
       return
     }
 
@@ -679,17 +780,20 @@ function setupScreenHooks() {
   window.addEventListener('screen:rendered', (e) => {
     const screen = e.detail?.screen || state.currentScreen
     setupAvatarLoops()
-    if (screen === 'game')               { updateHudConfidence(); checkHeartbeat(); _setupGamePhotosSubscription() }
+    if (screen === 'game')               { updateHudConfidence(); checkHeartbeat(); _setupGamePhotosSubscription(); _setupLobbySubscriptions() }
     if (screen === 'lobby')              _setupLobbySubscriptions()
     if (screen === 'account')            _setupAccountScreen()
     if (screen === 'animations-loading') _setupAnimationsLoadingScreen()
-    if (screen === 'end')                _setupGamePhotosSubscription()
-    if (screen === 'home')               unsubscribeAll()
+    if (screen === 'end')                { _setupGamePhotosSubscription(); _setupLobbySubscriptions() }
+    if (screen === 'home')               { unsubscribeAll(); _lobbySubscribedFor = null; _photosSubscribedFor = null; delete state._pendingIntent; loadHallOfFame() }
   })
 }
 
 function _setupGamePhotosSubscription() {
   if (!state.gameCode) return
+  // Évite la boucle (cf. _setupLobbySubscriptions)
+  if (_photosSubscribedFor === state.gameCode) return
+  _photosSubscribedFor = state.gameCode
   subscribeToPhotos(state.gameCode, (photos) => {
     state.gamePhotos = photos
     // Re-render end si on est dessus pour voir les photos qui arrivent
@@ -733,6 +837,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  // Fallback localStorage : si Firebase a perdu l'UID anonyme
+  // (cookies effacés, navigation privée…), accountKey peut ne pas remonter
+  // via loadProfile. On hydrate manuellement depuis localStorage.
+  if (!state.accountKey) {
+    try {
+      const cachedKey = localStorage.getItem('bingo_account_key')
+      if (cachedKey) {
+        const { doc, getDoc } = await import('firebase/firestore')
+        const { db } = await import('./firebase/config.js')
+        const snap = await getDoc(doc(db, 'accounts', cachedKey))
+        if (snap.exists()) {
+          const data = snap.data()
+          state.accountKey  = cachedKey
+          state.myName      = data.name || state.myName
+          if (data.avatar) state.myAvatar = { ...state.myAvatar, ...data.avatar }
+          state.userProfile = { ...(state.userProfile || {}), accountKey: cachedKey, name: data.name, avatar: data.avatar }
+          console.log('[boot] account restored from localStorage:', cachedKey)
+          // Re-link l'UID actuel au compte (l'ancien UID anonyme a peut-être changé)
+          if (state.uid && state.uid !== data.uid) {
+            try {
+              const { updateAccountUID } = await import('./firebase/account.js')
+              await updateAccountUID(cachedKey, state.uid)
+              await saveProfile({ name: data.name, avatar: state.myAvatar }).catch(() => {})
+            } catch (err) { console.warn('[boot] re-link uid failed:', err) }
+          }
+        } else {
+          // accountKey orphelin (compte supprimé ?) → cleanup
+          localStorage.removeItem('bingo_account_key')
+        }
+      }
+    } catch (err) {
+      console.warn('[boot] localStorage account restore failed:', err)
+    }
+  }
+
   // Test rapide : si Firebase est bloqué par adblock, prévenir l'user
   setTimeout(async () => {
     try {
@@ -767,12 +906,59 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (typeof game.duration === 'number') state.gameDuration = game.duration
           state.selectedObjects = game.selectedObjects || []
           state.customObjects   = game.customObjects   || []
-          if (game.status === 'playing' && hash === 'game') {
+
+          // Hydrate les joueurs (noms, avatars, scores)
+          // Sans ça, le classement preview affiche "Joueur" anonymes après reload.
+          try {
+            const players = await getPlayersOnce(active.code)
+            state.players = players.map(p => ({
+              ...p,
+              isYou:      p.id === state.uid,
+              justJoined: false,
+            }))
+          } catch (err) {
+            console.warn('[boot] getPlayersOnce failed:', err)
+          }
+
+          // Helper local : recharge photos + reconstitue myGrid + myPhotos
+          // utilisé pour les deux cas reload (game ou end-preview)
+          const _hydratePhotos = async () => {
             state.myGrid = state.selectedObjects.map(id => ({ objId: id, status: 'empty' }))
+            state.myPhotos = {}
+            try {
+              const photos = await getPhotosOnce(active.code)
+              state.gamePhotos = photos
+              const mine = photos.filter(p => p.uid === state.uid)
+              for (const photo of mine) {
+                if (!photo.objId) continue
+                const idx = state.selectedObjects.indexOf(photo.objId)
+                if (idx >= 0) {
+                  state.myGrid[idx].status = 'validated'
+                  state.myPhotos[idx]      = photo.url
+                }
+              }
+            } catch (err) {
+              console.warn('[boot] getPhotosOnce failed:', err)
+            }
+          }
+
+          if (game.status === 'playing' && hash === 'game') {
+            await _hydratePhotos()
+            startTimer()
+          }
+          // Si on reload sur #end alors que la partie est ENCORE en cours
+          // → c'est forcément un preview de classement, pas une fin réelle
+          if (game.status === 'playing' && hash === 'end') {
+            state._previewClassement = true
+            await _hydratePhotos()
             startTimer()
           }
           if (game.status === 'ended' && hash !== 'end') {
             location.hash = 'end'
+          }
+          if (game.status === 'ended' && hash === 'end') {
+            // Charger les photos pour la galerie de fin
+            await _hydratePhotos()
           }
         } else {
           console.warn('[boot] active game not found in Firestore, clearing')
