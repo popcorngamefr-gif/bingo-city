@@ -52,7 +52,7 @@ export function renderHome() {
             <button class="home-v3-mini-account home-v3-mini-souvenirs" data-action="showSouvenirs" title="Souvenirs">
               ${icon('download', { size: 14 })}
             </button>
-            <button class="home-v3-mini-account" data-nav="account" title="Mon compte">
+            <button class="home-v3-mini-account" data-action="editHomeAvatar" title="Modifier mon avatar">
               ${icon('gear', { size: 14 })}
             </button>
           </div>

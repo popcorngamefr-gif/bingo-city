@@ -572,18 +572,16 @@ const ACTIONS = {
   },
 
   // ── Souvenirs (page compte) ─────────────────────────────────────────────
-  async downloadProfilePhoto() {
+  downloadProfilePhoto() {
     const url = state.myAvatar?.generatedImageUrl
     if (!url) return toast("Pas de photo générée")
-    const filename = `${state.accountKey || 'avatar'}-photo.png`
-    return _downloadFile(url, filename, 'image/png')
+    _downloadFile(url, `${state.accountKey || 'avatar'}-photo.png`)
   },
 
-  async downloadProfileVideo() {
+  downloadProfileVideo() {
     const url = state.myAvatar?.animationUrl
     if (!url) return toast("Pas de vidéo générée")
-    const filename = `${state.accountKey || 'avatar'}-deglingo.mp4`
-    return _downloadFile(url, filename, 'video/mp4')
+    _downloadFile(url, `${state.accountKey || 'avatar'}-deglingo.mp4`)
   },
 
   generateProfilePhoto() {
@@ -618,29 +616,21 @@ const ACTIONS = {
    DÉLÉGATION D'ÉVÉNEMENTS
    ============================================================ */
 /**
- * Télécharge un fichier distant via blob (compatible cross-origin et mobile).
- * Sans cette astuce, l'attribut `download` est ignoré pour les fichiers Firebase
- * Storage (domaine différent) et le fichier s'ouvre dans le navigateur au lieu
- * de se télécharger.
+ * Ouvre un fichier distant dans un nouvel onglet pour que l'utilisateur
+ * fasse "Enregistrer sous" manuellement.
+ *
+ * On a essayé fetch+blob mais Firebase Storage bloque le fetch via CORS
+ * depuis le domaine de production. Tant que le bucket n'est pas configuré
+ * en CORS, cette voie reste la plus simple et fiable.
  */
-async function _downloadFile(url, filename) {
+function _downloadFile(url, filename) {
+  if (!url) return
   try {
-    toast('Téléchargement en cours…', 1500)
-    const res = await fetch(url)
-    if (!res.ok) throw new Error('HTTP ' + res.status)
-    const blob = await res.blob()
-    const blobUrl = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = blobUrl
-    a.download = filename
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    // Libère la mémoire après que le navigateur ait pris la main
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
+    window.open(url, '_blank', 'noopener,noreferrer')
+    toast('Ouverture dans un nouvel onglet — fais "Enregistrer sous" 👍', 4000)
   } catch (err) {
-    console.warn('[download]', err)
-    toast('Téléchargement impossible. Réessaie ?')
+    console.warn('[download] open failed:', err)
+    toast('Impossible d\'ouvrir le fichier')
   }
 }
 

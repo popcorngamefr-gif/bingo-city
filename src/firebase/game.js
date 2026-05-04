@@ -55,10 +55,19 @@ export async function getGameOnce(code) {
 /**
  * Récupère tous les joueurs d'une partie (one-shot).
  * Utilisé pour hydrater state.players à la restauration après reload.
+ *
+ * Rétrocompat : si l'animationUrl est stockée au top-level (ancien format),
+ * on la fusionne dans avatar.animationUrl pour que le rendu soit cohérent.
  */
 export async function getPlayersOnce(code) {
   const qs = await getDocs(collection(db, 'games', code, 'players'))
-  return qs.docs.map(d => ({ id: d.id, ...d.data() }))
+  return qs.docs.map(d => {
+    const data = d.data()
+    if (data.animationUrl && !data.avatar?.animationUrl) {
+      data.avatar = { ...(data.avatar || {}), animationUrl: data.animationUrl }
+    }
+    return { id: d.id, ...data }
+  })
 }
 
 /**
@@ -154,7 +163,14 @@ export function subscribeToPlayers(code, onUpdate) {
     collection(db, 'games', code, 'players'),
     (snapshot) => {
       const players = []
-      snapshot.forEach(s => players.push({ id: s.id, ...s.data() }))
+      snapshot.forEach(s => {
+        const data = s.data()
+        // Rétrocompat : ancien format avec animationUrl au top-level
+        if (data.animationUrl && !data.avatar?.animationUrl) {
+          data.avatar = { ...(data.avatar || {}), animationUrl: data.animationUrl }
+        }
+        players.push({ id: s.id, ...data })
+      })
       onUpdate(players)
     },
     (err) => console.error('subscribeToPlayers error:', err)
@@ -187,12 +203,22 @@ export function unsubscribeAll() {
 
 /**
  * Patch le doc joueur (name, avatar) après que l'utilisateur ait fini son choix.
+ *
+ * IMPORTANT : `animationUrl` est mergé DANS `avatar.animationUrl` pour rester
+ * cohérent avec saveProfile (Firestore /users) et avec le rendu via
+ * avatarLayersHtml qui lit av.animationUrl.
  */
 export async function updatePlayerProfile(gameCode, uid, { name, avatar, animationUrl }) {
   const playerRef = doc(db, 'games', gameCode, 'players', uid)
   const data = {}
-  if (name)         data.name         = name
-  if (avatar)       data.avatar       = avatar
-  if (animationUrl) data.animationUrl = animationUrl
+  if (name)   data.name   = name
+  if (avatar) data.avatar = avatar
+  // Si on update juste l'animationUrl sans avatar complet, on patche en
+  // dot-notation pour fusionner dans le sous-objet avatar sans l'écraser
+  if (animationUrl && !avatar) {
+    data['avatar.animationUrl'] = animationUrl
+  } else if (animationUrl && avatar) {
+    data.avatar = { ...avatar, animationUrl }
+  }
   return updateDoc(playerRef, data)
 }
