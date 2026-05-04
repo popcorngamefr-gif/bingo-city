@@ -275,29 +275,26 @@ const ACTIONS = {
   },
 
   openExpressionsGen() {
-    if (!state.animationSourceImage) {
+    const imgUrl = state.myAvatar?.generatedImageUrl
+    if (!imgUrl) {
       import('./ui/toast.js').then(({ toast }) => toast(`Lance d'abord le scan de ta tête !`))
       return
     }
-    if (state.myAnimations?._ready) {
+    if (state.myAnimation?._ready && state.myAnimation?.url) {
       navigate('animations-loading')
       return
     }
-    // Navigue vers l'écran de chargement
-    state.myAnimations = {}
+    // Reset + navigation immédiate
+    state.myAnimation = { url: null, _ready: false }
     navigate('animations-loading')
 
-    // Lance la génération — uniquement à la demande utilisateur
+    // Lance la génération vidéo — uniquement à la demande utilisateur
     generateAnimations(
-      state.animationSourceImage,
-      ({ done, total, key, url }) => {
-        if (state.currentScreen === 'animations-loading') show('animations-loading')
-      },
-      () => {
-        if (state.currentScreen === 'animations-loading') show('animations-loading')
-      }
+      imgUrl,
+      () => { if (state.currentScreen === 'animations-loading') show('animations-loading') },
+      () => { if (state.currentScreen === 'animations-loading') show('animations-loading') }
     ).catch(err => {
-      import('./ui/toast.js').then(({ toast }) => toast('Erreur : ' + err.message))
+      console.error('generateAnimations error:', err)
     })
   },
 

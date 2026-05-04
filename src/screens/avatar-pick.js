@@ -16,7 +16,7 @@ export function renderAvatarPick() {
 // ─── Vue confirmation post-IA ─────────────────────────────────────────────────
 
 function _renderConfirm() {
-  const hasAnimations       = !!state.myAnimations?._ready
+  const hasAnimations       = !!state.myAnimation?.url
   const expressionsUnlocked = isUnlocked('expressions')
 
   return `
@@ -42,12 +42,12 @@ function _renderConfirm() {
       <div class="ap-expr-option">
         ${hasAnimations
           ? `<div class="ap-expr-ready" style="cursor:pointer;" data-nav="animations-loading">
-               ${icon('sparkle', { size: 14 })} Animations prêtes — actives en jeu
+               ${icon('sparkle', { size: 14 })} Animation prête — active en jeu
              </div>`
           : expressionsUnlocked
             ? `<div class="ap-expr-loading-bar" data-nav="animations-loading">
                  <div class="ap-expr-loading-label">
-                   ${icon('star', { size: 12 })} Génération des animations en cours…
+                   ${icon('star', { size: 12 })} Génération vidéo en cours…
                  </div>
                  <div class="ap-expr-progress" id="expr-progress-bar">
                    <div class="ap-expr-progress-fill" id="expr-progress-fill" style="width:0%"></div>
@@ -58,7 +58,7 @@ function _renderConfirm() {
                  <div class="ap-card-icon">${icon('heart', { size: 28 })}</div>
                  <div class="ap-card-body">
                    <div class="ap-card-title">Déglingo IA</div>
-                   <div class="ap-card-sub">3 animations : neutre, triste, hilare</div>
+                   <div class="ap-card-sub">Donne vie à ton avatar en vidéo</div>
                  </div>
                  <div class="ap-card-lock">${icon('star', { size: 10 })} 1 SHOOTER</div>
                </div>`

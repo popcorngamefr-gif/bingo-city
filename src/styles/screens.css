@@ -1315,3 +1315,64 @@
   letter-spacing: 0.05em;
   opacity: 0.8;
 }
+
+
+/* ── ANIMATION VIDEO (wan-2.2 single video) ─────────────────────────────── */
+.anim-video-wrap {
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+  aspect-ratio: 1;
+  background: var(--ink);
+  border: 4px solid var(--tram-yellow);
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+  box-shadow: 0 6px 0 rgba(0,0,0,0.3);
+}
+.anim-video-wrap.ready {
+  border-color: var(--tram-red);
+  box-shadow: 0 6px 0 var(--tram-red-dark);
+  animation: exprPop 0.4s steps(3) 1;
+}
+
+.anim-video-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+}
+
+.anim-video-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+}
+
+.anim-video-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--tram-yellow);
+  padding: 20px;
+  text-align: center;
+}
+
+/* Progress bar indéterminée */
+.anim-progress-indeterminate {
+  width: 30% !important;
+  animation: indetSlide 1.4s ease-in-out infinite;
+}
+@keyframes indetSlide {
+  0%   { margin-left: -30%; }
+  100% { margin-left: 100%; }
+}

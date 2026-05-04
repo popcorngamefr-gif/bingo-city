@@ -17,7 +17,7 @@
  */
 
 import { PORTRAIT }       from '../data/portrait.js'
-import { moodToAnimation } from './animations-generator.js'
+// import retiré : on n'a plus de mapping mood → animation, juste une vidéo unique
 
 export function avatarHtml(av, opts = {}) {
   const { size = 'md', mood = 'idle', confidence = 'neutral', sparkles = false } = opts
@@ -33,24 +33,23 @@ export function avatarHtml(av, opts = {}) {
 }
 
 export function avatarLayersHtml(av, mood = 'idle', confidence = 'neutral') {
-  // 1. GIFs animés Déglingo IA (mode premium)
-  if (av?.generatedImageUrl) {
-    // Cherche un GIF animé correspondant au mood courant
-    const animKey = moodToAnimation(mood)
-    const animUrl = window.__state?.myAnimations?.[animKey] || null
-    // Fallback sur l'image statique générée
-    const imgUrl  = animUrl || av.generatedImageUrl
-    const isGif   = imgUrl?.endsWith?.('.gif') || animUrl
+  // 1. Vidéo Déglingo IA (mode premium) — prioritaire
+  const videoUrl = window.__state?.myAnimation?.url
+  if (videoUrl && av?.generatedImageUrl) {
     return `
-      <div class="layer generated-anim" style="${isGif ? '' : `background-image:url('${imgUrl}')`}">
-        ${isGif
-          ? `<img src="${imgUrl}" alt="avatar" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated;" />`
-          : ''
-        }
+      <div class="layer generated-video">
+        <video src="${videoUrl}" autoplay loop muted playsinline
+               style="width:100%;height:100%;object-fit:cover;image-rendering:pixelated;"></video>
       </div>
     `
   }
-  // 2. Sprites classiques avec bouche SVG
+  // 2. Image statique générée par face-to-many
+  if (av?.generatedImageUrl) {
+    return `
+      <div class="layer generated-img" style="background-image:url('${av.generatedImageUrl}')"></div>
+    `
+  }
+  // 3. Sprites classiques avec bouche SVG animée
   const layers = avatarLayers(av)
   return `${layers.map(src => `<div class="layer" style="background-image:url('${src}')"></div>`).join('')}
     <div class="layer mouth-layer" data-mouth>${mouthSvg(mood, confidence)}</div>`

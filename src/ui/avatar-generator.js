@@ -11,7 +11,6 @@ import { openCamera } from './modal.js'
 const POLL_MS = 2500
 
 export function openGeneratorModal() {
-  _lastBase64 = null  // reset à chaque ouverture
   document.getElementById('modal-root').innerHTML = _modalHtml()
   document.getElementById('gen-capture-btn')?.addEventListener('click', () => {
     openCamera('user', (dataUrl) => _resizeAndSend(dataUrl))
@@ -23,8 +22,6 @@ export function closeGeneratorModal() {
   document.getElementById('modal-root').innerHTML = ''
 }
 
-let _lastBase64 = null
-
 function _resizeAndSend(dataUrl) {
   _setLoading('Préparation de la photo…')
   const img = new Image()
@@ -35,8 +32,7 @@ function _resizeAndSend(dataUrl) {
     canvas.width  = Math.round(img.width  * ratio)
     canvas.height = Math.round(img.height * ratio)
     canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
-    _lastBase64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1]
-    _start(_lastBase64)
+    _start(canvas.toDataURL('image/jpeg', 0.85).split(',')[1])
   }
   img.src = dataUrl
 }
@@ -111,8 +107,7 @@ function _showResult(url) {
   `
   document.getElementById('gen-accept-btn')?.addEventListener('click', () => {
     state.myAvatar.generatedImageUrl = url
-    // Garde l'avatar pixel art pour la génération d'animations (premium Déglingo IA)
-    if (_lastBase64) state.animationSourceImage = _lastBase64
+    // L'URL servira aussi pour la génération vidéo (premium)
     closeGeneratorModal()
     navigate('avatar-pick')
   })

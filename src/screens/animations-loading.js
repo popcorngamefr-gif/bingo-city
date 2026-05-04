@@ -1,109 +1,74 @@
 /**
- * Écran : chargement des 3 GIFs d'animation
- * Affiché pendant la génération, re-rendu à chaque GIF reçu.
+ * Écran : chargement de l'animation vidéo
+ * Affiché pendant la génération wan-2.2-i2v-fast (~40-80s).
  */
 
 import { state } from '../state.js'
 import { icon }  from '../ui/icons.js'
 
-const ANIM_META = {
-  idle:  { label: 'Neutre + Clin d\'œil', emoji: 'idle' },
-  sad:   { label: 'Triste + Furieux',     emoji: 'sad'  },
-  laugh: { label: 'Mort de rire',         emoji: 'laugh' },
-}
-
 export function renderAnimationsLoading() {
-  const anims = state.myAnimations || {}
-  const keys  = ['idle', 'sad', 'laugh']
-  const done  = keys.filter(k => anims[k] !== undefined).length
-  const ready = anims._ready
-
-  const msgs = [
-    'L\'IA réfléchit à comment t\'animer…',
-    'Premiers pixels en mouvement…',
-    'Plus qu\'une animation…',
-    '★ Tout est prêt !',
-  ]
-  const msgIdx = Math.min(done, msgs.length - 1)
+  const anim  = state.myAnimation
+  const ready = !!anim?.url
+  const error = anim?.error
 
   return `
     <section class="screen anim-loading-screen">
 
       <h2 class="title-screen">★ DÉGLINGO IA ★</h2>
 
-      <p class="anim-loading-msg ${ready ? 'done' : ''}">${msgs[msgIdx]}</p>
+      <p class="anim-loading-msg ${ready ? 'done' : ''}">
+        ${ready  ? 'Tout est prêt !'
+        : error  ? 'Oups, une erreur est survenue'
+                 : 'L\\'IA donne vie à ton avatar…'}
+      </p>
 
-      <!-- 3 tuiles GIF -->
-      <div class="anim-grid">
-        ${keys.map(key => {
-          const url   = anims[key]
-          const meta  = ANIM_META[key]
-          const state_= url !== undefined ? (url ? 'ready' : 'error') : 'pending'
-
-          return `
-            <div class="anim-tile anim-tile--${state_}">
-              <div class="anim-tile-preview">
-                ${url
-                  ? `<img src="${url}" alt="${meta.label}" class="anim-tile-gif" />`
-                  : `<div class="anim-tile-spinner">
-                       ${state_ === 'error'
-                         ? icon('cross', { size: 24 })
-                         : '<div class="gen-pixel-spinner" style="width:32px;height:32px;margin:auto;"></div>'
-                       }
-                     </div>`
-                }
-              </div>
-              <div class="anim-tile-label">${meta.label}</div>
-            </div>
-          `
-        }).join('')}
+      <!-- Preview vidéo grand format -->
+      <div class="anim-video-wrap ${ready ? 'ready' : ''}">
+        ${ready
+          ? `<video
+              src="${anim.url}"
+              autoplay loop muted playsinline
+              class="anim-video-preview"
+            ></video>`
+          : error
+            ? `<div class="anim-video-error">
+                ${icon('alert', { size: 48 })}
+                <p style="font-size:13px;margin-top:8px;">${error}</p>
+              </div>`
+            : `<div class="anim-video-loading">
+                <div class="gen-pixel-spinner" style="width:48px;height:48px;"></div>
+                <p style="font-family:'Press Start 2P',monospace;font-size:8px;color:var(--tram-yellow);margin-top:14px;">
+                  GÉNÉRATION VIDÉO<br>~1 minute
+                </p>
+              </div>`
+        }
       </div>
 
-      <!-- Barre progression -->
-      <div class="anim-progress-wrap">
-        <div class="anim-progress-bar">
-          <div class="anim-progress-fill" style="width:${(done / keys.length) * 100}%"></div>
+      ${!ready && !error ? `
+        <div class="anim-progress-wrap">
+          <div class="anim-progress-bar">
+            <div class="anim-progress-fill anim-progress-indeterminate"></div>
+          </div>
+          <div class="anim-progress-text">L'IA réfléchit…</div>
         </div>
-        <div class="anim-progress-text">${done}/3 animations générées</div>
-      </div>
+      ` : ''}
 
-      <!-- Preview enchainée quand tout est prêt -->
-      ${ready ? _renderPreview(anims) : ''}
-
-      <!-- Sticky CTA -->
+      <!-- CTAs -->
       ${ready ? `
         <div class="sticky-cta">
           <button class="btn btn-red" data-action="validateAnimations">
-            ${icon('check', { size: 16 })} Valider mes animations
+            ${icon('check', { size: 16 })} Valider mon animation
+          </button>
+        </div>
+      ` : error ? `
+        <div class="sticky-cta">
+          <button class="btn btn-cream btn-sm" data-nav="avatar-pick">Retour</button>
+          <button class="btn btn-red" data-action="openExpressionsGen">
+            ${icon('retry', { size: 14 })} Réessayer
           </button>
         </div>
       ` : ''}
 
     </section>
-  `
-}
-
-function _renderPreview(anims) {
-  return `
-    <div class="anim-preview-section">
-      <div class="section-title">Aperçu — les 3 s'enchaînent en jeu</div>
-      <div class="anim-preview-player">
-        <div class="anim-preview-track" id="anim-preview-track">
-          ${['idle', 'sad', 'laugh'].filter(k => anims[k]).map(k => `
-            <img
-              src="${anims[k]}"
-              alt="${ANIM_META[k].label}"
-              class="anim-preview-frame"
-              data-anim="${k}"
-            />
-          `).join('')}
-        </div>
-        <div class="anim-preview-dots">
-          ${['idle', 'sad', 'laugh'].filter(k => anims[k]).map((k, i) => `
-            <div class="anim-dot ${i === 0 ? 'active' : ''}" data-dot="${i}"></div>
-          `).join('')}
-        </div>
-      </div>
-    </div>
   `
 }
