@@ -65,5 +65,11 @@ export function initRouter() {
 }
 
 export function navigate(screen) {
-  window.location.hash = screen
+  const currentHash = window.location.hash.slice(1) || 'home'
+  if (currentHash === screen) {
+    // Même écran que l'actuel → hashchange ne se déclenchera pas, on force le re-render
+    show(screen)
+  } else {
+    window.location.hash = screen
+  }
 }
