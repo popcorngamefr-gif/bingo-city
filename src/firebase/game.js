@@ -20,12 +20,13 @@ let _unsubGame    = null
 
 // ─── Création ────────────────────────────────────────────────────────────────
 
-export async function createGame({ code, name, hostUid, hostName, hostAvatar }) {
+export async function createGame({ code, name, hostUid, hostName, hostAvatar, duration = 1200 }) {
   await setDoc(doc(db, 'games', code), {
     name,
     hostUid,
     status:          'lobby',
     selectedObjects: [],
+    duration,
     createdAt:       serverTimestamp(),
     startedAt:       null,
   })
@@ -71,6 +72,10 @@ export async function startGame(code, selectedObjects, customObjects = []) {
 }
 
 // ─── Terminer ────────────────────────────────────────────────────────────────
+
+export async function updateGameDuration(code, duration) {
+  await updateDoc(doc(db, 'games', code), { duration })
+}
 
 export async function endGame(code) {
   await updateDoc(doc(db, 'games', code), { status: 'ended' })

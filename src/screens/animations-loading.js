@@ -14,12 +14,12 @@ export function renderAnimationsLoading() {
   return `
     <section class="screen anim-loading-screen">
 
-      <h2 class="title-screen">★ DÉGLINGO IA ★</h2>
+      <h2 class="title-screen">★ ÇA SE PRÉPARE ★</h2>
 
-      <p class="anim-loading-msg ${ready ? 'done' : ''}">
-        ${ready  ? `Tout est prêt !`
-        : error  ? `Oups, une erreur est survenue`
-                 : `L'IA donne vie à ton avatar…`}
+      <p class="anim-loading-msg ${ready ? 'done' : ''}" id="anim-loading-msg">
+        ${ready  ? `C'est parti, mon kiki !`
+        : error  ? `Aïe, ça a foiré`
+                 : `Tu vas voir ce que tu vas voir…`}
       </p>
 
       <!-- Preview vidéo grand format -->
@@ -37,8 +37,8 @@ export function renderAnimationsLoading() {
               </div>`
             : `<div class="anim-video-loading">
                 <div class="gen-pixel-spinner" style="width:48px;height:48px;"></div>
-                <p style="font-family:'Press Start 2P',monospace;font-size:8px;color:var(--tram-yellow);margin-top:14px;">
-                  GÉNÉRATION VIDÉO<br>~1 minute
+                <p style="font-family:'Press Start 2P',monospace;font-size:8px;color:var(--tram-yellow);margin-top:14px;line-height:1.6;" id="anim-fun-msg">
+                  ÇA MIJOTE…<br>1 minute environ
                 </p>
               </div>`
         }

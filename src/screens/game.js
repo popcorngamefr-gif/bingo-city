@@ -21,6 +21,10 @@ export function renderGame() {
 
   return `
     <section class="screen game-screen">
+      <button class="game-share-btn" data-action="openShareModal" title="Partager le lien">
+        ${icon('link', { size: 18 })}
+      </button>
+
       <!-- HUD haut avec avatar qui marche -->
       <div class="game-hud">
         <div class="hud-avatar">
@@ -62,13 +66,20 @@ export function renderGame() {
         ${state.myGrid.map((cell, i) => {
           const obj = getObject(cell.objId)
           if (!obj) return ''
-          const statusIcon = cell.status === 'validated' ? icon('check', { size: 20, cls: 'cell-status-icon' }) : ''
+          const photo = state.myPhotos?.[i]
+          const isValidated = cell.status === 'validated'
+          const statusIcon  = isValidated ? icon('check', { size: 20, cls: 'cell-status-icon' }) : ''
           // Objets custom : on rend l'icône via icon() au lieu de objectSvg
           const iconHtml = obj.icon && !obj.grid
             ? icon(obj.icon, { size: 36 })
             : objectSvg(obj)
-          return `<div class="bingo-cell ${cell.status}" data-cell="${i}">
-            <div class="bingo-cell-icon">${iconHtml}</div>
+          // Si validée et photo dispo : on affiche la photo en background, l'icône est masquée
+          const hasPhoto = isValidated && photo
+          return `<div class="bingo-cell ${cell.status} ${hasPhoto ? 'has-photo' : ''}" data-cell="${i}">
+            ${hasPhoto
+              ? `<img src="${photo}" alt="${obj.name}" class="bingo-cell-photo" loading="lazy" />`
+              : `<div class="bingo-cell-icon">${iconHtml}</div>`
+            }
             <div class="bingo-cell-name">${obj.name}</div>
             ${statusIcon}
           </div>`

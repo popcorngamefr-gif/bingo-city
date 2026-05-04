@@ -26,7 +26,18 @@ export function renderCreate() {
         <input class="input mb" id="game-name-input" placeholder="ex: Varsovie Mai 26" maxlength="30" />
 
         <label class="label">Ton pseudo</label>
-        <input class="input" id="creator-name-input" placeholder="ex: Marek" maxlength="15" value="${savedName}" />
+        <input class="input mb" id="creator-name-input" placeholder="ex: Marek" maxlength="15" value="${savedName}" />
+
+        <label class="label">Durée de la partie</label>
+        <div class="duration-picker" id="duration-picker">
+          <button type="button" class="duration-tile" data-duration="600">10 min</button>
+          <button type="button" class="duration-tile selected" data-duration="1200">20 min</button>
+          <button type="button" class="duration-tile" data-duration="1800">30 min</button>
+          <button type="button" class="duration-tile" data-duration="3600">1h</button>
+        </div>
+        <p class="small light" style="font-size:11px;margin-top:6px;color:var(--ink-soft);">
+          Modifiable avant le lancement
+        </p>
       </div>
 
       <div class="sticky-cta">

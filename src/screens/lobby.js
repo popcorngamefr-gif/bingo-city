@@ -32,12 +32,29 @@ export function renderLobby() {
 
       <div class="code-badge-wrap">
         <span class="code-deco code-deco-left">${icon('sparkle', { size: 24 })}</span>
-        <div class="code-badge">
+        <div class="code-badge" data-action="openShareModal" style="cursor:pointer;">
           <div class="code-label">CODE À PARTAGER</div>
           <div class="code-value">${state.gameCode || '----'}</div>
         </div>
         <span class="code-deco code-deco-right">${icon('sparkle', { size: 24 })}</span>
       </div>
+
+      <button class="btn btn-cream btn-sm share-cta-mb" data-action="openShareModal" style="position:relative;z-index:5;margin:-6px auto 14px;display:inline-flex;align-items:center;gap:6px;">
+        ${icon('link', { size: 14 })} Partager le lien
+      </button>
+
+      ${isMJ ? `
+      <div class="card mb" style="position:relative;z-index:5;">
+        <div class="section-title">Durée de la partie</div>
+        <div class="duration-picker">
+          ${[600, 1200, 1800, 3600].map(d => {
+            const label = d === 3600 ? '1h' : `${d/60} min`
+            const sel   = (state.gameDuration || 1200) === d ? 'selected' : ''
+            return `<button type="button" class="duration-tile ${sel}" data-action="updateGameDuration" data-duration-arg="${d}">${label}</button>`
+          }).join('')}
+        </div>
+      </div>
+      ` : ''}
 
       <div class="card mb" style="position: relative; z-index: 5;">
         <div class="section-title">

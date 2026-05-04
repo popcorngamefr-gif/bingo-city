@@ -29,6 +29,7 @@ import { openGeneratorModal }   from './ui/avatar-generator.js'
 import { openShooterPaywall } from './ui/shooter-paywall.js'
 import { openMoodPicker }     from './ui/mood-picker.js'
 import { openCustomObjPicker as openCustomObjPickerUI } from './ui/custom-obj-picker.js'
+import { openShareModal as openShareModalUI } from './ui/share-modal.js'
 import { generateAnimations }               from './ui/animations-generator.js'
 
 /* ============================================================
@@ -56,10 +57,11 @@ function _onPlayersUpdate(players) {
 }
 
 function _onGameUpdate(gameData) {
+  // Hydrate la durée à tout moment (le MJ peut la modifier en lobby)
+  if (typeof gameData.duration === 'number') state.gameDuration = gameData.duration
+
   if (gameData.status === 'playing' && state.currentScreen === 'lobby' && !state.isMJ) {
     state.selectedObjects = gameData.selectedObjects || []
-    // Hydrate les objets custom envoyés par le MJ pour que les joueurs
-    // puissent les afficher dans leur grille (nom, icône, points)
     state.customObjects   = gameData.customObjects || []
     state.myGrid = state.selectedObjects.map(id => ({ objId: id, status: 'empty' }))
     startTimer()
@@ -223,7 +225,7 @@ const ACTIONS = {
     if (state.isMJ) {
       state.players = [me]
       try {
-        await fbCreateGame({ code: state.gameCode, name: state.gameName, hostUid: state.uid, hostName: state.myName, hostAvatar: state.myAvatar })
+        await fbCreateGame({ code: state.gameCode, name: state.gameName, hostUid: state.uid, hostName: state.myName, hostAvatar: state.myAvatar, duration: state.gameDuration })
       } catch (err) {
         console.warn('createGame failed:', err)
         // Pas de simulateJoin en prod — laisse l'utilisateur seul s'il n'y a pas de Firebase
@@ -331,6 +333,17 @@ const ACTIONS = {
     })
   },
 
+  openShareModal() {
+    if (!state.gameCode) return
+    openShareModalUI(state.gameCode)
+  },
+
+  updateGameDuration() {
+    // Cette action est déclenchée via data-action mais on lit l'argument depuis le data-duration-arg
+    // L'event delegation appelle ACTIONS[action]() — il faut donc gérer ça spécialement
+    // Voir la délégation pour le branchement custom
+  },
+
   logoutAccount() {
     state.accountKey  = null
     state.userProfile = { ...state.userProfile, accountKey: null }
@@ -344,11 +357,30 @@ const ACTIONS = {
    ============================================================ */
 function setupEventDelegation() {
   document.addEventListener('click', (e) => {
-    const target = e.target.closest('[data-action],[data-nav],[data-cycle],[data-toggle-obj],[data-cell]')
+    const target = e.target.closest('[data-action],[data-nav],[data-cycle],[data-toggle-obj],[data-cell],[data-duration]')
     if (!target || target.disabled) return
 
     const action = target.dataset.action
-    if (action && ACTIONS[action]) { e.preventDefault(); ACTIONS[action](); return }
+    if (action && ACTIONS[action]) {
+      e.preventDefault()
+      // Handler spécial : updateGameDuration avec data-duration-arg
+      if (action === 'updateGameDuration' && target.dataset.durationArg) {
+        const dur = parseInt(target.dataset.durationArg, 10)
+        state.gameDuration = dur
+        // Toggle visuel chirurgical
+        target.parentElement?.querySelectorAll('.duration-tile').forEach(t => t.classList.remove('selected'))
+        target.classList.add('selected')
+        // Sync Firestore (best-effort)
+        if (state.gameCode && state.uid && state.uid !== 'me') {
+          import('./firebase/game.js').then(({ updateGameDuration }) => {
+            updateGameDuration(state.gameCode, dur).catch(console.error)
+          })
+        }
+        return
+      }
+      ACTIONS[action]()
+      return
+    }
 
     const nav = target.dataset.nav
     if (nav) { e.preventDefault(); navigate(nav); return }
@@ -400,12 +432,36 @@ function setupEventDelegation() {
       return
     }
 
+    const duration = target.dataset.duration
+    if (duration) {
+      state.gameDuration = parseInt(duration, 10)
+      // Toggle visuel — chirurgical, pas de re-render
+      target.parentElement?.querySelectorAll('.duration-tile').forEach(t => t.classList.remove('selected'))
+      target.classList.add('selected')
+      return
+    }
+
     const cellAttr = target.dataset.cell
     if (cellAttr !== undefined) {
       const idx  = parseInt(cellAttr)
       const cell = state.myGrid[idx]
       if (!cell) return
-      if (cell.status === 'validated') return toast('Déjà capturé !')
+      // Cellule validée avec photo : ouvre la photo en plein écran
+      if (cell.status === 'validated') {
+        const photo = state.myPhotos?.[idx]
+        if (photo) {
+          Promise.all([
+            import('./ui/photo-viewer.js'),
+            import('./data/objects.js'),
+          ]).then(([{ openPhotoViewer }, { getObject }]) => {
+            const obj = getObject(cell.objId)
+            openPhotoViewer(photo, obj?.name || '')
+          }).catch(() => toast('Déjà capturé !'))
+        } else {
+          toast('Déjà capturé !')
+        }
+        return
+      }
       openCameraModal(idx)
       return
     }
@@ -426,24 +482,31 @@ function setupInputFilters() {
    AVATAR SCREEN — bouton génération IA
    ============================================================ */
 function _setupAnimationsLoadingScreen() {
-  // Preview player — cycle automatique des 3 GIFs
-  const track  = document.getElementById('anim-preview-track')
-  if (!track) return
+  // Cycle de messages amusants pendant le chargement
+  const FUN_MESSAGES = [
+    'On chauffe les pixels...',
+    'Ton avatar fait des étirements...',
+    'Le grimage est en cours...',
+    'Encore un peu de patience...',
+    'Ça vaut le coup, promis...',
+    'Petit shot pour faire passer le temps ?',
+    'On ajuste la coiffure...',
+    'Plus que quelques secondes...',
+  ]
+  const msgEl = document.getElementById('anim-fun-msg')
+  if (!msgEl) return
 
-  const frames = [...track.querySelectorAll('.anim-preview-frame')]
-  const dots   = [...document.querySelectorAll('.anim-dot')]
-  if (!frames.length) return
-
-  let current = 0
-  frames[0]?.classList.add('active')
-
-  setInterval(() => {
-    frames[current]?.classList.remove('active')
-    dots[current]?.classList.remove('active')
-    current = (current + 1) % frames.length
-    frames[current]?.classList.add('active')
-    dots[current]?.classList.add('active')
-  }, 2500)
+  let i = 0
+  const interval = setInterval(() => {
+    // Si l'écran a changé, on stoppe
+    if (!document.getElementById('anim-fun-msg')) {
+      clearInterval(interval)
+      return
+    }
+    i = (i + 1) % FUN_MESSAGES.length
+    const el = document.getElementById('anim-fun-msg')
+    if (el) el.innerHTML = FUN_MESSAGES[i].toUpperCase().replace(/\.{3}$/, '...').replace(/(\.\.\.)$/, '<br>$1')
+  }, 4500)
 }
 
 /* ============================================================

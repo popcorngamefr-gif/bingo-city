@@ -777,7 +777,7 @@
 /* Couche avatar générée (remplace les sprites) */
 .layer.generated-img {
   background-size: cover;
-  background-position: center top;
+  background-position: center center;
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
 }
@@ -1398,8 +1398,11 @@
   max-width: 380px;
   width: 92%;
   margin: auto;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: 0 8px 0 rgba(0, 0, 0, 0.4);
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .mood-header {
@@ -1503,16 +1506,19 @@
 
 .mood-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   padding: 12px 16px 16px;
   background: var(--cream-cold);
   border-top: 2px solid var(--ink);
-}
-.mood-actions .btn {
-  flex: 1;
+  position: sticky;
+  bottom: 0;
 }
 .mood-actions .btn-ghost {
   flex: 0 0 auto;
+}
+.mood-actions .btn-red {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 /* ── CUSTOM OBJECT TILE (la tuile "+ Ajouter") ──────────────────────────── */
@@ -1653,3 +1659,229 @@
   border-top: 2px solid var(--ink);
 }
 .custom-obj-actions .btn-red { flex: 1; }
+
+/* ── DURATION PICKER (création + setup) ─────────────────────────────────── */
+.duration-picker {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.duration-tile {
+  padding: 10px 4px;
+  background: var(--cream-cold);
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform 0.1s steps(2);
+  text-align: center;
+}
+.duration-tile:active {
+  transform: translateY(1px);
+}
+.duration-tile.selected {
+  background: var(--tram-yellow);
+  border-color: var(--tram-red);
+  box-shadow: 0 0 0 2px var(--tram-red);
+}
+
+/* ── SHARE MODAL ────────────────────────────────────────────────────────── */
+.share-modal-box {
+  background: var(--cream-warm);
+  border: 4px solid var(--ink);
+  border-radius: 16px;
+  max-width: 360px;
+  width: 92%;
+  margin: auto;
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+.share-header {
+  background: var(--ink);
+  color: var(--cream-cold);
+  padding: 14px 16px;
+  text-align: center;
+  border-bottom: 3px solid var(--tram-yellow);
+}
+.share-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: var(--tram-yellow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.share-body {
+  padding: 16px;
+}
+.share-code-block {
+  background: var(--ink);
+  color: var(--cream-cold);
+  border: 3px solid var(--tram-yellow);
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  margin-bottom: 14px;
+}
+.share-code-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: var(--tram-yellow);
+  margin-bottom: 6px;
+  letter-spacing: 0.1em;
+}
+.share-code-value {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 28px;
+  color: var(--cream-cold);
+  letter-spacing: 0.1em;
+}
+.share-msg-preview {
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  color: var(--ink-soft);
+  font-style: italic;
+  text-align: center;
+  margin: 0 0 14px;
+  line-height: 1.4;
+}
+.share-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.share-actions .btn {
+  width: 100%;
+}
+.share-close {
+  padding: 8px 16px 14px;
+  text-align: center;
+  background: var(--cream-cold);
+  border-top: 2px solid var(--ink);
+}
+
+/* HUD partage button (en jeu) */
+.game-share-btn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 20;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 2px solid var(--tram-yellow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tram-yellow);
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3);
+}
+.game-share-btn:active {
+  transform: translateY(1px);
+}
+
+/* ── BINGO CELL : photo capturée à la place de l'icône ──────────────────── */
+.bingo-cell.has-photo {
+  padding: 0;
+  overflow: hidden;
+  position: relative;
+  background: var(--ink);
+  cursor: pointer;
+}
+.bingo-cell.has-photo:active {
+  transform: translate(1px, 1px) scale(0.98);
+}
+.bingo-cell-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 5px;
+}
+/* Nom de l'objet : overlay translucide en bas pour lisibilité */
+.bingo-cell.has-photo .bingo-cell-name {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.85) 100%);
+  color: var(--cream-cold);
+  font-size: 12px;
+  padding: 14px 4px 4px;
+  margin: 0;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.8);
+  z-index: 2;
+}
+/* Check icon par-dessus la photo : badge en haut à droite */
+.bingo-cell.has-photo .cell-status-icon {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: var(--tram-red);
+  color: var(--cream-cold);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--cream-cold);
+  z-index: 3;
+}
+
+/* ── PHOTO VIEWER (fullscreen pour montrer la photo aux autres) ─────────── */
+.photo-viewer-modal {
+  background: rgba(0, 0, 0, 0.92);
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  cursor: pointer;
+}
+.photo-viewer-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 2px solid var(--tram-yellow);
+  color: var(--tram-yellow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+}
+.photo-viewer-frame {
+  max-width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: default;
+}
+.photo-viewer-img {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  border: 4px solid var(--tram-yellow);
+  border-radius: 12px;
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.6);
+}
+.photo-viewer-label {
+  margin-top: 14px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px;
+  color: var(--tram-yellow);
+  text-align: center;
+  letter-spacing: 0.05em;
+}
