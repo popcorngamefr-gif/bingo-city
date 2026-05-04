@@ -83,7 +83,15 @@ function _onGameUpdate(gameData) {
     startTimer()
     navigate('game')
   }
-  if (gameData.status === 'ended' && state.currentScreen === 'game') navigate('end')
+  if (gameData.status === 'ended') {
+    // Partie réellement terminée → on quitte le mode preview s'il était actif
+    // et on bascule sur le classement final
+    if (state.currentScreen === 'game' || state.currentScreen === 'end') {
+      state._previewClassement = false
+      if (state.currentScreen === 'end') show('end')
+      else navigate('end')
+    }
+  }
 }
 
 function _setupLobbySubscriptions() {
@@ -352,6 +360,17 @@ const ACTIONS = {
   },
 
   cancelPhoto() { closeModal(); state.currentPickingObj = null },
+
+  openClassement() {
+    // Vue temporaire du classement pendant la partie (ne termine pas la partie)
+    state._previewClassement = true
+    navigate('end')
+  },
+
+  closeClassement() {
+    state._previewClassement = false
+    navigate('game')
+  },
 
   newGame() { unsubscribeAll(); _seenPlayerIds.clear(); _lobbySubscribedFor = null; _photosSubscribedFor = null; clearActiveGame(); resetGame(); navigate('home') },
 

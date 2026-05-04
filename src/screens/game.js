@@ -21,8 +21,9 @@ export function renderGame() {
 
   return `
     <section class="screen game-screen">
-      <button class="game-share-btn" data-action="openShareModal" title="Partager le lien">
-        ${icon('link', { size: 18 })}
+      <button class="game-share-btn" data-action="openShareModal" title="Partager la partie">
+        ${icon('link', { size: 14 })}
+        <span class="game-share-code">${state.gameCode || ''}</span>
       </button>
 
       <!-- HUD haut avec avatar qui marche -->
@@ -87,7 +88,7 @@ export function renderGame() {
       </div>
 
       <div class="sticky-cta">
-        <button class="btn btn-cream btn-sm" data-nav="end">
+        <button class="btn btn-cream btn-sm" data-action="openClassement">
           ${icon('trophy', { size: 16 })} Classement
         </button>
         ${state.isMJ ? `
