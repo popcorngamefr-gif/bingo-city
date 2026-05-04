@@ -123,46 +123,39 @@ function _collectPin(prefix) {
 }
 
 function _setupAccountScreen() {
-  // Tab switch
+  // Tabs : on attache les listeners directement, le HTML vient d'être ré-rendu
   document.querySelectorAll('.account-tab').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.onclick = () => {
       document.querySelectorAll('.account-tab').forEach(b => b.classList.remove('active'))
       btn.classList.add('active')
       const tab = btn.dataset.tab
       document.querySelectorAll('.account-panel').forEach(p => p.classList.add('hidden'))
       document.getElementById(`panel-${tab}`)?.classList.remove('hidden')
-    })
-  })
-
-  // PIN digit nav : saute auto au suivant
-  document.addEventListener('input', (e) => {
-    if (!e.target.classList.contains('pin-digit')) return
-    e.target.value = e.target.value.replace(/\D/g, '').slice(-1)
-    if (e.target.value) {
-      const idx  = parseInt(e.target.dataset.idx)
-      const next = document.querySelector(`[data-pin="${e.target.dataset.pin}"][data-idx="${idx + 1}"]`)
-      next?.focus()
     }
   })
 
   // Pseudo dispo (debounced)
   let _pseudoTimer = null
-  document.getElementById('acc-pseudo-create')?.addEventListener('input', (e) => {
-    clearTimeout(_pseudoTimer)
-    const el = document.getElementById('pseudo-status')
-    if (!el) return
-    const val = e.target.value.trim()
-    if (val.length < 3) { el.textContent = ''; el.className = 'pseudo-status'; return }
-    el.textContent = '…'; el.className = 'pseudo-status'
-    _pseudoTimer = setTimeout(async () => {
-      const ok = await checkPseudoAvailable(val).catch(() => true)
-      el.textContent = ok ? '✓ Disponible' : '✗ Déjà pris'
-      el.className   = ok ? 'pseudo-status ok' : 'pseudo-status err'
-    }, 500)
-  })
+  const pseudoInput = document.getElementById('acc-pseudo-create')
+  if (pseudoInput) {
+    pseudoInput.oninput = (e) => {
+      clearTimeout(_pseudoTimer)
+      const el = document.getElementById('pseudo-status')
+      if (!el) return
+      const val = e.target.value.trim()
+      if (val.length < 3) { el.textContent = ''; el.className = 'pseudo-status'; return }
+      el.textContent = '…'; el.className = 'pseudo-status'
+      _pseudoTimer = setTimeout(async () => {
+        const ok = await checkPseudoAvailable(val).catch(() => true)
+        el.textContent = ok ? '✓ Disponible' : '✗ Déjà pris'
+        el.className   = ok ? 'pseudo-status ok' : 'pseudo-status err'
+      }, 500)
+    }
+  }
 
-  // Créer
-  document.getElementById('btn-create-account')?.addEventListener('click', async () => {
+  // Créer (utilise onclick pour overwrite à chaque setup, pas d'accumulation)
+  const createBtn = document.getElementById('btn-create-account')
+  if (createBtn) createBtn.onclick = async () => {
     const pseudo = document.getElementById('acc-pseudo-create')?.value.trim()
     const pin    = _collectPin('pin-create')
     const pinC   = _collectPin('pin-confirm')
@@ -183,10 +176,11 @@ function _setupAccountScreen() {
     } catch (err) {
       toast(err.message || 'Erreur lors de la création')
     }
-  })
+  }
 
   // Connexion
-  document.getElementById('btn-login-account')?.addEventListener('click', async () => {
+  const loginBtn = document.getElementById('btn-login-account')
+  if (loginBtn) loginBtn.onclick = async () => {
     const pseudo = document.getElementById('acc-pseudo-login')?.value.trim()
     const pin    = _collectPin('pin-login')
     if (!pseudo) return toast('Entre ton pseudo')
@@ -207,6 +201,30 @@ function _setupAccountScreen() {
       navigate('home')
     } catch (err) {
       toast(err.message || 'Erreur de connexion')
+    }
+  }
+
+  // PIN auto-skip : délégation directe sur les inputs PIN du DOM courant
+  _wirePinDigits()
+}
+
+function _wirePinDigits() {
+  document.querySelectorAll('.pin-digit').forEach(input => {
+    input.oninput = (e) => {
+      e.target.value = e.target.value.replace(/\D/g, '').slice(-1)
+      if (e.target.value) {
+        const idx  = parseInt(e.target.dataset.idx)
+        const next = document.querySelector(`[data-pin="${e.target.dataset.pin}"][data-idx="${idx + 1}"]`)
+        next?.focus()
+      }
+    }
+    // Backspace : revenir au précédent si vide
+    input.onkeydown = (e) => {
+      if (e.key === 'Backspace' && !e.target.value) {
+        const idx  = parseInt(e.target.dataset.idx)
+        const prev = document.querySelector(`[data-pin="${e.target.dataset.pin}"][data-idx="${idx - 1}"]`)
+        prev?.focus()
+      }
     }
   })
 }
@@ -604,17 +622,17 @@ function _setupAnimationsLoadingScreen() {
    SCREEN HOOKS
    ============================================================ */
 function setupScreenHooks() {
-  window.addEventListener('hashchange', () => {
-    const screen = state.currentScreen
-    setTimeout(() => {
-      setupAvatarLoops()
-      if (screen === 'game')    { updateHudConfidence(); checkHeartbeat(); _setupGamePhotosSubscription() }
-      if (screen === 'lobby')   _setupLobbySubscriptions()
-      if (screen === 'account')            _setupAccountScreen()
-      if (screen === 'animations-loading') _setupAnimationsLoadingScreen()
-      if (screen === 'end')                _setupGamePhotosSubscription()
-      if (screen === 'home') unsubscribeAll()
-    }, 50)
+  // Écoute l'événement custom dispatché APRÈS le render du screen.
+  // Plus fiable que hashchange + setTimeout.
+  window.addEventListener('screen:rendered', (e) => {
+    const screen = e.detail?.screen || state.currentScreen
+    setupAvatarLoops()
+    if (screen === 'game')               { updateHudConfidence(); checkHeartbeat(); _setupGamePhotosSubscription() }
+    if (screen === 'lobby')              _setupLobbySubscriptions()
+    if (screen === 'account')            _setupAccountScreen()
+    if (screen === 'animations-loading') _setupAnimationsLoadingScreen()
+    if (screen === 'end')                _setupGamePhotosSubscription()
+    if (screen === 'home')               unsubscribeAll()
   })
 }
 

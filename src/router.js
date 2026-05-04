@@ -45,6 +45,10 @@ export function show(screenName) {
     appRoot.innerHTML = renderer()
     const screenEl = appRoot.querySelector('.screen')
     if (screenEl) requestAnimationFrame(() => screenEl.classList.add('active'))
+    // Notifie les hooks de setup que le DOM est prêt
+    requestAnimationFrame(() => {
+      window.dispatchEvent(new CustomEvent('screen:rendered', { detail: { screen: screenName } }))
+    })
   } catch (err) {
     console.error(`Error rendering ${screenName}:`, err)
     appRoot.innerHTML = `
