@@ -156,35 +156,56 @@ function _setupAccountScreen() {
   // Créer (utilise onclick pour overwrite à chaque setup, pas d'accumulation)
   const createBtn = document.getElementById('btn-create-account')
   if (createBtn) createBtn.onclick = async () => {
+    console.log('[create-account] clicked')
     const pseudo = document.getElementById('acc-pseudo-create')?.value.trim()
     const pin    = _collectPin('pin-create')
     const pinC   = _collectPin('pin-confirm')
+    console.log('[create-account] pseudo:', pseudo, 'pin len:', pin.length, 'pinC len:', pinC.length)
+
     if (!pseudo || pseudo.length < 3) return toast('Pseudo trop court (3 min)')
-    if (pin.length < 4)              return toast('PIN incomplet')
+    if (pin.length < 4)              return toast('PIN incomplet (4 chiffres)')
     if (pin !== pinC)                return toast('Les PIN ne correspondent pas')
 
+    if (!state.uid) {
+      console.error('[create-account] state.uid manquant — auth Firebase pas connectée')
+      toast('Pas connecté à Firebase — recharge la page')
+      return
+    }
+
     try {
+      console.log('[create-account] uid:', state.uid, 'avatar:', state.myAvatar)
       const key = await createAccount({
         pseudo, pin,
         uid:    state.uid,
         name:   state.myName || pseudo,
-        avatar: state.myAvatar,
+        avatar: state.myAvatar || { skin: 0, eyes: 0, hairStyle: 0, hairColor: 0, acc: 0 },
       })
+      console.log('[create-account] success, key:', key)
       state.accountKey = key
       toast('Compte créé !')
       navigate('home')
     } catch (err) {
-      toast(err.message || 'Erreur lors de la création')
+      console.error('[create-account] error:', err)
+      const msg = err.code === 'permission-denied'
+        ? 'Permissions Firestore manquantes'
+        : err.message || 'Erreur lors de la création'
+      toast(msg)
     }
   }
 
   // Connexion
   const loginBtn = document.getElementById('btn-login-account')
   if (loginBtn) loginBtn.onclick = async () => {
+    console.log('[login] clicked')
     const pseudo = document.getElementById('acc-pseudo-login')?.value.trim()
     const pin    = _collectPin('pin-login')
     if (!pseudo) return toast('Entre ton pseudo')
-    if (pin.length < 4) return toast('PIN incomplet')
+    if (pin.length < 4) return toast('PIN incomplet (4 chiffres)')
+
+    if (!state.uid) {
+      toast('Pas connecté à Firebase — recharge la page')
+      return
+    }
 
     try {
       const data = await loginWithPin({ pseudo, pin })
