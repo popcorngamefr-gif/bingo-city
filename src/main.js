@@ -50,6 +50,8 @@ const _seenPlayerIds = new Set()
 // Évite la boucle de re-render : sans ça, screen:rendered retrigger _setupLobbySubscriptions
 // qui réinstalle le listener, qui reçoit le snapshot initial, qui re-render, etc.
 let _lobbySubscribedFor = null
+// Même mécanisme pour la subscription photos (game + end)
+let _photosSubscribedFor = null
 
 function _onPlayersUpdate(players) {
   const newIds = players
@@ -351,7 +353,7 @@ const ACTIONS = {
 
   cancelPhoto() { closeModal(); state.currentPickingObj = null },
 
-  newGame() { unsubscribeAll(); _seenPlayerIds.clear(); _lobbySubscribedFor = null; clearActiveGame(); resetGame(); navigate('home') },
+  newGame() { unsubscribeAll(); _seenPlayerIds.clear(); _lobbySubscribedFor = null; _photosSubscribedFor = null; clearActiveGame(); resetGame(); navigate('home') },
 
   endGameByMJ() {
     if (!state.isMJ) return
@@ -656,12 +658,15 @@ function setupScreenHooks() {
     if (screen === 'account')            _setupAccountScreen()
     if (screen === 'animations-loading') _setupAnimationsLoadingScreen()
     if (screen === 'end')                _setupGamePhotosSubscription()
-    if (screen === 'home')               { unsubscribeAll(); _lobbySubscribedFor = null }
+    if (screen === 'home')               { unsubscribeAll(); _lobbySubscribedFor = null; _photosSubscribedFor = null }
   })
 }
 
 function _setupGamePhotosSubscription() {
   if (!state.gameCode) return
+  // Évite la boucle (cf. _setupLobbySubscriptions)
+  if (_photosSubscribedFor === state.gameCode) return
+  _photosSubscribedFor = state.gameCode
   subscribeToPhotos(state.gameCode, (photos) => {
     state.gamePhotos = photos
     // Re-render end si on est dessus pour voir les photos qui arrivent

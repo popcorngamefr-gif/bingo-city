@@ -1,9 +1,17 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+    // Photos de partie : games/{code}/{uid}/photo_X.jpg
     match /games/{gameId}/{uid}/{photo} {
       allow read:  if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == uid;
+    }
+    // Avatars persistants : avatars/{uid}/image.png et avatars/{uid}/animation.mp4
+    // Lecture publique pour que tous les joueurs puissent afficher l'avatar du host/des autres
+    match /avatars/{uid}/{file} {
+      allow read:  if true;
+      allow write: if request.auth != null && request.auth.uid == uid
+                   && request.resource.size < 10 * 1024 * 1024;  // 10 MB max
     }
   }
 }

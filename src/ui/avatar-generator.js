@@ -105,11 +105,31 @@ function _showResult(url) {
       </div>
     </div>
   `
-  document.getElementById('gen-accept-btn')?.addEventListener('click', () => {
+  document.getElementById('gen-accept-btn')?.addEventListener('click', async () => {
+    // Pose tout de suite l'URL Replicate dans le state pour que la transition soit fluide
     state.myAvatar.generatedImageUrl = url
-    // L'URL servira aussi pour la génération vidéo (premium)
     closeGeneratorModal()
     navigate('avatar-pick')
+
+    // En tâche de fond : mirror vers Firebase Storage pour avoir une URL stable
+    // (les URLs replicate.delivery expirent en ~24h)
+    if (state.uid && state.uid !== 'me') {
+      try {
+        const { uploadAvatarImage } = await import('../firebase/storage.js')
+        const stableUrl = await uploadAvatarImage(state.uid, url)
+        state.myAvatar.generatedImageUrl = stableUrl
+        // Sync au profil pour persister l'URL Storage (et plus l'URL Replicate)
+        const { saveProfile } = await import('../firebase/auth.js')
+        await saveProfile({
+          name:   state.myName || state.accountKey || 'Anonyme',
+          avatar: state.myAvatar,
+        }).catch(err => console.warn('saveProfile after mirror failed:', err))
+        console.log('[avatar] mirrored to Storage:', stableUrl)
+      } catch (err) {
+        // Non-bloquant : on garde l'URL Replicate (marche pour la session courante)
+        console.warn('[avatar] mirror to Storage failed, keeping Replicate URL:', err)
+      }
+    }
   })
   document.getElementById('gen-retry-btn')?.addEventListener('click', openGeneratorModal)
   document.getElementById('gen-sprites-btn')?.addEventListener('click', () => {
