@@ -59,7 +59,7 @@ export function renderCreate() {
       </div>
 
       <div class="sticky-cta">
-        <button class="btn btn-red" data-action="createGame">
+        <button class="btn btn-red" data-action="createGame" data-loading-label="Création…">
           ${icon('arrow_right', { size: 16 })} Créer la partie
         </button>
       </div>

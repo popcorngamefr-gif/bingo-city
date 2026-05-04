@@ -63,7 +63,7 @@ export function renderAvatar() {
       </div>
 
       <div class="sticky-cta">
-        <button class="btn btn-red" data-action="confirmAvatar">
+        <button class="btn btn-red" data-action="confirmAvatar" data-loading-label="Sauvegarde…">
           ✓ Valider mon look
         </button>
       </div>

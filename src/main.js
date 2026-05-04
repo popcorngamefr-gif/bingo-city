@@ -369,6 +369,34 @@ const ACTIONS = {
     const nameInput = document.getElementById('avatar-name-input')
     if (nameInput) { const v = nameInput.value.trim(); if (v) state.myName = v }
 
+    // Si une vidéo Déglingo a été générée, on attend la fin du mirror vers
+    // Firebase Storage (URL stable à vie) — sans ça on persisterait l'URL
+    // Replicate temporaire qui expire à 24h.
+    // Timeout à 30s pour les connexions lentes : si l'upload Storage est
+    // vraiment trop lent, on continue avec ce qu'on a, le mirror finira en
+    // arrière-plan et un futur saveProfile mettra à jour l'URL.
+    if (state._animationStorageUploadPromise) {
+      const uploadPromise = state._animationStorageUploadPromise
+      // Reset l'état tout de suite : si l'user clique Valider 2 fois,
+      // on n'attend pas une 2e fois inutilement (la promesse continue à
+      // vivre via la closure jusqu'à sa résolution, ce qui suffit pour
+      // que le mirror termine en arrière-plan)
+      delete state._animationStorageUploadPromise
+      toast('Sauvegarde de ta vidéo Déglingo…', 5000)
+      try {
+        await Promise.race([
+          uploadPromise,
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 30000)),
+        ])
+      } catch (err) {
+        if (err.message === 'timeout') {
+          console.warn('[confirmAvatar] mirror Storage timeout 30s — continuing in background')
+        } else {
+          console.warn('[confirmAvatar] mirror failed:', err)
+        }
+      }
+    }
+
     try { await saveProfile({ name: state.myName || state.accountKey || 'Anonyme', avatar: state.myAvatar }) }
     catch (err) { console.warn('saveProfile failed:', err) }
 
@@ -663,12 +691,18 @@ function _resolvePendingIntent(fallback = 'home') {
  * Affiche un spinner de chargement sur un bouton pendant une promesse.
  * Le contenu original est restauré (succès ou échec).
  * Empêche aussi le double-clic via `disabled`.
+ *
+ * Si le bouton a un attribut `data-loading-label`, ce label est affiché
+ * à côté du spinner pour donner un contexte à l'utilisateur.
  */
 function _withButtonLoader(btn, promise) {
   const originalHTML = btn.innerHTML
+  const label        = btn.dataset.loadingLabel
   btn.disabled = true
   btn.dataset.loading = 'true'
-  btn.innerHTML = `<span class="btn-loader"></span>`
+  btn.innerHTML = label
+    ? `<span class="btn-loader"></span> <span class="btn-loader-label">${label}</span>`
+    : `<span class="btn-loader"></span>`
 
   const cleanup = () => {
     btn.disabled = false

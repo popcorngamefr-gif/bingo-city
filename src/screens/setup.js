@@ -73,6 +73,7 @@ export function renderSetup() {
         <button
           class="btn btn-red"
           data-action="startGame"
+          data-loading-label="Démarrage…"
           ${n < 6 || n > 25 ? 'disabled' : ''}
         >
           Lancer la partie ${icon('arrow_right', { size: 16 })}

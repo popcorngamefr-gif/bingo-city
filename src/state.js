@@ -75,6 +75,7 @@ export function resetGame() {
   state.currentPickingObj = null
   state._previewClassement = false
   delete state._statsRecordedFor
+  delete state._animationStorageUploadPromise
   state.timer           = state.gameDuration
   if (state.timerInterval) {
     clearInterval(state.timerInterval)

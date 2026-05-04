@@ -998,3 +998,41 @@ button[data-loading="true"],
   cursor: wait;
   opacity: 0.85;
 }
+
+/* Label affiché à côté du spinner quand data-loading-label est défini */
+.btn-loader-label {
+  margin-left: 4px;
+  font-size: 0.92em;
+  vertical-align: middle;
+}
+
+/* ── AVATAR LOADING SHIMMER (pendant que l'image/vidéo distante charge) ─── */
+/* Affichée uniquement sur les avatars qui ont une image/vidéo distante
+   (couche generated-img ou generated-video). Pour les sprites locaux,
+   l'état neutre suffit. */
+.avatar:has(.generated-img)::before,
+.avatar:has(.generated-video)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      var(--cream-warm) 0,
+      var(--cream-warm) 6px,
+      var(--cream-cold) 6px,
+      var(--cream-cold) 12px
+    );
+  background-size: 200% 200%;
+  animation: avatarShimmer 1.6s steps(8) infinite;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.45;
+}
+.avatar .layer { z-index: 1; }
+
+@keyframes avatarShimmer {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 200% 200%; }
+}

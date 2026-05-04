@@ -74,7 +74,7 @@ function _renderConfirm() {
         <button class="btn btn-cream btn-sm" data-action="retryGeneration">
           ${icon('retry', { size: 14 })} Réessayer
         </button>
-        <button class="btn btn-red" data-action="confirmAvatar">
+        <button class="btn btn-red" data-action="confirmAvatar" data-loading-label="Sauvegarde…">
           ${icon('check', { size: 16 })} Valider ce look
         </button>
       </div>

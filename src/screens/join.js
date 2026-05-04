@@ -58,7 +58,7 @@ export function renderJoin() {
       </div>
 
       <div class="sticky-cta">
-        <button class="btn btn-yellow" data-action="joinGame">
+        <button class="btn btn-yellow" data-action="joinGame" data-loading-label="Connexion…">
           ${icon('arrow_right', { size: 16 })} Rejoindre
         </button>
       </div>

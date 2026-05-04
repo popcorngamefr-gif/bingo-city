@@ -63,32 +63,41 @@ function _poll(id, attempt, onProgress, onComplete) {
         console.log('Animation ready:', data.url)
         onComplete?.(null)
 
-        // 2. En tâche de fond : mirror vers Firebase Storage (URL stable à vie)
-        let finalUrl = data.url
-        if (state.uid && state.uid !== 'me') {
-          try {
-            const { uploadAvatarVideo } = await import('../firebase/storage.js')
-            finalUrl = await uploadAvatarVideo(state.uid, data.url)
-            state.myAnimation.url       = finalUrl
-            state.myAvatar.animationUrl = finalUrl
-            console.log('[animation] mirrored to Storage:', finalUrl)
-          } catch (err) {
-            console.warn('[animation] mirror to Storage failed, keeping Replicate URL:', err)
+        // 2-3-4. Mirror Storage + sync profil + sync player en chaîne.
+        // Stocke la promesse en state pour que confirmAvatar puisse l'await
+        // (garantit que la vidéo est sur Storage avant de naviguer ailleurs)
+        state._animationStorageUploadPromise = (async () => {
+          let finalUrl = data.url
+          if (state.uid && state.uid !== 'me') {
+            try {
+              const { uploadAvatarVideo } = await import('../firebase/storage.js')
+              finalUrl = await uploadAvatarVideo(state.uid, data.url)
+              state.myAnimation.url       = finalUrl
+              state.myAvatar.animationUrl = finalUrl
+              console.log('[animation] mirrored to Storage:', finalUrl)
+            } catch (err) {
+              console.warn('[animation] mirror to Storage failed, keeping Replicate URL:', err)
+            }
           }
-        }
-
-        // 3. Sync au profil (compte) — best-effort, avec l'URL définitive
-        import('../firebase/auth.js').then(({ saveProfile }) => {
-          saveProfile({ name: state.myName || state.accountKey || 'Anonyme', avatar: state.myAvatar })
-            .catch(err => console.warn('Sync profile failed:', err))
-        })
-        // 4. Sync au doc player (partie en cours)
-        if (state.gameCode && state.uid && state.uid !== 'me') {
-          import('../firebase/game.js').then(({ updatePlayerProfile }) => {
-            updatePlayerProfile(state.gameCode, state.uid, { animationUrl: finalUrl })
-              .catch(err => console.warn('Sync animation failed:', err))
-          })
-        }
+          // Sync profil avec URL définitive
+          try {
+            const { saveProfile } = await import('../firebase/auth.js')
+            await saveProfile({ name: state.myName || state.accountKey || 'Anonyme', avatar: state.myAvatar })
+          } catch (err) {
+            console.warn('[animation] saveProfile failed:', err)
+          }
+          // Sync au doc player si partie en cours
+          if (state.gameCode && state.uid && state.uid !== 'me') {
+            try {
+              const { updatePlayerProfile } = await import('../firebase/game.js')
+              await updatePlayerProfile(state.gameCode, state.uid, { animationUrl: finalUrl })
+            } catch (err) {
+              console.warn('[animation] updatePlayerProfile failed:', err)
+            }
+          }
+        })()
+        // On ne await pas ici — laisse la promesse vivre en arrière-plan.
+        // confirmAvatar pourra la await pour attendre la fin.
       } else if (data.status === 'failed') {
         state.myAnimation = { url: null, _ready: true, error: data.error || 'failed' }
         onComplete?.(new Error(data.error || 'Generation failed'))
