@@ -49,8 +49,11 @@ export function renderHome() {
             </div>
           </div>
           <div class="home-v3-account-link">
-            <button class="home-v3-mini-account home-v3-mini-souvenirs" data-action="showSouvenirs" onclick="event.stopPropagation()" title="Souvenirs">
+            <button class="home-v3-mini-account home-v3-mini-souvenirs" data-action="showSouvenirs" title="Souvenirs">
               ${icon('download', { size: 14 })}
+            </button>
+            <button class="home-v3-mini-account" data-nav="account" title="Mon compte">
+              ${icon('gear', { size: 14 })}
             </button>
           </div>
         </div>
