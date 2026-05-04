@@ -16,8 +16,8 @@
  * SPARKLES : étoiles autour
  */
 
-import { PORTRAIT }       from '../data/portrait.js'
-// import retiré : on n'a plus de mapping mood → animation, juste une vidéo unique
+import { PORTRAIT } from '../data/portrait.js'
+import { state }    from '../state.js'
 
 export function avatarHtml(av, opts = {}) {
   const { size = 'md', mood = 'idle', confidence = 'neutral', sparkles = false } = opts
@@ -35,8 +35,8 @@ export function avatarHtml(av, opts = {}) {
 export function avatarLayersHtml(av, mood = 'idle', confidence = 'neutral') {
   av = av || {}
   // 1. Vidéo Déglingo IA — priorise animationUrl (joueur en cours de partie),
-  //    sinon myAnimation.url (mon propre avatar dans l'éditeur)
-  const videoUrl = av.animationUrl || window.__state?.myAnimation?.url
+  //    sinon state.myAnimation.url (mon propre avatar dans l'éditeur)
+  const videoUrl = av.animationUrl || state.myAnimation?.url
   if (videoUrl && (av?.generatedImageUrl || av?.animationUrl)) {
     const safeUrl = String(videoUrl).replace(/"/g, '&quot;')
     return `

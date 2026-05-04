@@ -7,21 +7,12 @@ import { state }        from '../state.js'
 import { bgVarsovieHtml, floatingItemsHtml } from '../ui/varsovie.js'
 import { icon }         from '../ui/icons.js'
 import { avatarLayersHtml } from '../ui/avatar.js'
-
-function _getActiveGame() {
-  try {
-    const raw = localStorage.getItem('bingo_active_game')
-    if (!raw) return null
-    const data = JSON.parse(raw)
-    if (Date.now() - data.savedAt > 4 * 24 * 3600 * 1000) return null
-    return data
-  } catch { return null }
-}
+import { getActiveGame } from '../activeGame.js'
 
 export function renderHome() {
   const profile    = state.userProfile
   const hasAccount = !!state.accountKey
-  const active     = _getActiveGame()
+  const active     = getActiveGame()
   const myAvatar   = state.myAvatar || profile?.avatar
   const displayName = profile?.name || state.myName || state.accountKey || ''
   const hasDeglingoVideo = !!(myAvatar?.animationUrl)

@@ -73,7 +73,7 @@ export function resetGame() {
   state.selectedMoodPrompt = null
   state.selectedMoodKey    = null
   state.currentPickingObj = null
-  state.timer           = 1200
+  state.timer           = state.gameDuration
   if (state.timerInterval) {
     clearInterval(state.timerInterval)
     state.timerInterval = null

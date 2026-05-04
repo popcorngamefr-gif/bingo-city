@@ -91,7 +91,6 @@ export async function saveProfile({ name, avatar }) {
       createdAt: now,
     })
   }
-  state.myAvatar = { ...state.myAvatar, ...cleanAvatar }
 
   // Si compte PIN actif → sync l'avatar dans /accounts/{key} aussi
   // pour qu'il soit récupéré au login depuis un autre device
@@ -104,9 +103,10 @@ export async function saveProfile({ name, avatar }) {
     }
   }
 
-  state.myName      = name
-  state.myAvatar    = { ...avatar }
-  state.userProfile = { ...(state.userProfile || {}), name, avatar }
+  // Sync state local — merge propre, ne touche aux champs que si fournis
+  state.myAvatar    = { ...state.myAvatar, ...cleanAvatar }
+  if (name) state.myName = name
+  state.userProfile = { ...(state.userProfile || {}), name: state.myName, avatar: state.myAvatar }
 }
 
 /**

@@ -13,14 +13,11 @@ import { toast }                          from './ui/toast.js'
 import { randomAvatar }                   from './utils/random.js'
 import { getObjects }                     from './data/objects.js'
 import { PORTRAIT }                       from './data/portrait.js'
+import { saveActiveGame, clearActiveGame, getActiveGame } from './activeGame.js'
 
 import { refreshAvatarUI, cycleAvatarField, setupAvatarLoops, updateHudConfidence, checkHeartbeat } from './controllers/avatarController.js'
 import { startTimer }                     from './controllers/timerController.js'
-import { simulateJoin }                   from './controllers/gameController.js'
 import { openCameraModal, closeModal }    from './ui/modal.js'
-
-// Bridge état global pour avatar.js (accès aux animations sans circular import)
-window.__state = state
 
 import { initAuth, saveProfile }          from './firebase/auth.js'
 import { createGame as fbCreateGame, joinGame as fbJoinGame, startGame as fbStartGame, subscribeToPlayers, subscribeToGame, subscribeToPhotos, unsubscribeAll, getGameOnce } from './firebase/game.js'
@@ -43,45 +40,16 @@ function _showAdblockBanner() {
 }
 
 // ─── Persistance partie en cours ─────────────────────────────────────────────
-const ACTIVE_GAME_KEY = 'bingo_active_game'
-
-function saveActiveGame() {
-  if (!state.gameCode) return
-  try {
-    localStorage.setItem(ACTIVE_GAME_KEY, JSON.stringify({
-      code:     state.gameCode,
-      name:     state.gameName,
-      isMJ:     state.isMJ,
-      myName:   state.myName,
-      savedAt:  Date.now(),
-    }))
-  } catch {}
-}
-
-function clearActiveGame() {
-  try { localStorage.removeItem(ACTIVE_GAME_KEY) } catch {}
-}
-
-export function getActiveGame() {
-  try {
-    const raw = localStorage.getItem(ACTIVE_GAME_KEY)
-    if (!raw) return null
-    const data = JSON.parse(raw)
-    // Expire après 4 jours (max durée + marge)
-    if (Date.now() - data.savedAt > 4 * 24 * 3600 * 1000) {
-      clearActiveGame()
-      return null
-    }
-    return data
-  } catch {
-    return null
-  }
-}
+// Voir ./activeGame.js pour saveActiveGame, clearActiveGame, getActiveGame
 
 /* ============================================================
    LOBBY — temps réel
    ============================================================ */
 const _seenPlayerIds = new Set()
+// Code de la partie pour laquelle on a actuellement des listeners lobby actifs.
+// Évite la boucle de re-render : sans ça, screen:rendered retrigger _setupLobbySubscriptions
+// qui réinstalle le listener, qui reçoit le snapshot initial, qui re-render, etc.
+let _lobbySubscribedFor = null
 
 function _onPlayersUpdate(players) {
   const newIds = players
@@ -117,8 +85,12 @@ function _onGameUpdate(gameData) {
 }
 
 function _setupLobbySubscriptions() {
-  _seenPlayerIds.clear()
   if (!state.gameCode) return
+  // Évite de ré-installer les listeners à chaque re-render du lobby
+  // (sinon Firestore renvoie un snapshot initial → re-render → réinstall → boucle)
+  if (_lobbySubscribedFor === state.gameCode) return
+  _lobbySubscribedFor = state.gameCode
+  _seenPlayerIds.clear()
   subscribeToPlayers(state.gameCode, _onPlayersUpdate)
   subscribeToGame(state.gameCode, _onGameUpdate)
 }
@@ -379,7 +351,7 @@ const ACTIONS = {
 
   cancelPhoto() { closeModal(); state.currentPickingObj = null },
 
-  newGame() { unsubscribeAll(); _seenPlayerIds.clear(); clearActiveGame(); resetGame(); navigate('home') },
+  newGame() { unsubscribeAll(); _seenPlayerIds.clear(); _lobbySubscribedFor = null; clearActiveGame(); resetGame(); navigate('home') },
 
   endGameByMJ() {
     if (!state.isMJ) return
@@ -684,7 +656,7 @@ function setupScreenHooks() {
     if (screen === 'account')            _setupAccountScreen()
     if (screen === 'animations-loading') _setupAnimationsLoadingScreen()
     if (screen === 'end')                _setupGamePhotosSubscription()
-    if (screen === 'home')               unsubscribeAll()
+    if (screen === 'home')               { unsubscribeAll(); _lobbySubscribedFor = null }
   })
 }
 
