@@ -23,7 +23,7 @@ import { openCameraModal, closeModal }    from './ui/modal.js'
 window.__state = state
 
 import { initAuth, saveProfile }          from './firebase/auth.js'
-import { createGame as fbCreateGame, joinGame as fbJoinGame, startGame as fbStartGame, subscribeToPlayers, subscribeToGame, subscribeToPhotos, unsubscribeAll } from './firebase/game.js'
+import { createGame as fbCreateGame, joinGame as fbJoinGame, startGame as fbStartGame, subscribeToPlayers, subscribeToGame, subscribeToPhotos, unsubscribeAll, getGameOnce } from './firebase/game.js'
 import { checkPseudoAvailable, createAccount, loginWithPin, updateAccountUID } from './firebase/account.js'
 import { openGeneratorModal }   from './ui/avatar-generator.js'
 import { openShooterPaywall } from './ui/shooter-paywall.js'
@@ -174,16 +174,20 @@ function _setupAccountScreen() {
 
     try {
       console.log('[create-account] uid:', state.uid, 'avatar:', state.myAvatar)
+      // Le pseudo devient le nom par défaut s'il n'y en a pas déjà un
+      if (!state.myName) state.myName = pseudo
       const key = await createAccount({
         pseudo, pin,
         uid:    state.uid,
-        name:   state.myName || pseudo,
+        name:   state.myName,
         avatar: state.myAvatar || { skin: 0, eyes: 0, hairStyle: 0, hairColor: 0, acc: 0 },
       })
       console.log('[create-account] success, key:', key)
       state.accountKey = key
-      toast('Compte créé !')
-      navigate('home')
+      // Persiste accountKey dans /users/{uid} pour qu'il soit restauré au reload
+      await saveProfile({ name: state.myName, avatar: state.myAvatar }).catch(console.warn)
+      toast('Compte créé ! Crée ton avatar')
+      navigate('avatar-pick')
     } catch (err) {
       console.error('[create-account] error:', err)
       const msg = err.code === 'permission-denied'
@@ -216,10 +220,12 @@ function _setupAccountScreen() {
       state.myName      = data.name
       state.myAvatar    = { ...state.myAvatar, ...(data.avatar || {}) }
       state.userProfile = { ...state.userProfile, ...data }
-      // Sync avec /users/{uid}
+      // Sync avec /users/{uid} (inclut accountKey via saveProfile)
       await saveProfile({ name: data.name, avatar: data.avatar }).catch(() => {})
       toast(`Bienvenue, ${data.name} !`)
-      navigate('home')
+      // Si pas d'avatar custom → propose la création
+      const hasCustomAvatar = data.avatar && (data.avatar.generatedImageUrl || data.avatar.skin > 0 || data.avatar.hairStyle > 0)
+      navigate(hasCustomAvatar ? 'home' : 'avatar-pick')
     } catch (err) {
       toast(err.message || 'Erreur de connexion')
     }
@@ -292,10 +298,11 @@ const ACTIONS = {
   },
 
   async confirmAvatar() {
+    console.log('[confirmAvatar] start', { isMJ: state.isMJ, gameCode: state.gameCode, myName: state.myName, hasAvatar: !!state.myAvatar })
     const nameInput = document.getElementById('avatar-name-input')
     if (nameInput) { const v = nameInput.value.trim(); if (v) state.myName = v }
 
-    try { await saveProfile({ name: state.myName || 'Anonyme', avatar: state.myAvatar }) }
+    try { await saveProfile({ name: state.myName || state.accountKey || 'Anonyme', avatar: state.myAvatar }) }
     catch (err) { console.warn('saveProfile failed:', err) }
 
     // Édition pure depuis la home (pas de partie en cours) → retour home
@@ -311,15 +318,18 @@ const ACTIONS = {
       return
     }
 
-    const me = { id: state.uid || 'me', name: state.myName || 'Moi', avatar: { ...state.myAvatar }, score: 0, isMJ: state.isMJ, isYou: true }
+    const me = { id: state.uid || 'me', name: state.myName || state.accountKey || 'Moi', avatar: { ...state.myAvatar }, score: 0, isMJ: state.isMJ, isYou: true }
     if (state.isMJ) {
       state.players = [me]
+      console.log('[confirmAvatar] MJ creating game:', state.gameCode)
       try {
         await fbCreateGame({ code: state.gameCode, name: state.gameName, hostUid: state.uid, hostName: state.myName, hostAvatar: state.myAvatar, duration: state.gameDuration })
         saveActiveGame()
+        console.log('[confirmAvatar] game created OK')
       } catch (err) {
-        console.warn('createGame failed:', err)
-        // Pas de simulateJoin en prod — laisse l'utilisateur seul s'il n'y a pas de Firebase
+        console.error('[confirmAvatar] createGame failed:', err)
+        toast('Erreur création partie : ' + (err.message || err.code || 'inconnu'))
+        return
       }
     } else {
       state.players = [me]
@@ -366,10 +376,9 @@ const ACTIONS = {
 
   editHomeAvatar() {
     // Hors partie : on n'est ni MJ ni joueur, juste en édition
-    // On reset la vue avatar-pick pour ne pas afficher la confirmation IA
     state.isMJ = false
-    delete state.myAvatar.generatedImageUrl
-    state.myAnimation = null
+    // Force l'affichage des 3 cartes de choix (sans détruire l'avatar IA existant)
+    state._forceAvatarChoice = true
     navigate('avatar-pick')
   },
 
@@ -681,6 +690,45 @@ document.addEventListener('DOMContentLoaded', async () => {
     </section>`
 
   try { await initAuth() } catch (err) { console.warn('Auth failed, running offline:', err) }
+
+  // Restauration partie en cours si le hash pointe vers un écran de partie
+  const hash = (location.hash.slice(1) || 'home').split('/')[0]
+  const inGameScreens = ['lobby', 'setup', 'game', 'end']
+  if (inGameScreens.includes(hash)) {
+    const active = getActiveGame()
+    if (active) {
+      console.log('[boot] restoring active game:', active.code)
+      state.gameCode = active.code
+      state.gameName = active.name
+      state.isMJ     = active.isMJ
+      state.myName   = active.myName || state.myName
+      // Hydrate la partie depuis Firestore avant de render
+      try {
+        const game = await getGameOnce(active.code)
+        if (game) {
+          if (typeof game.duration === 'number') state.gameDuration = game.duration
+          state.selectedObjects = game.selectedObjects || []
+          state.customObjects   = game.customObjects   || []
+          if (game.status === 'playing' && hash === 'game') {
+            state.myGrid = state.selectedObjects.map(id => ({ objId: id, status: 'empty' }))
+            startTimer()
+          }
+          if (game.status === 'ended' && hash !== 'end') {
+            location.hash = 'end'
+          }
+        } else {
+          console.warn('[boot] active game not found in Firestore, clearing')
+          clearActiveGame()
+          location.hash = 'home'
+        }
+      } catch (err) {
+        console.warn('[boot] hydrate failed:', err)
+      }
+    } else {
+      // Pas de partie active → revenir home
+      location.hash = 'home'
+    }
+  }
 
   initRouter()
   setTimeout(setupAvatarLoops, 100)

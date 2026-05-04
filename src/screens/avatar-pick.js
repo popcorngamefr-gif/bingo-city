@@ -9,6 +9,11 @@ import { icon }           from '../ui/icons.js'
 import { isUnlocked }     from '../ui/shooter-paywall.js'
 
 export function renderAvatarPick() {
+  // Force la vue choix si l'utilisateur veut éditer (sinon on serait bloqué sur la confirmation IA)
+  if (state._forceAvatarChoice) {
+    state._forceAvatarChoice = false  // consume le flag
+    return _renderChoice(!!(state.userProfile?.name && state.userProfile?.avatar))
+  }
   if (state.myAvatar?.generatedImageUrl) return _renderConfirm()
   return _renderChoice(!!(state.userProfile?.name && state.userProfile?.avatar))
 }

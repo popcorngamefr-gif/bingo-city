@@ -13,6 +13,7 @@ import {
   collection, onSnapshot, serverTimestamp,
 } from 'firebase/firestore'
 import { db } from './config.js'
+import { cleanForFirestore } from './auth.js'
 
 // Listeners actifs — nettoyés via unsubscribeAll()
 let _unsubPlayers = null
@@ -21,8 +22,9 @@ let _unsubGame    = null
 // ─── Création ────────────────────────────────────────────────────────────────
 
 export async function createGame({ code, name, hostUid, hostName, hostAvatar, duration = 1200 }) {
+  const cleanAvatar = cleanForFirestore(hostAvatar || {})
   await setDoc(doc(db, 'games', code), {
-    name,
+    name:            name || 'Sans nom',
     hostUid,
     status:          'lobby',
     selectedObjects: [],
@@ -31,14 +33,23 @@ export async function createGame({ code, name, hostUid, hostName, hostAvatar, du
     startedAt:       null,
   })
   await setDoc(doc(db, 'games', code, 'players', hostUid), {
-    name:      hostName,
-    avatar:    hostAvatar,
+    name:      hostName || 'MJ',
+    avatar:    cleanAvatar,
     score:     0,
     isMJ:      true,
     hasBingo:  false,
     grid:      [],
     joinedAt:  serverTimestamp(),
   })
+}
+
+/**
+ * Récupère un game une seule fois (pas de subscribe).
+ */
+export async function getGameOnce(code) {
+  const snap = await getDoc(doc(db, 'games', code))
+  if (!snap.exists()) return null
+  return snap.data()
 }
 
 // ─── Rejoindre ────────────────────────────────────────────────────────────────
@@ -49,8 +60,8 @@ export async function joinGame({ code, uid, name, avatar }) {
   if (snap.data().status === 'ended') throw new Error('Partie déjà terminée')
 
   await setDoc(doc(db, 'games', code, 'players', uid), {
-    name,
-    avatar,
+    name:     name || 'Joueur',
+    avatar:   cleanForFirestore(avatar || {}),
     score:    0,
     isMJ:     false,
     hasBingo: false,

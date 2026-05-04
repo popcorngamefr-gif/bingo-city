@@ -63,7 +63,7 @@ function _poll(id, attempt, onProgress, onComplete) {
         console.log('Animation ready:', data.url)
         // Sync au profil (compte) — best-effort
         import('../firebase/auth.js').then(({ saveProfile }) => {
-          saveProfile({ name: state.myName || 'Anonyme', avatar: state.myAvatar })
+          saveProfile({ name: state.myName || state.accountKey || 'Anonyme', avatar: state.myAvatar })
             .catch(err => console.warn('Sync profile failed:', err))
         })
         // Sync au doc player (partie en cours)

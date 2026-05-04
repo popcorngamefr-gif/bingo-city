@@ -33,21 +33,24 @@ export function avatarHtml(av, opts = {}) {
 }
 
 export function avatarLayersHtml(av, mood = 'idle', confidence = 'neutral') {
+  av = av || {}
   // 1. Vidéo Déglingo IA — priorise animationUrl (joueur en cours de partie),
   //    sinon myAnimation.url (mon propre avatar dans l'éditeur)
-  const videoUrl = av?.animationUrl || window.__state?.myAnimation?.url
+  const videoUrl = av.animationUrl || window.__state?.myAnimation?.url
   if (videoUrl && (av?.generatedImageUrl || av?.animationUrl)) {
+    const safeUrl = String(videoUrl).replace(/"/g, '&quot;')
     return `
       <div class="layer generated-video">
-        <video src="${videoUrl}" autoplay loop muted playsinline
+        <video src="${safeUrl}" autoplay loop muted playsinline
                style="width:100%;height:100%;object-fit:cover;image-rendering:pixelated;"></video>
       </div>
     `
   }
   // 2. Image statique générée par face-to-many
   if (av?.generatedImageUrl) {
+    const safeUrl = String(av.generatedImageUrl).replace(/'/g, "\\'").replace(/"/g, '%22')
     return `
-      <div class="layer generated-img" style="background-image:url('${av.generatedImageUrl}')"></div>
+      <div class="layer generated-img" style="background-image:url('${safeUrl}')"></div>
     `
   }
   // 3. Sprites classiques avec bouche SVG animée
@@ -57,11 +60,13 @@ export function avatarLayersHtml(av, mood = 'idle', confidence = 'neutral') {
 }
 
 export function avatarLayers(av) {
+  // Fallback robuste si av est null, undefined, ou un objet vide
+  av = av || {}
   const skin = PORTRAIT.skins[av.skin] || PORTRAIT.skins[0]
   const eyes = PORTRAIT.eyes[av.eyes] || PORTRAIT.eyes[0]
   const hairStyle = PORTRAIT.hairStyles[av.hairStyle] || PORTRAIT.hairStyles[0]
   const hairColor = hairStyle.colors[av.hairColor] || hairStyle.colors[0]
-  const acc = PORTRAIT.accessories[av.acc]
+  const acc = av.acc != null ? PORTRAIT.accessories[av.acc] : null
   const layers = [skin.src, eyes.src, hairColor.src]
   if (acc && acc.src) layers.push(acc.src)
   return layers

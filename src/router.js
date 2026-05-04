@@ -50,11 +50,14 @@ export function show(screenName) {
       window.dispatchEvent(new CustomEvent('screen:rendered', { detail: { screen: screenName } }))
     })
   } catch (err) {
-    console.error(`Error rendering ${screenName}:`, err)
+    console.error(`[router] crash rendering ${screenName}:`, err)
     appRoot.innerHTML = `
-      <div style="padding:20px;color:#fff;">
-        <h2>Erreur</h2><p>${err.message}</p>
-        <button onclick="location.hash='home'" style="padding:8px;">Retour home</button>
+      <div style="padding:20px;background:#fce080;color:#2a2228;font-family:monospace;min-height:100vh;">
+        <h2 style="font-size:14px;margin-bottom:12px;">⚠️ Erreur affichage</h2>
+        <p style="font-size:12px;margin-bottom:8px;">Écran : <strong>${screenName}</strong></p>
+        <p style="font-size:12px;margin-bottom:8px;">Message : ${err.message || err}</p>
+        <pre style="font-size:10px;background:rgba(0,0,0,0.1);padding:8px;overflow:auto;max-height:200px;">${(err.stack || '').slice(0, 500)}</pre>
+        <button onclick="location.hash='home';location.reload()" style="margin-top:12px;padding:10px 16px;background:#cf3a3a;color:#fff;border:none;border-radius:6px;cursor:pointer;">Retour home</button>
       </div>`
   }
 }

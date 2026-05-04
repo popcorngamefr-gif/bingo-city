@@ -25,7 +25,7 @@ export function renderAvatar() {
               type="text"
               class="char-name-input"
               id="avatar-name-input"
-              value="${state.myName || 'MAREK'}"
+              value="${state.myName || state.accountKey || ''}"
               maxlength="12"
             />
           </div>
