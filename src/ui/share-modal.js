@@ -1,18 +1,24 @@
 /**
  * Share Modal — bouton "Partager" du lobby et du jeu.
- * Utilise navigator.share si dispo (mobile natif), sinon copie + propose alternative.
+ * Lien pré-rempli avec le code, objet email pour aller plus vite.
  */
 
 import { icon }  from './icons.js'
 import { toast } from './toast.js'
 
+const buildLink = (code) => `${location.origin}/#join/${code}`
+
 const SHARE_TEXT = (code) =>
-  `Rejoins le Bingo Santé Varsovie comme un déglingo ! 🍻\n\nCode : ${code}\nLien : ${location.origin}/#join`
+  `Rejoins le Bingo Santé Varsovie comme un déglingo ! 🍻\n\nCode : ${code}\nLien direct : ${buildLink(code)}`
+
+const EMAIL_SUBJECT = 'Rejoins le Bingo Santé Varsovie comme un déglingo !'
+const EMAIL_BODY    = (code) =>
+  `Salut !\n\nJ'organise un Bingo Santé Varsovie. Tu rejoins ?\n\nCode de la partie : ${code}\nLien direct (cliquable) : ${buildLink(code)}\n\nÀ tout de suite !`
 
 export function openShareModal(gameCode) {
   const root = document.getElementById('modal-root')
   const text = SHARE_TEXT(gameCode)
-  const link = `${location.origin}/#join`
+  const link = buildLink(gameCode)
 
   root.innerHTML = `
     <div class="modal show">
@@ -33,12 +39,16 @@ export function openShareModal(gameCode) {
           <p class="share-msg-preview">"Rejoins le Bingo Santé Varsovie comme un déglingo !"</p>
 
           <div class="share-actions">
-            <button class="btn btn-yellow" id="share-copy-btn">
-              ${icon('check', { size: 16 })} Copier le message
-            </button>
-
             <button class="btn btn-red" id="share-native-btn">
               ${icon('arrow_right', { size: 16 })} Envoyer à...
+            </button>
+
+            <button class="btn btn-yellow" id="share-email-btn">
+              ${icon('link', { size: 14 })} Envoyer par email
+            </button>
+
+            <button class="btn btn-cream btn-sm" id="share-copy-btn">
+              ${icon('check', { size: 14 })} Copier le message
             </button>
 
             <button class="btn btn-cream btn-sm" id="share-link-only-btn">
@@ -55,27 +65,16 @@ export function openShareModal(gameCode) {
     </div>
   `
 
-  // Copie du message complet
-  document.getElementById('share-copy-btn')?.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(text)
-      toast('Message copié !')
-    } catch {
-      toast('Impossible de copier')
-    }
-  })
-
-  // Partage natif iOS/Android
+  // Partage natif (sheet iOS/Android)
   document.getElementById('share-native-btn')?.addEventListener('click', async () => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Bingo Santé Varsovie',
+          title: EMAIL_SUBJECT,
           text:  text,
+          url:   link,
         })
-      } catch {
-        // l'utilisateur a annulé, pas grave
-      }
+      } catch { /* annulé par user */ }
     } else {
       try {
         await navigator.clipboard.writeText(text)
@@ -86,7 +85,24 @@ export function openShareModal(gameCode) {
     }
   })
 
-  // Lien seul
+  // Email pré-rempli (objet + body)
+  document.getElementById('share-email-btn')?.addEventListener('click', () => {
+    const subject = encodeURIComponent(EMAIL_SUBJECT)
+    const body    = encodeURIComponent(EMAIL_BODY(gameCode))
+    location.href = `mailto:?subject=${subject}&body=${body}`
+  })
+
+  // Copie message complet
+  document.getElementById('share-copy-btn')?.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(text)
+      toast('Message copié !')
+    } catch {
+      toast('Impossible de copier')
+    }
+  })
+
+  // Copie lien seul
   document.getElementById('share-link-only-btn')?.addEventListener('click', async () => {
     try {
       await navigator.clipboard.writeText(link)

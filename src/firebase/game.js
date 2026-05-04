@@ -81,6 +81,25 @@ export async function endGame(code) {
   await updateDoc(doc(db, 'games', code), { status: 'ended' })
 }
 
+/**
+ * Écoute toutes les photos de la partie en temps réel.
+ * @param {string} code
+ * @param {Function} onUpdate — reçoit un tableau de { url, objId, uid, capturedAt }
+ */
+let _unsubPhotos = null
+export function subscribeToPhotos(code, onUpdate) {
+  if (_unsubPhotos) _unsubPhotos()
+  _unsubPhotos = onSnapshot(
+    collection(db, 'games', code, 'photos'),
+    (snapshot) => {
+      const photos = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+      onUpdate(photos)
+    },
+    (err) => console.warn('subscribeToPhotos:', err)
+  )
+  return _unsubPhotos
+}
+
 // ─── Mise à jour joueur ───────────────────────────────────────────────────────
 
 export async function updatePlayerGrid(code, uid, grid) {
@@ -133,6 +152,7 @@ export function subscribeToGame(code, onUpdate) {
 export function unsubscribeAll() {
   if (_unsubPlayers) { _unsubPlayers(); _unsubPlayers = null }
   if (_unsubGame)    { _unsubGame();    _unsubGame    = null }
+  if (_unsubPhotos)  { _unsubPhotos();  _unsubPhotos  = null }
 }
 
 

@@ -11,16 +11,13 @@ import { icon } from '../ui/icons.js'
 import { escapeHtml } from '../utils/html.js'
 
 export function renderEnd() {
-  // Scores aléatoires pour les bots
-  state.players.forEach(p => {
-    if (!p.isYou && (p.score == null || p.score === 0)) {
-      p.score = Math.floor(Math.random() * 25) + 5
-    }
-  })
-
   const sorted = [...state.players].sort((a, b) => (b.score || 0) - (a.score || 0))
   const winner = sorted[0]
-  const title  = winner.isYou ? 'TU AS GAGNÉ !' : `${winner.name.toUpperCase()} GAGNE !`
+  const hasScores = sorted.some(p => (p.score || 0) > 0)
+  const title  = !winner ? 'PARTIE TERMINÉE'
+                : !hasScores ? 'PARTIE TERMINÉE'
+                : winner.isYou ? 'TU AS GAGNÉ !'
+                : `${winner.name.toUpperCase()} GAGNE !`
 
   const medals = [
     icon('medal_gold',   { size: 28 }),
@@ -28,23 +25,59 @@ export function renderEnd() {
     icon('medal_bronze', { size: 28 }),
   ]
 
-  // Galerie des photos capturées
-  const photoEntries = Object.entries(state.myPhotos || {})
-  const photosSection = photoEntries.length > 0 ? `
+  // Galerie globale : toutes les photos de tous les joueurs (sync via Firestore)
+  const allPhotos = state.gamePhotos || []  // [{ url, objId, uid, ... }]
+
+  // Groupe par joueur
+  const playersById = {}
+  state.players.forEach(p => { playersById[p.id] = p })
+
+  const photosByPlayer = {}
+  allPhotos.forEach(photo => {
+    const player = playersById[photo.uid]
+    const key    = photo.uid
+    if (!photosByPlayer[key]) photosByPlayer[key] = { player, photos: [] }
+    photosByPlayer[key].photos.push(photo)
+  })
+
+  // Si pas de photos remontées via Firestore, fallback sur mes photos locales
+  if (Object.keys(photosByPlayer).length === 0 && state.myPhotos && Object.keys(state.myPhotos).length > 0) {
+    const me = state.players.find(p => p.isYou)
+    photosByPlayer[me?.id || 'me'] = {
+      player: me,
+      photos: Object.entries(state.myPhotos).map(([idx, url]) => {
+        const cell = state.myGrid[parseInt(idx)]
+        return { url, objId: cell?.objId, uid: me?.id }
+      }),
+    }
+  }
+
+  const totalPhotos = Object.values(photosByPlayer).reduce((acc, g) => acc + g.photos.length, 0)
+  const photosSection = totalPhotos > 0 ? `
     <div class="card mb photos-recap" style="position: relative; z-index: 5;">
-      <div class="section-title">${icon('camera', { size: 14 })} Vos captures (${photoEntries.length})</div>
-      <div class="photos-grid">
-        ${photoEntries.map(([idx, dataUrl]) => {
-          const cell = state.myGrid[parseInt(idx)]
-          const obj  = cell ? getObject(cell.objId) : null
-          return `
-            <div class="photo-thumb">
-              <img src="${dataUrl}" alt="${obj ? escapeHtml(obj.name) : ''}" loading="lazy" />
-              <div class="photo-label">${obj ? escapeHtml(obj.name) : '?'}</div>
-            </div>
-          `
-        }).join('')}
+      <div class="section-title">
+        ${icon('camera', { size: 14 })} Galerie de la partie (${totalPhotos})
       </div>
+      ${Object.values(photosByPlayer).map(({ player, photos }) => `
+        <div class="photos-player-group">
+          <div class="photos-player-header">
+            <div class="avatar xs"><div class="avatar-inner">${avatarLayersHtml(player?.avatar || {})}</div></div>
+            <span class="photos-player-name">${escapeHtml(player?.name || 'Joueur')}${player?.isYou ? ' (toi)' : ''}</span>
+            <span class="photos-player-count">${photos.length}</span>
+          </div>
+          <div class="photos-grid">
+            ${photos.map(photo => {
+              const obj = photo.objId ? getObject(photo.objId) : null
+              return `
+                <div class="photo-thumb" data-photo-url="${photo.url}" data-photo-name="${obj ? escapeHtml(obj.name) : ''}">
+                  <img src="${photo.url}" alt="${obj ? escapeHtml(obj.name) : ''}" loading="lazy" />
+                  <div class="photo-label">${obj ? escapeHtml(obj.name) : '?'}</div>
+                </div>
+              `
+            }).join('')}
+          </div>
+        </div>
+      `).join('')}
     </div>
   ` : ''
 

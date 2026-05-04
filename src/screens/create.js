@@ -30,10 +30,12 @@ export function renderCreate() {
 
         <label class="label">Durée de la partie</label>
         <div class="duration-picker" id="duration-picker">
-          <button type="button" class="duration-tile" data-duration="600">10 min</button>
-          <button type="button" class="duration-tile selected" data-duration="1200">20 min</button>
-          <button type="button" class="duration-tile" data-duration="1800">30 min</button>
-          <button type="button" class="duration-tile" data-duration="3600">1h</button>
+          <button type="button" class="duration-tile selected" data-duration="7200">2h</button>
+          <button type="button" class="duration-tile" data-duration="14400">4h</button>
+          <button type="button" class="duration-tile" data-duration="43200">12h</button>
+          <button type="button" class="duration-tile" data-duration="86400">1 jour</button>
+          <button type="button" class="duration-tile" data-duration="172800">2 jours</button>
+          <button type="button" class="duration-tile" data-duration="259200">3 jours</button>
         </div>
         <p class="small light" style="font-size:11px;margin-top:6px;color:var(--ink-soft);">
           Modifiable avant le lancement

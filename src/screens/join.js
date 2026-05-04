@@ -8,6 +8,16 @@ import { icon }         from '../ui/icons.js'
 
 export function renderJoin() {
   const savedName = state.myName || state.userProfile?.name || ''
+  // Pré-remplir le code depuis l'URL : #join/ABCD ou ?code=ABCD
+  let prefilledCode = ''
+  const hash = window.location.hash.slice(1)
+  if (hash.startsWith('join/')) {
+    prefilledCode = hash.slice(5).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4)
+  } else {
+    const params = new URLSearchParams(window.location.search)
+    const queryCode = params.get('code')
+    if (queryCode) prefilledCode = queryCode.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4)
+  }
   return `
     <section class="screen">
       ${bgVarsovieHtml({ withTram: false, opacity: 0.4 })}
@@ -20,7 +30,7 @@ export function renderJoin() {
         <div style="font-family: 'Press Start 2P', monospace; font-size: 10px; color: var(--ink); margin-bottom: 8px;">
           Code de la partie
         </div>
-        <input class="input input-code" id="join-code-input" placeholder="XXXX" maxlength="4" />
+        <input class="input input-code" id="join-code-input" placeholder="XXXX" maxlength="4" value="${prefilledCode}" />
         <p class="small center mt">Demande le code au MJ</p>
       </div>
 

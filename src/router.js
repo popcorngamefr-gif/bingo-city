@@ -55,20 +55,29 @@ export function show(screenName) {
   }
 }
 
+function _resolveScreen(rawHash) {
+  // Supporte #join/CODE → renvoie 'join' (le code est lu dans le screen)
+  const screen = rawHash.split('/')[0] || 'home'
+  return SCREENS[screen] ? screen : 'home'
+}
+
 export function initRouter() {
-  const initial = window.location.hash.slice(1) || 'home'
-  show(SCREENS[initial] ? initial : 'home')
+  const raw     = window.location.hash.slice(1)
+  const initial = _resolveScreen(raw)
+  show(initial)
   window.addEventListener('hashchange', () => {
-    const screen = window.location.hash.slice(1) || 'home'
-    if (SCREENS[screen]) show(screen)
+    const raw    = window.location.hash.slice(1)
+    const screen = _resolveScreen(raw)
+    show(screen)
   })
 }
 
 export function navigate(screen) {
   const currentHash = window.location.hash.slice(1) || 'home'
-  if (currentHash === screen) {
-    // Même écran que l'actuel → hashchange ne se déclenchera pas, on force le re-render
-    show(screen)
+  const currentScreen = currentHash.split('/')[0] || 'home'
+  const targetScreen  = screen.split('/')[0]
+  if (currentScreen === targetScreen) {
+    show(targetScreen)
   } else {
     window.location.hash = screen
   }

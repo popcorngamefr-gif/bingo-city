@@ -47,10 +47,16 @@ export function renderLobby() {
       <div class="card mb" style="position:relative;z-index:5;">
         <div class="section-title">Durée de la partie</div>
         <div class="duration-picker">
-          ${[600, 1200, 1800, 3600].map(d => {
-            const label = d === 3600 ? '1h' : `${d/60} min`
-            const sel   = (state.gameDuration || 1200) === d ? 'selected' : ''
-            return `<button type="button" class="duration-tile ${sel}" data-action="updateGameDuration" data-duration-arg="${d}">${label}</button>`
+          ${[
+            { v: 7200,   l: '2h' },
+            { v: 14400,  l: '4h' },
+            { v: 43200,  l: '12h' },
+            { v: 86400,  l: '1 jour' },
+            { v: 172800, l: '2 jours' },
+            { v: 259200, l: '3 jours' },
+          ].map(({ v, l }) => {
+            const sel = (state.gameDuration || 7200) === v ? 'selected' : ''
+            return `<button type="button" class="duration-tile ${sel}" data-action="updateGameDuration" data-duration-arg="${v}">${l}</button>`
           }).join('')}
         </div>
       </div>

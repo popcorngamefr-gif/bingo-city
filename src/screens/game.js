@@ -52,7 +52,7 @@ export function renderGame() {
           ${icon('hourglass', { size: 16 })}
           <div class="hud-stat-block">
             <span class="hud-label">TEMPS</span>
-            <span class="hud-value timer" id="game-timer">30:00</span>
+            <span class="hud-value timer" id="game-timer">--:--</span>
           </div>
         </div>
       </div>
@@ -90,6 +90,11 @@ export function renderGame() {
         <button class="btn btn-cream btn-sm" data-nav="end">
           ${icon('trophy', { size: 16 })} Classement
         </button>
+        ${state.isMJ ? `
+          <button class="btn btn-red btn-sm" data-action="endGameByMJ">
+            ${icon('cross', { size: 14 })} Terminer
+          </button>
+        ` : ''}
       </div>
     </section>
   `

@@ -20,7 +20,7 @@ export const state = {
   players:         [],   // { id, name, avatar, score, isMJ, isYou, justJoined, hasBingo }
   selectedObjects: [],   // ids des objets choisis par MJ
   customObjects:   [],   // objets créés par le MJ : { id, name, icon, points }
-  gameDuration:    1200, // durée de partie en secondes (modifiable par MJ)
+  gameDuration:    7200, // durée en secondes (default 2h, range 2h-3j)
   myGrid:          [],   // { objId, status: 'empty' | 'validated' }
 
   // Photos capturées : { [cellIdx]: url (Storage) ou dataUrl (avant upload) }
@@ -36,7 +36,7 @@ export const state = {
   currentPickingObj: null,
 
   // Timer
-  timer:         1200,    // décompte courant (= gameDuration au démarrage)
+  timer:         7200,    // décompte courant (= gameDuration au démarrage)
   timerInterval: null,
 
   // Routing
@@ -66,7 +66,7 @@ export function resetGame() {
   state.players         = []
   state.selectedObjects = []
   state.customObjects   = []
-  state.gameDuration    = 1200
+  state.gameDuration    = 7200
   state.myGrid          = []
   state.myPhotos        = {}
   state.myAnimation = null
