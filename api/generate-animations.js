@@ -1,13 +1,11 @@
 /**
  * POST /api/generate-animations
  * Lance 3 prédictions rd-animation en parallèle.
- * Input : imageBase64 (l'avatar pixel art déjà généré)
- * Output : { ids: { idle, sad, laugh } }
  *
- * Les 3 GIFs :
- *  - idle  : loop neutre + clin d'œil (rd_advanced_animation__idle)
- *  - sad   : triste + colère (custom_action)
- *  - laugh : rire + hyper heureux (custom_action)
+ * IMPORTANT : sur Replicate, le paramètre est `style` (pas `prompt_style`).
+ * Le style "idle" génère un cycle d'animation neutre — on varie le prompt.
+ *
+ * 3 GIFs : neutre+clin d'oeil, triste+colère, mort de rire
  */
 
 export default async function handler(req, res) {
@@ -26,26 +24,20 @@ export default async function handler(req, res) {
     'Prefer':        'respond-async',
   }
 
-  // Dimensions 48x48 — seule taille supportée par les advanced animations
+  // Sur Replicate, "style" est le seul param accepté pour rd-animation
+  // Styles disponibles : four_angle_walking (48×48), idle (variable)
+  // On utilise "idle" pour des animations de portrait centrées
   const BASE = {
-    width:       48,
-    height:      48,
-    input_image: imageBase64,
+    style:        'idle',
+    width:        48,
+    height:       48,
+    input_image:  imageBase64,
   }
 
   const ANIMATIONS = {
-    idle: {
-      prompt:       'pixel art character portrait, neutral expression, calm idle loop',
-      prompt_style: 'rd_advanced_animation__idle',
-    },
-    sad: {
-      prompt:       'pixel art character portrait, sad crying then furious rage expression',
-      prompt_style: 'rd_advanced_animation__custom_action',
-    },
-    laugh: {
-      prompt:       'pixel art character portrait, laughing out loud, extremely happy and joyful',
-      prompt_style: 'rd_advanced_animation__custom_action',
-    },
+    idle:  { prompt: 'pixel art portrait of a person, neutral face, calm expression with subtle wink' },
+    sad:   { prompt: 'pixel art portrait of a person, sad and angry face, frowning, furious expression' },
+    laugh: { prompt: 'pixel art portrait of a person, laughing very hard, mouth wide open, extremely happy' },
   }
 
   try {
@@ -55,12 +47,19 @@ export default async function handler(req, res) {
         headers: HEADERS,
         body:    JSON.stringify({ input: { ...BASE, ...anim } }),
       })
-      .then(r => r.json())
-      .then(p => {
-        console.log(`Animation ${key} started:`, p.id, p.error || '')
-        return { key, id: p.id || null, error: p.detail || p.error || null }
+      .then(async r => {
+        const data = await r.json().catch(() => ({}))
+        if (!r.ok) {
+          console.error(`Animation ${key} HTTP ${r.status}:`, JSON.stringify(data).slice(0, 300))
+          return { key, id: null, error: data.detail || data.error || `HTTP ${r.status}` }
+        }
+        console.log(`Animation ${key} started:`, data.id)
+        return { key, id: data.id || null, error: null }
       })
-      .catch(err => ({ key, id: null, error: err.message }))
+      .catch(err => {
+        console.error(`Animation ${key} exception:`, err.message)
+        return { key, id: null, error: err.message }
+      })
     )
 
     const results = await Promise.all(requests)

@@ -221,9 +221,7 @@ const ACTIONS = {
         await createGame({ code: state.gameCode, name: state.gameName, hostUid: state.uid, hostName: state.myName, hostAvatar: state.myAvatar })
       } catch (err) {
         console.warn('createGame failed:', err)
-        setTimeout(() => simulateJoin('Marion'), 800)
-        setTimeout(() => simulateJoin('Karim'),  2000)
-        setTimeout(() => simulateJoin('Léa'),    3400)
+        // Pas de simulateJoin en prod — laisse l'utilisateur seul s'il n'y a pas de Firebase
       }
     } else {
       state.players = [me]
