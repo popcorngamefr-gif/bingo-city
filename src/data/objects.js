@@ -1,3 +1,4 @@
+import { state } from '../state.js'
 /**
  * Bibliothèque d'objets bingo — Varsovie Édition
  * 3 catégories :
@@ -138,10 +139,18 @@ export function getObjects() {
 }
 
 export function getObject(id) {
-  return ALL.find(o => o.id === id)
+  const std = ALL.find(o => o.id === id)
+  if (std) return std
+  // Fallback sur les objets custom créés par le MJ
+  return (state.customObjects || []).find(o => o.id === id)
 }
 
 export function objectSvg(obj) {
   if (!obj) return ''
+  // Objets custom : pas de grid, juste un nom d'icône
+  if (obj.icon && !obj.grid) {
+    // Renvoie un placeholder ; l'icône réelle est rendue côté UI via icon()
+    return `<span data-custom-icon="${obj.icon}"></span>`
+  }
   return pixelSvg(obj.grid, obj.pal)
 }

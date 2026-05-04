@@ -45,6 +45,30 @@ export function renderSetup() {
         </div>
       `).join('')}
 
+      <!-- Section objets custom créés par le MJ -->
+      <div class="category-section cat-custom">
+        <div class="category-header">
+          <strong>Tes objets perso</strong>
+          <span class="category-subtitle">Crée tes propres défis</span>
+        </div>
+        <div class="obj-library">
+          ${(state.customObjects || []).map(obj => {
+            const selected = state.selectedObjects.includes(obj.id)
+            return `<div class="obj-tile ${selected ? 'selected' : ''}" data-toggle-obj="${obj.id}">
+              <div class="obj-tile-icon">${icon(obj.icon, { size: 36 })}</div>
+              <div class="obj-tile-name">${obj.name}</div>
+              <div class="obj-tile-points">${obj.points}pt${obj.points > 1 ? 's' : ''}</div>
+              ${selected ? `<div class="obj-tile-check">${icon('check', { size: 18 })}</div>` : ''}
+            </div>`
+          }).join('')}
+          <div class="obj-tile obj-tile--add" data-action="openCustomObjPicker">
+            <div class="obj-tile-icon obj-tile-add-icon">${icon('plus', { size: 36 })}</div>
+            <div class="obj-tile-name">Ajouter</div>
+            <div class="obj-tile-points">Custom</div>
+          </div>
+        </div>
+      </div>
+
       <div class="sticky-cta">
         <button
           class="btn btn-red"

@@ -21,6 +21,10 @@ export function renderGame() {
 
   return `
     <section class="screen game-screen">
+      <button class="game-share-btn" data-action="openShareModal" title="Partager le lien">
+        ${icon('link', { size: 18 })}
+      </button>
+
       <!-- HUD haut avec avatar qui marche -->
       <div class="game-hud">
         <div class="hud-avatar">
@@ -31,21 +35,30 @@ export function renderGame() {
           </div>
         </div>
         <div class="hud-stat">
-          ${icon('pierogi', { size: 18 })}
-          <span class="hud-value">${me.score || 0}</span>
+          ${icon('pierogi', { size: 16 })}
+          <div class="hud-stat-block">
+            <span class="hud-label">PTS</span>
+            <span class="hud-value">${me.score || 0}</span>
+          </div>
         </div>
         <div class="hud-stat">
-          ${icon('star', { size: 18 })}
-          <span class="hud-value">${rank || '?'}/${totalPlayers}</span>
+          ${icon('star', { size: 16 })}
+          <div class="hud-stat-block">
+            <span class="hud-label">RANG</span>
+            <span class="hud-value">${rank || '?'}/${totalPlayers}</span>
+          </div>
         </div>
         <div class="hud-stat">
-          ${icon('hourglass', { size: 18 })}
-          <span class="hud-value timer" id="game-timer">30:00</span>
+          ${icon('hourglass', { size: 16 })}
+          <div class="hud-stat-block">
+            <span class="hud-label">TEMPS</span>
+            <span class="hud-value timer" id="game-timer">--:--</span>
+          </div>
         </div>
       </div>
 
       <p class="small light center mb">
-        Repéré ? <strong style="color: var(--tram-red);">Tape</strong> et photo. L'IA valide.
+        Repéré ? <strong style="color: var(--tram-red);">Tape</strong> pour prendre la photo.
       </p>
 
       <!-- Grille de bingo -->
@@ -53,20 +66,36 @@ export function renderGame() {
         ${state.myGrid.map((cell, i) => {
           const obj = getObject(cell.objId)
           if (!obj) return ''
-          const statusIcon =
-            cell.status === 'pending'   ? icon('robot', { size: 18, cls: 'cell-status-icon' }) :
-            cell.status === 'validated' ? icon('check', { size: 20, cls: 'cell-status-icon' }) :
-            cell.status === 'rejected'  ? icon('cross', { size: 18, cls: 'cell-status-icon' }) :
-            ''
-          return `<div class="bingo-cell ${cell.status}" data-cell="${i}">
-            <div class="bingo-cell-icon">${objectSvg(obj)}</div>
+          const photo = state.myPhotos?.[i]
+          const isValidated = cell.status === 'validated'
+          const statusIcon  = isValidated ? icon('check', { size: 20, cls: 'cell-status-icon' }) : ''
+          // Objets custom : on rend l'icône via icon() au lieu de objectSvg
+          const iconHtml = obj.icon && !obj.grid
+            ? icon(obj.icon, { size: 36 })
+            : objectSvg(obj)
+          // Si validée et photo dispo : on affiche la photo en background, l'icône est masquée
+          const hasPhoto = isValidated && photo
+          return `<div class="bingo-cell ${cell.status} ${hasPhoto ? 'has-photo' : ''}" data-cell="${i}">
+            ${hasPhoto
+              ? `<img src="${photo}" alt="${obj.name}" class="bingo-cell-photo" loading="lazy" />`
+              : `<div class="bingo-cell-icon">${iconHtml}</div>`
+            }
             <div class="bingo-cell-name">${obj.name}</div>
             ${statusIcon}
           </div>`
         }).join('')}
       </div>
 
-      <button class="btn btn-cream btn-sm mt" data-nav="end">Voir le classement</button>
+      <div class="sticky-cta">
+        <button class="btn btn-cream btn-sm" data-nav="end">
+          ${icon('trophy', { size: 16 })} Classement
+        </button>
+        ${state.isMJ ? `
+          <button class="btn btn-red btn-sm" data-action="endGameByMJ">
+            ${icon('cross', { size: 14 })} Terminer
+          </button>
+        ` : ''}
+      </div>
     </section>
   `
 }

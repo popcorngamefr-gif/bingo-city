@@ -52,12 +52,21 @@ function _process(cellIdx, dataUrl) {
   state.currentPickingObj = null
   handleValidation(cellIdx)
 
-  if (state.gameCode && state.uid) {
+  if (state.gameCode && state.uid && state.uid !== 'me') {
     import('../firebase/storage.js').then(({ uploadPhoto }) => {
       const cell = state.myGrid[cellIdx]
       uploadPhoto(state.gameCode, state.uid, cellIdx, dataUrl, cell?.objId)
-        .then(url => { state.myPhotos[cellIdx] = url })
-        .catch(err => console.warn('Photo upload failed:', err))
+        .then(url => { state.myPhotos[cellIdx] = url; console.log('[photo] uploaded:', url) })
+        .catch(err => {
+          console.error('[photo] upload failed:', err)
+          if (err.code === 'storage/unauthorized') {
+            // Toast une seule fois pour pas spammer
+            if (!window.__photoErrShown) {
+              window.__photoErrShown = true
+              import('./toast.js').then(({ toast }) => toast('Photos désactivées (rules Storage)', 4000))
+            }
+          }
+        })
     })
   }
 }

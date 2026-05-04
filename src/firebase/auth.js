@@ -45,8 +45,9 @@ export async function loadProfile(uid) {
   const snap = await getDoc(doc(db, 'users', uid))
   if (!snap.exists()) return null
   const data = snap.data()
-  if (data.name)   state.myName   = data.name
-  if (data.avatar) state.myAvatar = { ...state.myAvatar, ...data.avatar }
+  if (data.name)       state.myName     = data.name
+  if (data.avatar)     state.myAvatar   = { ...state.myAvatar, ...data.avatar }
+  if (data.accountKey) state.accountKey = data.accountKey
   state.userProfile = data
   return data
 }
@@ -54,6 +55,19 @@ export async function loadProfile(uid) {
 /**
  * Sauvegarde / met à jour le profil dans Firestore.
  */
+// Nettoie un objet pour Firestore (vire les undefined qui plantent setDoc)
+export function cleanForFirestore(obj) {
+  if (obj === null || obj === undefined) return null
+  if (Array.isArray(obj)) return obj.map(cleanForFirestore).filter(v => v !== undefined)
+  if (typeof obj !== 'object') return obj
+  const out = {}
+  for (const [k, v] of Object.entries(obj)) {
+    if (v === undefined) continue
+    out[k] = cleanForFirestore(v)
+  }
+  return out
+}
+
 export async function saveProfile({ name, avatar }) {
   const uid = state.uid
   if (!uid) return
@@ -62,16 +76,32 @@ export async function saveProfile({ name, avatar }) {
   const snap = await getDoc(ref)
   const now  = serverTimestamp()
 
+  // Nettoie avatar des undefined qui plantent Firestore
+  const cleanAvatar = cleanForFirestore(avatar || {})
+  // Inclut accountKey s'il existe (lien compte PIN ↔ uid)
+  const baseFields = { name: name || 'Anonyme', avatar: cleanAvatar, updatedAt: now }
+  if (state.accountKey) baseFields.accountKey = state.accountKey
+
   if (snap.exists()) {
-    await updateDoc(ref, { name, avatar, updatedAt: now })
+    await updateDoc(ref, baseFields)
   } else {
     await setDoc(ref, {
-      name,
-      avatar,
+      ...baseFields,
       stats: { totalGames: 0, totalScore: 0, bingos: 0, wins: 0 },
       createdAt: now,
-      updatedAt: now,
     })
+  }
+  state.myAvatar = { ...state.myAvatar, ...cleanAvatar }
+
+  // Si compte PIN actif → sync l'avatar dans /accounts/{key} aussi
+  // pour qu'il soit récupéré au login depuis un autre device
+  if (state.accountKey) {
+    try {
+      const accRef = doc(db, 'accounts', state.accountKey)
+      await updateDoc(accRef, { avatar: cleanAvatar, name: name || 'Anonyme', updatedAt: now })
+    } catch (err) {
+      console.warn('[saveProfile] sync to accounts failed:', err)
+    }
   }
 
   state.myName      = name

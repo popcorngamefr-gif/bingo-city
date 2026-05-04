@@ -16,7 +16,8 @@
  * SPARKLES : étoiles autour
  */
 
-import { PORTRAIT } from '../data/portrait.js'
+import { PORTRAIT }       from '../data/portrait.js'
+// import retiré : on n'a plus de mapping mood → animation, juste une vidéo unique
 
 export function avatarHtml(av, opts = {}) {
   const { size = 'md', mood = 'idle', confidence = 'neutral', sparkles = false } = opts
@@ -32,23 +33,40 @@ export function avatarHtml(av, opts = {}) {
 }
 
 export function avatarLayersHtml(av, mood = 'idle', confidence = 'neutral') {
-  if (av?.generatedImageUrl) {
+  av = av || {}
+  // 1. Vidéo Déglingo IA — priorise animationUrl (joueur en cours de partie),
+  //    sinon myAnimation.url (mon propre avatar dans l'éditeur)
+  const videoUrl = av.animationUrl || window.__state?.myAnimation?.url
+  if (videoUrl && (av?.generatedImageUrl || av?.animationUrl)) {
+    const safeUrl = String(videoUrl).replace(/"/g, '&quot;')
     return `
-      <div class="layer generated-img" style="background-image:url('${av.generatedImageUrl}')"></div>
-      <div class="layer mouth-layer" data-mouth>${mouthSvg(mood, confidence)}</div>
+      <div class="layer generated-video">
+        <video src="${safeUrl}" autoplay loop muted playsinline
+               style="width:100%;height:100%;object-fit:cover;image-rendering:pixelated;"></video>
+      </div>
     `
   }
+  // 2. Image statique générée par face-to-many
+  if (av?.generatedImageUrl) {
+    const safeUrl = String(av.generatedImageUrl).replace(/'/g, "\\'").replace(/"/g, '%22')
+    return `
+      <div class="layer generated-img" style="background-image:url('${safeUrl}')"></div>
+    `
+  }
+  // 3. Sprites classiques avec bouche SVG animée
   const layers = avatarLayers(av)
   return `${layers.map(src => `<div class="layer" style="background-image:url('${src}')"></div>`).join('')}
     <div class="layer mouth-layer" data-mouth>${mouthSvg(mood, confidence)}</div>`
 }
 
 export function avatarLayers(av) {
+  // Fallback robuste si av est null, undefined, ou un objet vide
+  av = av || {}
   const skin = PORTRAIT.skins[av.skin] || PORTRAIT.skins[0]
   const eyes = PORTRAIT.eyes[av.eyes] || PORTRAIT.eyes[0]
   const hairStyle = PORTRAIT.hairStyles[av.hairStyle] || PORTRAIT.hairStyles[0]
   const hairColor = hairStyle.colors[av.hairColor] || hairStyle.colors[0]
-  const acc = PORTRAIT.accessories[av.acc]
+  const acc = av.acc != null ? PORTRAIT.accessories[av.acc] : null
   const layers = [skin.src, eyes.src, hairColor.src]
   if (acc && acc.src) layers.push(acc.src)
   return layers
@@ -107,6 +125,29 @@ function mouthSvg(mood, confidence = 'neutral') {
                  <path d="M 18 22 L 18 24 L 16 22 Q 14 20 16 18 Q 18 17 18 19 Q 18 17 20 18 Q 22 20 20 22 Z" fill="${cheek}"/>
                  <path d="M 18 22 L 18 24 L 16 22 Q 14 20 16 18 Q 18 17 18 19 Q 18 17 20 18 Q 22 20 20 22 Z" fill="#d04848" opacity="0.5"/>
                </g>`
+      break
+
+    case 'laugh':
+      mouth = `<path d="M 22 38 Q 32 52 42 38 Z" fill="${ink}"/>
+               <rect x="24" y="38" width="16" height="3" fill="white"/>
+               <ellipse cx="32" cy="40" rx="6" ry="2" fill="#a02828" opacity="0.6"/>`
+      extra = `<ellipse cx="20" cy="36" rx="4" ry="2.5" fill="${cheek}" opacity="0.65"/>
+               <ellipse cx="44" cy="36" rx="4" ry="2.5" fill="${cheek}" opacity="0.65"/>`
+      break
+
+    case 'wink':
+      // Bouche sourire + œil gauche fermé (trait horizontal)
+      mouth = `<path d="M 26 40 Q 32 46 38 40" stroke="${ink}" stroke-width="2" fill="none" stroke-linecap="round"/>`
+      extra = `<line x1="20" y1="26" x2="28" y2="26" stroke="${ink}" stroke-width="2.5" stroke-linecap="round"/>
+               <text x="20" y="26" font-size="0">wink</text>`
+      break
+
+    case 'rage':
+      // Bouche serrée + sourcils en V
+      mouth = `<path d="M 26 44 L 38 44" stroke="${ink}" stroke-width="3" stroke-linecap="round"/>
+               <path d="M 27 46 L 30 44 M 37 46 L 34 44" stroke="${ink}" stroke-width="1.5" stroke-linecap="round"/>`
+      extra = `<path d="M 18 20 L 28 24" stroke="${ink}" stroke-width="2.5" stroke-linecap="round"/>
+               <path d="M 46 20 L 36 24" stroke="${ink}" stroke-width="2.5" stroke-linecap="round"/>`
       break
 
     case 'walk':
@@ -180,7 +221,7 @@ export function triggerMood(el, mood, opts = {}) {
   if (!el) return
   const { duration = 600, emote = null, persist = false } = opts
 
-  const allMoods = ['idle', 'walk', 'hop', 'jump', 'dance', 'sad', 'excited', 'sweat', 'heartbeat']
+  const allMoods = ['idle', 'walk', 'hop', 'jump', 'dance', 'sad', 'excited', 'sweat', 'heartbeat', 'laugh', 'wink', 'rage']
   allMoods.forEach(m => el.classList.remove(`mood-${m}`))
   el.classList.add(`mood-${mood}`)
   el.classList.add('has-sparkles')

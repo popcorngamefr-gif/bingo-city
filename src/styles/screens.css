@@ -11,18 +11,24 @@
   inset: 0;
   background: rgba(42, 34, 40, 0.85);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   z-index: 100;
-  padding: 20px;
+  padding: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .modal-box {
   max-width: 360px;
   width: 100%;
+  margin: 20px auto;
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
   background: var(--cream-cold);
   border: 4px solid var(--ink);
   border-radius: 14px;
   box-shadow: 0 8px 0 var(--tram-red-dark);
+  -webkit-overflow-scrolling: touch;
 }
 .modal-title {
   display: flex;
@@ -447,12 +453,25 @@
 .sticky-cta {
   position: -webkit-sticky;
   position: sticky;
-  bottom: 0;
-  margin-top: auto;          /* pousse vers le bas dans un flex column */
-  padding: 12px 0 max(16px, env(safe-area-inset-bottom, 16px));
+  bottom: -20px;             /* compense le padding-bottom du .screen parent */
+  margin: auto -20px -20px;  /* étend au-delà du padding latéral et bottom du parent */
+  padding: 12px 20px max(20px, env(safe-area-inset-bottom, 20px));
   background: var(--cream-cold);
-  border-top: 2px solid rgba(42, 34, 40, 0.12);
+  border-top: 3px solid var(--ink);
+  box-shadow: 0 -4px 0 rgba(0, 0, 0, 0.06);
   z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sticky-cta .btn {
+  width: 100%;
+}
+.sticky-cta:has(.btn + .btn) {
+  flex-direction: row;
+}
+.sticky-cta:has(.btn + .btn) .btn {
+  flex: 1;
 }
 
 /* ============================================
@@ -764,7 +783,7 @@
 /* Couche avatar générée (remplace les sprites) */
 .layer.generated-img {
   background-size: cover;
-  background-position: center top;
+  background-position: center center;
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
 }
@@ -880,8 +899,7 @@
   align-items: center;
   position: relative;
   z-index: 5;
-  flex: 1;
-  justify-content: center;
+  margin: 12px 0;
 }
 .ap-actions {
   display: flex;
@@ -904,4 +922,1579 @@
   color: var(--tram-yellow);
   text-align: center;
   line-height: 1.8;
+}
+
+/* ============================================
+   PREMIUM / SHOOTER PAYWALL
+   ============================================ */
+.ap-card-premium {
+  opacity: 0.75;
+  position: relative;
+}
+.ap-card-premium .ap-card-stripe {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--ink) 0px, var(--ink) 4px,
+    var(--concrete) 4px, var(--concrete) 8px
+  );
+}
+.ap-card-lock {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--ink);
+  border: 2px solid var(--tram-yellow);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  color: var(--tram-yellow);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Modal shooter */
+.shooter-modal-box {
+  max-width: 340px;
+  width: 100%;
+  background: var(--ink);
+  border: 4px solid var(--tram-yellow);
+  border-radius: 16px;
+  box-shadow: 0 8px 0 rgba(0,0,0,0.4);
+  overflow: hidden;
+}
+.shooter-header {
+  background: var(--tram-red);
+  padding: 16px;
+  text-align: center;
+  border-bottom: 3px solid var(--tram-yellow);
+}
+.shooter-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  color: white;
+  text-shadow: 1px 1px 0 var(--tram-red-dark);
+  line-height: 1.6;
+}
+.shooter-body {
+  padding: 20px 16px;
+  text-align: center;
+}
+.shooter-icon {
+  font-size: 56px;
+  margin-bottom: 12px;
+  display: block;
+  animation: bottleSway 2s ease-in-out infinite;
+}
+@keyframes bottleSway {
+  0%, 100% { transform: rotate(-8deg); }
+  50%       { transform: rotate(8deg); }
+}
+.shooter-desc {
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+  color: var(--cream-cold);
+  line-height: 1.4;
+  margin-bottom: 16px;
+}
+.shooter-cta {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--tram-yellow);
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+.shooter-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 16px 20px;
+}
+
+/* ============================================
+   EXPRESSIONS LOADING SCREEN
+   ============================================ */
+.expr-loading-screen {
+  gap: 16px;
+  align-items: center;
+}
+
+.expr-avatar-preview {
+  position: relative;
+  z-index: 5;
+}
+
+.expr-loading-msg {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--ink);
+  text-align: center;
+  line-height: 1.8;
+  animation: textBlink 1.2s steps(2) infinite;
+  position: relative;
+  z-index: 5;
+}
+
+/* Grille 5 expressions */
+.expr-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  width: 100%;
+  position: relative;
+  z-index: 5;
+}
+
+.expr-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.expr-tile-img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: 3px solid var(--ink);
+  border-radius: 8px;
+  box-shadow: 0 3px 0 var(--ink);
+  image-rendering: pixelated;
+}
+
+.expr-tile-placeholder {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 3px dashed var(--ink-soft);
+  border-radius: 8px;
+  background: var(--cream-warm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.expr-tile.ready .expr-tile-img {
+  border-color: var(--tram-red);
+  box-shadow: 0 3px 0 var(--tram-red-dark);
+  animation: exprPop 0.3s steps(3) 1;
+}
+
+@keyframes exprPop {
+  0%   { transform: scale(0.8); }
+  50%  { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.expr-tile-label {
+  font-family: 'VT323', monospace;
+  font-size: 13px;
+  color: var(--ink-soft);
+  text-align: center;
+  line-height: 1;
+}
+
+/* Barre de progression */
+.expr-progress-wrap {
+  width: 100%;
+  position: relative;
+  z-index: 5;
+}
+
+.expr-progress-bar {
+  height: 10px;
+  background: var(--concrete);
+  border: 2px solid var(--ink);
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.expr-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--tram-red), var(--tram-yellow));
+  transition: width 0.4s steps(4);
+  border-radius: 3px;
+}
+
+.expr-progress-text {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+/* Option expressions dans avatar-pick confirm */
+.ap-expr-option {
+  width: 100%;
+  position: relative;
+  z-index: 5;
+}
+
+.ap-expr-ready {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  color: var(--green-go);
+  padding: 10px;
+  background: rgba(106, 144, 112, 0.12);
+  border: 2px solid var(--green-go);
+  border-radius: 10px;
+}
+
+/* ============================================
+   ANIMATIONS LOADING SCREEN
+   ============================================ */
+.anim-loading-screen {
+  gap: 16px;
+}
+
+.anim-loading-msg {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--ink);
+  text-align: center;
+  line-height: 1.8;
+  animation: textBlink 1.2s steps(2) infinite;
+  position: relative;
+  z-index: 5;
+}
+.anim-loading-msg.done {
+  animation: none;
+  color: var(--green-go);
+}
+
+/* Grille 3 animations */
+.anim-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+  position: relative;
+  z-index: 5;
+}
+
+.anim-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.anim-tile-preview {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--cream-warm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 0 var(--ink);
+}
+
+.anim-tile--ready .anim-tile-preview {
+  border-color: var(--tram-red);
+  box-shadow: 0 4px 0 var(--tram-red-dark);
+  animation: exprPop 0.3s steps(3) 1;
+}
+
+.anim-tile--error .anim-tile-preview {
+  border-color: var(--ink-soft);
+  opacity: 0.5;
+}
+
+.anim-tile-gif {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+}
+
+.anim-tile-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.anim-tile-label {
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  color: var(--ink-soft);
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* Barre de progression */
+.anim-progress-wrap {
+  width: 100%;
+  position: relative;
+  z-index: 5;
+}
+
+.anim-progress-bar {
+  height: 10px;
+  background: var(--concrete);
+  border: 2px solid var(--ink);
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.anim-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--tram-red), var(--tram-yellow));
+  transition: width 0.5s steps(5);
+}
+
+.anim-progress-text {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+/* Preview player — enchainement des 3 GIFs */
+.anim-preview-section {
+  width: 100%;
+  position: relative;
+  z-index: 5;
+}
+
+.anim-preview-player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: var(--ink);
+  border: 3px solid var(--tram-yellow);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 5px 0 rgba(0,0,0,0.3);
+}
+
+.anim-preview-track {
+  position: relative;
+  width: 96px;
+  height: 96px;
+}
+
+.anim-preview-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  opacity: 0;
+  transition: opacity 0.3s steps(2);
+  border-radius: 6px;
+}
+.anim-preview-frame.active {
+  opacity: 1;
+}
+
+.anim-preview-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.anim-dot {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--tram-yellow);
+  border-radius: 2px;
+  background: transparent;
+  transition: background 0.2s;
+}
+.anim-dot.active {
+  background: var(--tram-yellow);
+}
+
+/* ── HUD stat block (label + valeur empilés) ────────────────────────────── */
+.hud-stat-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+.hud-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 6px;
+  color: var(--concrete);
+  letter-spacing: 0.05em;
+  opacity: 0.8;
+}
+
+
+/* ── ANIMATION VIDEO (wan-2.2 single video) ─────────────────────────────── */
+.anim-video-wrap {
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+  aspect-ratio: 1;
+  background: var(--ink);
+  border: 4px solid var(--tram-yellow);
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+  box-shadow: 0 6px 0 rgba(0,0,0,0.3);
+}
+.anim-video-wrap.ready {
+  border-color: var(--tram-red);
+  box-shadow: 0 6px 0 var(--tram-red-dark);
+  animation: exprPop 0.4s steps(3) 1;
+}
+
+.anim-video-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+}
+
+.anim-video-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+}
+
+.anim-video-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--tram-yellow);
+  padding: 20px;
+  text-align: center;
+}
+
+/* Progress bar indéterminée */
+.anim-progress-indeterminate {
+  width: 30% !important;
+  animation: indetSlide 1.4s ease-in-out infinite;
+}
+@keyframes indetSlide {
+  0%   { margin-left: -30%; }
+  100% { margin-left: 100%; }
+}
+
+/* ── MOOD PICKER MODAL ──────────────────────────────────────────────────── */
+.mood-modal-box {
+  background: var(--cream-warm);
+  border: 4px solid var(--ink);
+  border-radius: 16px;
+  max-width: 380px;
+  width: 92%;
+  margin: 20px auto;
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mood-header {
+  background: var(--ink);
+  color: var(--cream-cold);
+  padding: 14px 16px;
+  text-align: center;
+  border-bottom: 3px solid var(--tram-red);
+}
+.mood-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: var(--tram-yellow);
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.mood-subtitle {
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  color: var(--cream-cold);
+  opacity: 0.85;
+  margin: 0;
+}
+
+.mood-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 16px;
+}
+
+.mood-card {
+  background: var(--cream-cold);
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  padding: 12px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.1s steps(2);
+  box-shadow: 0 3px 0 var(--ink);
+  user-select: none;
+}
+.mood-card:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+.mood-card.selected {
+  background: var(--tram-yellow);
+  border-color: var(--tram-red);
+  box-shadow: 0 3px 0 var(--tram-red-dark);
+  animation: exprPop 0.3s steps(3) 1;
+}
+
+.mood-card-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 6px;
+  color: var(--ink);
+}
+.mood-card-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.mood-card-desc {
+  font-family: 'VT323', monospace;
+  font-size: 12px;
+  color: var(--ink-soft);
+  line-height: 1.2;
+}
+
+.mood-custom {
+  padding: 0 16px 12px;
+}
+.mood-or {
+  text-align: center;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: var(--concrete);
+  margin-bottom: 10px;
+}
+.mood-custom-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.mood-custom-input {
+  width: 100%;
+  font-family: 'VT323', monospace;
+  font-size: 16px;
+}
+
+.mood-actions {
+  display: flex;
+  gap: 8px;
+  padding: 14px 16px max(16px, env(safe-area-inset-bottom, 16px));
+  background: var(--cream-cold);
+  border-top: 2px solid var(--ink);
+  flex-shrink: 0;
+}
+.mood-actions .btn {
+  min-width: 0;
+}
+.mood-actions .btn-ghost {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  padding-left: 14px;
+  padding-right: 14px;
+}
+.mood-actions .btn-red {
+  flex: 1 1 0;
+  white-space: nowrap;
+}
+
+/* ── CUSTOM OBJECT TILE (la tuile "+ Ajouter") ──────────────────────────── */
+.obj-tile--add {
+  background: var(--cream-warm);
+  border: 3px dashed var(--ink) !important;
+  cursor: pointer;
+  transition: transform 0.1s steps(2);
+}
+.obj-tile--add:hover,
+.obj-tile--add:active {
+  background: var(--tram-yellow);
+  border-style: solid !important;
+  transform: translateY(-1px);
+}
+.obj-tile-add-icon {
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Section custom MJ — visuellement distincte */
+.category-section.cat-custom .category-header {
+  background: var(--ink);
+  color: var(--cream-cold);
+}
+.category-section.cat-custom .category-header strong {
+  color: var(--tram-yellow);
+}
+
+/* ── CUSTOM OBJECT MODAL ────────────────────────────────────────────────── */
+.custom-obj-modal-box {
+  background: var(--cream-warm);
+  border: 4px solid var(--ink);
+  border-radius: 16px;
+  max-width: 380px;
+  width: 92%;
+  margin: 20px auto;
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.4);
+  -webkit-overflow-scrolling: touch;
+}
+
+.custom-obj-header {
+  background: var(--ink);
+  color: var(--cream-cold);
+  padding: 14px 16px;
+  text-align: center;
+  border-bottom: 3px solid var(--tram-yellow);
+}
+.custom-obj-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: var(--tram-yellow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.custom-obj-subtitle {
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  color: var(--cream-cold);
+  opacity: 0.8;
+  margin: 6px 0 0;
+}
+
+.custom-obj-body {
+  padding: 16px;
+}
+.custom-obj-label {
+  display: block;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.custom-obj-icons {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+.custom-obj-icon-tile {
+  aspect-ratio: 1;
+  background: var(--cream-cold);
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--ink);
+  transition: transform 0.1s steps(2);
+}
+.custom-obj-icon-tile:active { transform: scale(0.92); }
+.custom-obj-icon-tile.selected {
+  background: var(--tram-yellow);
+  border-color: var(--tram-red);
+  box-shadow: 0 0 0 2px var(--tram-red);
+}
+
+.custom-obj-points {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.custom-obj-points-tile {
+  background: var(--cream-cold);
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  padding: 8px 4px;
+  text-align: center;
+  cursor: pointer;
+}
+.custom-obj-points-tile.selected {
+  background: var(--tram-yellow);
+  border-color: var(--tram-red);
+}
+.custom-obj-points-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+.custom-obj-points-desc {
+  font-family: 'VT323', monospace;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.custom-obj-actions {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px 16px;
+  background: var(--cream-cold);
+  border-top: 2px solid var(--ink);
+}
+.custom-obj-actions .btn-red { flex: 1; }
+
+/* ── DURATION PICKER (création + setup) ─────────────────────────────────── */
+.duration-picker {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.duration-tile {
+  padding: 10px 4px;
+  background: var(--cream-cold);
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform 0.1s steps(2);
+  text-align: center;
+}
+.duration-tile:active {
+  transform: translateY(1px);
+}
+.duration-tile.selected {
+  background: var(--tram-yellow);
+  border-color: var(--tram-red);
+  box-shadow: 0 0 0 2px var(--tram-red);
+}
+
+/* ── SHARE MODAL ────────────────────────────────────────────────────────── */
+.share-modal-box {
+  background: var(--cream-warm);
+  border: 4px solid var(--ink);
+  border-radius: 16px;
+  max-width: 360px;
+  width: 92%;
+  margin: 20px auto;
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.4);
+  -webkit-overflow-scrolling: touch;
+}
+.share-header {
+  background: var(--ink);
+  color: var(--cream-cold);
+  padding: 14px 16px;
+  text-align: center;
+  border-bottom: 3px solid var(--tram-yellow);
+}
+.share-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: var(--tram-yellow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.share-body {
+  padding: 16px;
+}
+.share-code-block {
+  background: var(--ink);
+  color: var(--cream-cold);
+  border: 3px solid var(--tram-yellow);
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  margin-bottom: 14px;
+}
+.share-code-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: var(--tram-yellow);
+  margin-bottom: 6px;
+  letter-spacing: 0.1em;
+}
+.share-code-value {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 28px;
+  color: var(--cream-cold);
+  letter-spacing: 0.1em;
+}
+.share-msg-preview {
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  color: var(--ink-soft);
+  font-style: italic;
+  text-align: center;
+  margin: 0 0 14px;
+  line-height: 1.4;
+}
+.share-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.share-actions .btn {
+  width: 100%;
+}
+.share-close {
+  padding: 8px 16px 14px;
+  text-align: center;
+  background: var(--cream-cold);
+  border-top: 2px solid var(--ink);
+}
+
+/* HUD partage button (en jeu) */
+.game-share-btn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 20;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 2px solid var(--tram-yellow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tram-yellow);
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3);
+}
+.game-share-btn:active {
+  transform: translateY(1px);
+}
+
+/* ── BINGO CELL : photo capturée à la place de l'icône ──────────────────── */
+.bingo-cell.has-photo {
+  padding: 0;
+  overflow: hidden;
+  position: relative;
+  background: var(--ink);
+  cursor: pointer;
+}
+.bingo-cell.has-photo:active {
+  transform: translate(1px, 1px) scale(0.98);
+}
+.bingo-cell-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 5px;
+}
+/* Nom de l'objet : overlay translucide en bas pour lisibilité */
+.bingo-cell.has-photo .bingo-cell-name {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.85) 100%);
+  color: var(--cream-cold);
+  font-size: 12px;
+  padding: 14px 4px 4px;
+  margin: 0;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.8);
+  z-index: 2;
+}
+/* Check icon par-dessus la photo : badge en haut à droite */
+.bingo-cell.has-photo .cell-status-icon {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: var(--tram-red);
+  color: var(--cream-cold);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--cream-cold);
+  z-index: 3;
+}
+
+/* ── PHOTO VIEWER (fullscreen pour montrer la photo aux autres) ─────────── */
+.photo-viewer-modal {
+  background: rgba(0, 0, 0, 0.92);
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  cursor: pointer;
+}
+.photo-viewer-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 2px solid var(--tram-yellow);
+  color: var(--tram-yellow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+}
+.photo-viewer-frame {
+  max-width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: default;
+}
+.photo-viewer-img {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  border: 4px solid var(--tram-yellow);
+  border-radius: 12px;
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.6);
+}
+.photo-viewer-label {
+  margin-top: 14px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px;
+  color: var(--tram-yellow);
+  text-align: center;
+  letter-spacing: 0.05em;
+}
+
+/* ── ACTIVE GAME BANNER (home, partie en cours) ─────────────────────────── */
+.active-game-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, var(--tram-yellow) 0%, #f8d870 100%);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 var(--ink);
+  transition: transform 0.1s steps(2);
+  position: relative;
+  z-index: 5;
+}
+.active-game-banner:active {
+  transform: translate(1px, 2px);
+  box-shadow: 0 2px 0 var(--ink);
+}
+.active-game-content {
+  flex: 1;
+  min-width: 0;
+}
+.active-game-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: var(--ink);
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.8;
+}
+.active-game-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px;
+  color: var(--ink);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.active-game-code {
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  color: var(--ink);
+}
+.active-game-code strong {
+  letter-spacing: 0.1em;
+  font-weight: bold;
+}
+.active-game-arrow {
+  flex: 0 0 auto;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+}
+
+/* ── HOME : compte mini en haut à droite ────────────────────────────────── */
+.account-mini-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--ink);
+  color: var(--tram-yellow);
+  border: 2px solid var(--tram-yellow);
+  border-radius: 999px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: transform 0.1s steps(2);
+  max-width: 160px;
+}
+.account-mini-btn:active {
+  transform: translate(1px, 1px);
+}
+.account-mini-btn span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── HOME : signature avatar (sous les CTA) ─────────────────────────────── */
+.home-avatar-signature {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  position: relative;
+  z-index: 5;
+}
+.home-avatar-signature .avatar {
+  border: 3px solid var(--ink);
+  box-shadow: 0 4px 0 var(--ink);
+}
+.home-avatar-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: var(--ink);
+  text-align: center;
+  background: var(--cream-cold);
+  padding: 4px 10px;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+}
+
+/* ── HOME : CTA "Créer mon compte" en bas (sans compte) ─────────────────── */
+.home-bottom-cta {
+  padding: 14px 0 8px;
+  position: relative;
+  z-index: 5;
+}
+.account-create-cta {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border: 3px dashed var(--ink) !important;
+  background: var(--cream-warm) !important;
+  padding: 14px 16px !important;
+}
+.account-create-cta-sub {
+  font-family: 'VT323', monospace;
+  font-size: 13px;
+  color: var(--ink-soft);
+  font-weight: normal;
+  letter-spacing: 0;
+}
+
+/* ── HOME AVATAR : hint modifier ────────────────────────────────────────── */
+.home-avatar-signature {
+  cursor: pointer;
+  transition: transform 0.1s steps(2);
+}
+.home-avatar-signature:active {
+  transform: scale(0.97);
+}
+.home-avatar-edit-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-family: 'VT323', monospace;
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-top: 2px;
+  text-transform: lowercase;
+  letter-spacing: 0;
+  font-weight: normal;
+}
+.home-avatar-name {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+/* ── END SCREEN : galerie groupée par joueur ────────────────────────────── */
+.photos-player-group {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 2px dashed var(--ink-soft);
+}
+.photos-player-group:first-child {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+.photos-player-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.photos-player-name {
+  flex: 1;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: var(--ink);
+}
+.photos-player-count {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--cream-cold);
+  background: var(--tram-red);
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+}
+.photo-thumb {
+  cursor: pointer;
+  transition: transform 0.1s steps(2);
+}
+.photo-thumb:active {
+  transform: scale(0.95);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   HOME V2 — hiérarchie claire
+   ═══════════════════════════════════════════════════════════════════════ */
+.home-v2 {
+  padding: 18px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 100dvh;
+}
+
+/* ZONE 1 — Hero (titre + identité) */
+.home-v2 .home-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding-top: 36px;
+  position: relative;
+  z-index: 5;
+}
+
+/* Carte identité : avatar + nom alignés horizontalement, compact */
+.home-identity-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px 8px 8px;
+  background: var(--cream-cold);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 0 3px 0 var(--ink);
+  cursor: pointer;
+  transition: transform 0.1s steps(2);
+  max-width: 260px;
+}
+.home-identity-card:active {
+  transform: translate(1px, 2px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+.home-identity-avatar {
+  flex: 0 0 auto;
+}
+.home-identity-avatar .avatar.md {
+  width: 56px;
+  height: 56px;
+  border: 2px solid var(--ink);
+  box-shadow: 0 2px 0 var(--ink);
+}
+.home-identity-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.home-identity-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+.home-identity-edit {
+  font-family: 'VT323', monospace;
+  font-size: 12px;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ZONE 2 — Actions principales : prend l'espace au centre */
+.home-v2 .home-actions-primary {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 4px;
+  position: relative;
+  z-index: 5;
+}
+.home-cta-main {
+  font-size: 14px !important;
+  padding: 18px 16px !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.home-cta-second {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Active game (priorité haute, design jaune/noir) */
+.home-v2 .active-game-banner {
+  margin-bottom: 0;
+}
+.home-active-secondary {
+  text-align: center;
+  margin-top: -4px;
+}
+
+/* ZONE 3 — Liens discrets en bas */
+.home-v2 .home-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  position: relative;
+  z-index: 5;
+}
+.link-discreet {
+  background: transparent;
+  border: none;
+  color: var(--ink-soft);
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 6px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: underline;
+  text-decoration-color: rgba(74, 56, 64, 0.3);
+  text-underline-offset: 3px;
+}
+.link-discreet:active {
+  color: var(--ink);
+}
+.link-emphasis {
+  color: var(--tram-red);
+  font-weight: bold;
+}
+
+/* Compte mini : version sans compte */
+.account-mini-btn-cta {
+  background: var(--tram-yellow);
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+/* Footer plus discret */
+.home-v2 .footer-info {
+  text-align: center;
+  font-family: 'VT323', monospace;
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin: 0;
+  position: relative;
+  z-index: 5;
+  opacity: 0.6;
+}
+
+/* Reset : enlève les anciens styles home pour la v2 */
+.home-v2 .home-spacer { display: none; }
+.home-v2 .home-actions { all: unset; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   HOME V3 — identité au-dessus, CTAs avec icônes SVG, help mini
+   ═══════════════════════════════════════════════════════════════════════ */
+.home-v3 {
+  padding: 24px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 100dvh;
+}
+
+.home-v3-title {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+}
+
+/* ── IDENTITÉ — carte horizontale au-dessus de Créer ───────────────── */
+.home-v3-identity {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px 10px 10px;
+  background: var(--cream-cold);
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 0 4px 0 var(--ink);
+  cursor: pointer;
+  transition: transform 0.1s steps(2);
+  margin-top: 8px;
+}
+.home-v3-identity:active {
+  transform: translate(1px, 2px);
+  box-shadow: 0 2px 0 var(--ink);
+}
+.home-v3-identity.has-video {
+  background: linear-gradient(135deg, #fff 0%, var(--tram-yellow) 100%);
+  border-color: var(--tram-red);
+  box-shadow: 0 4px 0 var(--tram-red-dark);
+}
+.home-v3-avatar-wrap {
+  flex: 0 0 auto;
+  position: relative;
+}
+.home-v3-avatar-wrap .avatar.md {
+  width: 64px;
+  height: 64px;
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 0 2px 0 var(--ink);
+  overflow: hidden;
+}
+.home-v3-deglingo-badge {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--tram-red);
+  color: var(--cream-cold);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 6px;
+  letter-spacing: 0.1em;
+  padding: 3px 6px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.home-v3-identity-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.home-v3-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.home-v3-edit {
+  font-family: 'VT323', monospace;
+  font-size: 13px;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.home-v3-account-link {
+  flex: 0 0 auto;
+}
+.home-v3-mini-account {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--tram-yellow);
+  border: 2px solid var(--tram-yellow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.1s steps(2);
+}
+.home-v3-mini-account:active {
+  transform: translateY(1px);
+}
+
+/* Empty state (pas de compte) */
+.home-v3-identity-empty {
+  background: var(--cream-warm);
+  border-style: dashed;
+  border-color: var(--ink-soft);
+  box-shadow: 0 3px 0 var(--ink-soft);
+}
+.home-v3-empty-icon {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  border: 2px dashed var(--ink-soft);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-soft);
+}
+
+/* ── ACTIONS principales ───────────────────────────────────────────── */
+.home-v3-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  z-index: 5;
+}
+
+.home-v3-cta-main,
+.home-v3-cta-second {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 14px 14px !important;
+  text-align: left !important;
+  justify-content: flex-start !important;
+}
+
+.home-v3-cta-icon {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--ink);
+}
+.home-v3-cta-icon-red {
+  background: var(--tram-red-dark);
+  color: var(--cream-cold);
+}
+.home-v3-cta-icon-yellow {
+  background: var(--cream-cold);
+  color: var(--ink);
+}
+
+.home-v3-cta-label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+.home-v3-cta-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+}
+.home-v3-cta-sub {
+  font-family: 'VT323', monospace;
+  font-size: 13px;
+  opacity: 0.85;
+  font-weight: normal;
+  letter-spacing: 0;
+}
+
+/* ── HELP mini-CTA ─────────────────────────────────────────────────── */
+.home-v3-help {
+  display: flex;
+  justify-content: center;
+  margin-top: auto;
+  padding-top: 12px;
+  position: relative;
+  z-index: 5;
+}
+.home-v3-help-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--ink-soft);
+  border-radius: 999px;
+  font-family: 'VT323', monospace;
+  font-size: 13px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.home-v3-help-btn:active {
+  background: var(--cream-cold);
+  color: var(--ink);
+}
+
+.home-v3-footer {
+  text-align: center;
+  font-family: 'VT323', monospace;
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin: 0;
+  position: relative;
+  z-index: 5;
+  opacity: 0.5;
 }

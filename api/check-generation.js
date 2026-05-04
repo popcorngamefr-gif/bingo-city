@@ -1,9 +1,3 @@
-/**
- * GET /api/check-generation?id={predictionId}
- * Poll le statut d'une prédiction Replicate.
- * Retourne { status, url? } — le client poll toutes les 2s jusqu'à succeeded/failed.
- */
-
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).end()
 
@@ -22,12 +16,21 @@ export default async function handler(req, res) {
     if (!response.ok) return res.status(502).json({ error: 'Replicate API error' })
 
     const prediction = await response.json()
+    console.log('Prediction status:', prediction.status, 'output:', JSON.stringify(prediction.output))
 
-    // Retourne seulement ce dont le client a besoin
+    // output peut être un tableau, un string, ou null selon le modèle
+    const output = prediction.output
+    let url = null
+    if (Array.isArray(output) && output.length > 0) {
+      url = output[output.length - 1]  // dernier élément (souvent le meilleur)
+    } else if (typeof output === 'string') {
+      url = output
+    }
+
     res.json({
       status: prediction.status,
-      url:    prediction.output?.[0] ?? null,
-      error:  prediction.error ?? null,
+      url,
+      error: prediction.error ?? null,
     })
   } catch (err) {
     console.error('check-generation error:', err)

@@ -13,6 +13,7 @@ import {
   collection, onSnapshot, serverTimestamp,
 } from 'firebase/firestore'
 import { db } from './config.js'
+import { cleanForFirestore } from './auth.js'
 
 // Listeners actifs — nettoyés via unsubscribeAll()
 let _unsubPlayers = null
@@ -20,24 +21,35 @@ let _unsubGame    = null
 
 // ─── Création ────────────────────────────────────────────────────────────────
 
-export async function createGame({ code, name, hostUid, hostName, hostAvatar }) {
+export async function createGame({ code, name, hostUid, hostName, hostAvatar, duration = 1200 }) {
+  const cleanAvatar = cleanForFirestore(hostAvatar || {})
   await setDoc(doc(db, 'games', code), {
-    name,
+    name:            name || 'Sans nom',
     hostUid,
     status:          'lobby',
     selectedObjects: [],
+    duration,
     createdAt:       serverTimestamp(),
     startedAt:       null,
   })
   await setDoc(doc(db, 'games', code, 'players', hostUid), {
-    name:      hostName,
-    avatar:    hostAvatar,
+    name:      hostName || 'MJ',
+    avatar:    cleanAvatar,
     score:     0,
     isMJ:      true,
     hasBingo:  false,
     grid:      [],
     joinedAt:  serverTimestamp(),
   })
+}
+
+/**
+ * Récupère un game une seule fois (pas de subscribe).
+ */
+export async function getGameOnce(code) {
+  const snap = await getDoc(doc(db, 'games', code))
+  if (!snap.exists()) return null
+  return snap.data()
 }
 
 // ─── Rejoindre ────────────────────────────────────────────────────────────────
@@ -48,8 +60,8 @@ export async function joinGame({ code, uid, name, avatar }) {
   if (snap.data().status === 'ended') throw new Error('Partie déjà terminée')
 
   await setDoc(doc(db, 'games', code, 'players', uid), {
-    name,
-    avatar,
+    name:     name || 'Joueur',
+    avatar:   cleanForFirestore(avatar || {}),
     score:    0,
     isMJ:     false,
     hasBingo: false,
@@ -61,18 +73,42 @@ export async function joinGame({ code, uid, name, avatar }) {
 
 // ─── Démarrer ────────────────────────────────────────────────────────────────
 
-export async function startGame(code, selectedObjects) {
+export async function startGame(code, selectedObjects, customObjects = []) {
   await updateDoc(doc(db, 'games', code), {
     status:          'playing',
     selectedObjects,
+    customObjects,                  // synchronisé pour que les joueurs aient les défs
     startedAt:       serverTimestamp(),
   })
 }
 
 // ─── Terminer ────────────────────────────────────────────────────────────────
 
+export async function updateGameDuration(code, duration) {
+  await updateDoc(doc(db, 'games', code), { duration })
+}
+
 export async function endGame(code) {
   await updateDoc(doc(db, 'games', code), { status: 'ended' })
+}
+
+/**
+ * Écoute toutes les photos de la partie en temps réel.
+ * @param {string} code
+ * @param {Function} onUpdate — reçoit un tableau de { url, objId, uid, capturedAt }
+ */
+let _unsubPhotos = null
+export function subscribeToPhotos(code, onUpdate) {
+  if (_unsubPhotos) _unsubPhotos()
+  _unsubPhotos = onSnapshot(
+    collection(db, 'games', code, 'photos'),
+    (snapshot) => {
+      const photos = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+      onUpdate(photos)
+    },
+    (err) => console.warn('subscribeToPhotos:', err)
+  )
+  return _unsubPhotos
 }
 
 // ─── Mise à jour joueur ───────────────────────────────────────────────────────
@@ -127,4 +163,18 @@ export function subscribeToGame(code, onUpdate) {
 export function unsubscribeAll() {
   if (_unsubPlayers) { _unsubPlayers(); _unsubPlayers = null }
   if (_unsubGame)    { _unsubGame();    _unsubGame    = null }
+  if (_unsubPhotos)  { _unsubPhotos();  _unsubPhotos  = null }
+}
+
+
+/**
+ * Patch le doc joueur (name, avatar) après que l'utilisateur ait fini son choix.
+ */
+export async function updatePlayerProfile(gameCode, uid, { name, avatar, animationUrl }) {
+  const playerRef = doc(db, 'games', gameCode, 'players', uid)
+  const data = {}
+  if (name)         data.name         = name
+  if (avatar)       data.avatar       = avatar
+  if (animationUrl) data.animationUrl = animationUrl
+  return updateDoc(playerRef, data)
 }

@@ -38,7 +38,7 @@ function _resizeAndSend(dataUrl) {
 }
 
 async function _start(base64) {
-  _setLoading("L'IA pixelise ta tête…")
+  _setLoading("Patiente… dans quelques secondes tu auras un visage de déglingo !")
   try {
     const res = await fetch('/api/start-generation', {
       method:  'POST',
@@ -64,7 +64,12 @@ function _poll(id, n) {
       if      (data.status === 'succeeded') _showResult(data.url)
       else if (data.status === 'failed')    _setError(data.error || 'Génération échouée')
       else {
-        const msgs = ["L'IA pixelise ta tête…", "Rendu pixel art…", "Presque fini…", "Derniers pixels…"]
+        const msgs = [
+        "Patiente… dans quelques secondes tu auras un visage de déglingo !",
+        "L'IA retravaille tes pixels…",
+        "Dernière couche de pixels…",
+        "C'est presque toi… mais en mieux !",
+      ]
         _setLoading(msgs[Math.min(Math.floor(n / 5), msgs.length - 1)])
         _poll(id, n + 1)
       }
@@ -102,6 +107,7 @@ function _showResult(url) {
   `
   document.getElementById('gen-accept-btn')?.addEventListener('click', () => {
     state.myAvatar.generatedImageUrl = url
+    // L'URL servira aussi pour la génération vidéo (premium)
     closeGeneratorModal()
     navigate('avatar-pick')
   })

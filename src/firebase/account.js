@@ -71,3 +71,11 @@ export async function updateAccountUID(key, uid) {
 export async function syncAccountStats(key, stats) {
   await updateDoc(doc(db, 'accounts', key), { stats, updatedAt: serverTimestamp() })
 }
+
+
+/**
+ * Met à jour l'avatar dans le doc /accounts/{key}.
+ */
+export async function updateAccountAvatar(key, avatar) {
+  await updateDoc(doc(db, 'accounts', key), { avatar, updatedAt: serverTimestamp() })
+}
