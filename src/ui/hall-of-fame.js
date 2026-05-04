@@ -1,8 +1,8 @@
 /**
- * Hall of Fame — top scores mondiaux affiché sur la home.
+ * Hall of Fame — top scores mondiaux (modale).
  *
- * Charge les données async puis injecte dans le conteneur #home-hof
- * Affiche un état vide stylé si aucune partie n'a encore été jouée.
+ * Ouvert depuis la home via le bouton "Hall of Fame".
+ * Charge la liste async et affiche un état vide si aucune partie jouée.
  */
 
 import { state }              from '../state.js'
@@ -18,15 +18,51 @@ function escapeHtml(s) {
 }
 
 /**
- * Charge et affiche le Hall of Fame dans #home-hof.
- * Idempotent : si déjà chargé, ne refait pas l'appel.
+ * Ouvre la modale Hall of Fame.
+ * Affiche un loader pendant le fetch puis remplace par la liste ou l'état vide.
  */
-export async function loadHallOfFame() {
-  const container = document.getElementById('home-hof')
-  if (!container) return
-  if (container.dataset.loaded === 'true') return
-  container.dataset.loaded = 'loading'
+export function openHallOfFameModal() {
+  const root = document.getElementById('modal-root')
+  if (!root) return
 
+  root.innerHTML = `
+    <div class="modal show hof-modal">
+      <div class="hof-box">
+        <div class="hof-header">
+          <span class="hof-deco">${icon('trophy', { size: 14 })}</span>
+          <span class="hof-title">HALL OF FAME</span>
+          <span class="hof-deco">${icon('trophy', { size: 14 })}</span>
+        </div>
+        <div class="hof-content" id="hof-content">
+          <div class="hof-loading">
+            <span class="btn-loader"></span>
+            <span>Chargement…</span>
+          </div>
+        </div>
+        <div class="hof-actions">
+          <button class="btn btn-red" id="hof-close-btn">
+            ${icon('check', { size: 16 })} Fermer
+          </button>
+        </div>
+      </div>
+    </div>
+  `
+
+  document.getElementById('hof-close-btn')?.addEventListener('click', closeHallOfFameModal)
+  // Click sur le voile (pas sur le contenu) → ferme
+  root.querySelector('.hof-modal')?.addEventListener('click', (e) => {
+    if (e.target.classList.contains('hof-modal')) closeHallOfFameModal()
+  })
+
+  _loadAndRender()
+}
+
+export function closeHallOfFameModal() {
+  const root = document.getElementById('modal-root')
+  if (root) root.innerHTML = ''
+}
+
+async function _loadAndRender() {
   let players = []
   try {
     const { getHallOfFame } = await import('../firebase/account.js')
@@ -35,11 +71,8 @@ export async function loadHallOfFame() {
     console.warn('[hof] load failed:', err)
   }
 
-  // Ne tente pas d'injecter si l'user a navigué ailleurs entre-temps
-  if (state.currentScreen !== 'home') return
-  if (!container.isConnected) return
-
-  container.dataset.loaded = 'true'
+  const container = document.getElementById('hof-content')
+  if (!container) return  // Modale fermée entre-temps
 
   if (players.length === 0) {
     container.innerHTML = _renderEmptyState()
@@ -51,11 +84,6 @@ export async function loadHallOfFame() {
 
 function _renderEmptyState() {
   return `
-    <div class="hof-header">
-      <span class="hof-deco">${icon('trophy', { size: 14 })}</span>
-      <span class="hof-title">HALL OF FAME</span>
-      <span class="hof-deco">${icon('trophy', { size: 14 })}</span>
-    </div>
     <div class="hof-empty">
       ${icon('hourglass', { size: 22 })}
       <p class="hof-empty-text">Aucune partie jouée pour le moment.<br>Lance la première !</p>
@@ -68,11 +96,6 @@ function _renderList(players) {
   const medals = ['medal_gold', 'medal_silver', 'medal_bronze']
 
   return `
-    <div class="hof-header">
-      <span class="hof-deco">${icon('trophy', { size: 14 })}</span>
-      <span class="hof-title">HALL OF FAME</span>
-      <span class="hof-deco">${icon('trophy', { size: 14 })}</span>
-    </div>
     <div class="hof-list">
       ${players.map((p, i) => {
         const isMe   = p.key === myKey

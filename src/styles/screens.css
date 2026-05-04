@@ -2475,7 +2475,9 @@
 /* ── HELP mini-CTA ─────────────────────────────────────────────────── */
 .home-v3-help {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
+  gap: 8px;
   margin-top: auto;
   padding-top: 12px;
   position: relative;
@@ -2649,33 +2651,47 @@
   width: 100%;
 }
 
-/* ── HALL OF FAME (home page) ───────────────────────────────────────────── */
-.home-v3-hof {
-  margin: 18px 0 12px;
-  padding: 14px 14px 12px;
-  background: var(--cream-cold);
-  border: 3px solid var(--ink);
-  border-radius: 14px;
-  box-shadow: 0 4px 0 var(--ink);
-  position: relative;
-  z-index: 5;
+/* ── HALL OF FAME MODAL ─────────────────────────────────────────────────── */
+.hof-modal {
+  align-items: center;
+  padding: 20px;
+}
+.hof-box {
+  background: var(--cream-warm);
+  border: 4px solid var(--ink);
+  border-radius: 16px;
+  max-width: 380px;
+  width: 100%;
+  margin: auto;
+  max-height: calc(100dvh - 40px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 0 var(--tram-red-dark);
 }
 
 .hof-header {
+  background: var(--ink);
+  color: var(--cream-cold);
+  padding: 16px;
+  text-align: center;
+  border-bottom: 3px solid var(--tram-red);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  margin-bottom: 12px;
-  padding-bottom: 10px;
-  border-bottom: 2px dashed var(--ink-soft);
+  gap: 10px;
+}
+.hof-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 14px;
+  -webkit-overflow-scrolling: touch;
 }
 .hof-title {
   font-family: 'Press Start 2P', monospace;
   font-size: 11px;
-  color: var(--tram-red);
+  color: var(--tram-yellow);
   letter-spacing: 0.06em;
-  text-shadow: 1px 1px 0 var(--cream-warm);
 }
 .hof-deco {
   display: inline-flex;
@@ -2686,10 +2702,16 @@
 .hof-loading,
 .hof-empty {
   text-align: center;
-  padding: 18px 8px;
+  padding: 28px 8px;
   color: var(--ink-soft);
   font-family: 'VT323', monospace;
   font-size: 14px;
+}
+.hof-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
 }
 .hof-empty {
   display: flex;
@@ -2804,4 +2826,15 @@
 }
 .account-intent-banner .ico {
   flex-shrink: 0;
+}
+
+/* HoF actions footer (bouton fermer) */
+.hof-actions {
+  padding: 14px 16px max(16px, env(safe-area-inset-bottom, 16px));
+  display: flex;
+  border-top: 2px solid var(--ink);
+  background: var(--cream-cold);
+}
+.hof-actions .btn {
+  width: 100%;
 }

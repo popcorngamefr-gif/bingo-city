@@ -19,7 +19,7 @@ import { refreshAvatarUI, cycleAvatarField, setupAvatarLoops, updateHudConfidenc
 import { startTimer }                     from './controllers/timerController.js'
 import { openCameraModal, closeModal }    from './ui/modal.js'
 import { openHowToPlay }                  from './ui/how-to-play.js'
-import { loadHallOfFame }                 from './ui/hall-of-fame.js'
+import { openHallOfFameModal }            from './ui/hall-of-fame.js'
 
 import { initAuth, saveProfile }          from './firebase/auth.js'
 import { createGame as fbCreateGame, joinGame as fbJoinGame, startGame as fbStartGame, subscribeToPlayers, subscribeToGame, subscribeToPhotos, unsubscribeAll, getGameOnce, getPlayersOnce, getPhotosOnce } from './firebase/game.js'
@@ -302,6 +302,10 @@ const ACTIONS = {
 
   showHelp() {
     openHowToPlay()
+  },
+
+  showHallOfFame() {
+    openHallOfFameModal()
   },
 
   async createGame() {
@@ -785,7 +789,7 @@ function setupScreenHooks() {
     if (screen === 'account')            _setupAccountScreen()
     if (screen === 'animations-loading') _setupAnimationsLoadingScreen()
     if (screen === 'end')                { _setupGamePhotosSubscription(); _setupLobbySubscriptions() }
-    if (screen === 'home')               { unsubscribeAll(); _lobbySubscribedFor = null; _photosSubscribedFor = null; delete state._pendingIntent; loadHallOfFame() }
+    if (screen === 'home')               { unsubscribeAll(); _lobbySubscribedFor = null; _photosSubscribedFor = null; delete state._pendingIntent }
   })
 }
 

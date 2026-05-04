@@ -116,21 +116,14 @@ export function renderHome() {
         `}
       </div>
 
-      <!-- ZONE 4 : Help mini-CTA -->
+      <!-- ZONE 4 : Help + Hall of Fame mini-CTAs -->
       <div class="home-v3-help">
         <button class="home-v3-help-btn" data-action="showHelp">
           ${icon('question', { size: 14 })} Comment jouer ?
         </button>
-      </div>
-
-      <!-- ZONE 5 : Hall of Fame (injecté dynamiquement) -->
-      <div class="home-v3-hof" id="home-hof" data-loaded="false">
-        <div class="hof-header">
-          <span class="hof-deco">${icon('trophy', { size: 14 })}</span>
-          <span class="hof-title">HALL OF FAME</span>
-          <span class="hof-deco">${icon('trophy', { size: 14 })}</span>
-        </div>
-        <div class="hof-loading">Chargement…</div>
+        <button class="home-v3-help-btn" data-action="showHallOfFame">
+          ${icon('trophy', { size: 14 })} Hall of Fame
+        </button>
       </div>
 
       <p class="footer-info home-v3-footer">
