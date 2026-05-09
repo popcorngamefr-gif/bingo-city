@@ -84,6 +84,10 @@ function _onPlayersUpdate(players) {
 function _onGameUpdate(gameData) {
   // Hydrate la durée à tout moment (le MJ peut la modifier en lobby)
   if (typeof gameData.duration === 'number') state.gameDuration = gameData.duration
+  // Ancre du timer (cf. timerController) — synchro reload + entre joueurs
+  if (gameData.startedAt && typeof gameData.startedAt.toMillis === 'function') {
+    state.gameStartedAt = gameData.startedAt.toMillis()
+  }
 
   if (gameData.status === 'playing' && state.currentScreen === 'lobby' && !state.isMJ) {
     state.selectedObjects = gameData.selectedObjects || []
@@ -447,6 +451,8 @@ const ACTIONS = {
   startGame() {
     if (state.selectedObjects.length < 6) return toast('Min. 6 objets')
     state.myGrid = state.selectedObjects.map(id => ({ objId: id, status: 'empty' }))
+    // Ancre locale optimiste — sera réécrasée par le serverTimestamp via _onGameUpdate
+    state.gameStartedAt = Date.now()
     if (state.gameCode) fbStartGame(state.gameCode, state.selectedObjects, state.customObjects || []).catch(console.error)
     startTimer()
     navigate('game')
@@ -1011,6 +1017,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const game = await getGameOnce(active.code)
         if (game) {
           if (typeof game.duration === 'number') state.gameDuration = game.duration
+          if (game.startedAt && typeof game.startedAt.toMillis === 'function') {
+            state.gameStartedAt = game.startedAt.toMillis()
+          }
           state.selectedObjects = game.selectedObjects || []
           state.customObjects   = game.customObjects   || []
 
