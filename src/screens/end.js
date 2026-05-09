@@ -112,7 +112,7 @@ export function renderEnd() {
 
       ${photosSection}
 
-      <div class="row mt" style="position: relative; z-index: 5;">
+      <div class="sticky-cta">
         ${isPreview
           ? `<button class="btn btn-red" data-action="closeClassement">
                ${icon('arrow_left', { size: 14 })} Retour à ma partie
