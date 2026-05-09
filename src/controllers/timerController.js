@@ -48,20 +48,20 @@ export function updateTimer() {
   const el = document.getElementById('game-timer')
   if (!el) return
 
-  const days  = Math.floor(t / 86400)
-  const hours = Math.floor((t % 86400) / 3600)
+  // Tout en heures + minutes (pas de jours, pas de secondes au-dessus
+  // de l'heure : à cette échelle ça n'apporte rien de visuel et ça
+  // mange trop de place dans le HUD). Sous l'heure on garde MM:SS pour
+  // donner le sentiment d'urgence quand la fin approche.
+  const hours = Math.floor(t / 3600)
   const mins  = Math.floor((t % 3600) / 60)
   const secs  = t % 60
 
   let text
-  if (days >= 1) {
-    // Plus d'un jour : Xj HHh
-    text = `${days}j ${String(hours).padStart(2, '0')}h`
-  } else if (hours >= 1) {
-    // Plus d'une heure : HH:MM:SS
-    text = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+  if (hours >= 1) {
+    // 46h00 — clair, 5 caractères, jamais ambigu avec MM:SS
+    text = `${String(hours).padStart(2, '0')}h${String(mins).padStart(2, '0')}`
   } else {
-    // Moins d'une heure : MM:SS
+    // MM:SS — décompte serré sous l'heure
     text = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
   }
 
