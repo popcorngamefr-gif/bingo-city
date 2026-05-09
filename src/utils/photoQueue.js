@@ -1,31 +1,32 @@
 /**
  * Photo upload queue — fiabilise l'envoi des photos prises pendant une partie.
  *
- * Problème historique : `_process` (modal.js) appelait uploadPhoto en
- * fire-and-forget. Sur 4G capricieuse, l'upload échouait silencieusement,
- * la cellule restait validée localement avec le dataURL, et au prochain
- * reload la photo + la validation + le score étaient perdus côté serveur
- * (les autres joueurs ne voyaient rien).
+ * Modèle de delivery :
+ *   1. enqueuePhoto(idx, dataUrl, objId) → status='pending'
+ *   2. _attempt() upload via uploadPhoto. Sur échec : exp backoff (2/4/8/16/32s,
+ *      max 5 essais) puis status='failed' (mais on garde en queue, retentable).
+ *   3. Sur succès : status='uploaded' (pas delete). On attend la confirmation
+ *      par subscribeToPhotos via confirmFromPhotos() : seul le serveur dit
+ *      "j'ai bien le doc". Tant qu'on n'a pas vu notre photo revenir via la
+ *      souscription, on considère que la livraison n'est pas finalisée.
+ *   4. confirmFromPhotos() est appelé depuis le handler subscribeToPhotos
+ *      (main.js _setupGamePhotosSubscription). Il scan les entries 'uploaded'
+ *      et supprime celles dont le doc Firestore est confirmé (uid + objId).
+ *   5. Garde-fou anti-fantôme : une entry 'uploaded' qui ne reçoit jamais de
+ *      confirmation passe automatiquement à 'pending' au bout de 2 min, ce qui
+ *      relance _attempt. Couvre le cas où uploadPhoto a returned success mais
+ *      le doc trace n'a pas vraiment commit côté serveur (rare).
  *
- * Cette queue règle ça :
+ * Cycle complet d'une photo "vraiment livrée" :
+ *   pending → (upload OK) → uploaded → (snapshot confirme) → supprimée
  *
- *   1. enqueuePhoto(idx, dataUrl, objId) ajoute la photo en mémoire et
- *      la persiste dans localStorage (clé par gameCode pour gérer plusieurs
- *      parties / éviter la pollution croisée).
- *   2. _attempt(idx) tente uploadPhoto avec exp backoff (2s, 4s, 8s, 16s,
- *      32s ; max 5 essais avant de marquer 'failed' tout en laissant la
- *      photo en queue pour un nouvel essai au prochain événement online
- *      ou au prochain reload).
- *   3. Sur succès, on enchaîne updatePlayerGrid + updatePlayerScore avec
- *      le state local courant (idempotents). Ça rattrape le cas où ces
- *      écritures avaient elles aussi échoué dans handleValidation initial.
- *   4. retryAllPending() est appelé sur événement 'online' (network.js)
- *      et au mount de l'écran 'game' (couvre le boot après reload).
+ * Cycle d'une photo qui échoue 5 fois :
+ *   pending → (upload KO ×5) → failed (reste en queue, retentable manuellement
+ *   via le badge ou auto via online event)
  *
- * Visuel : isPhotoPending(idx) / isPhotoFailed(idx) sont lus par le
- * render de game.js pour ajouter les classes .upload-pending / .upload-failed
- * sur la cellule. Une mise à jour chirurgicale du DOM est aussi faite via
- * _updateCellUI pour éviter d'attendre un re-render complet.
+ * Visuel côté UI : 'pending' ET 'uploaded' apparaissent comme "en cours"
+ * (pulse jaune ↑) — l'utilisateur voit "en cours" jusqu'à confirmation finale,
+ * pas juste jusqu'à l'upload. 'failed' = pulse rouge !
  */
 
 import { state } from '../state.js'
@@ -36,6 +37,9 @@ const _retryTimers = {}
 // uploadPhoto est encore mid-await — sans ce verrou on aurait deux écritures
 // concurrentes vers Storage / Firestore pour la même photo).
 const _inFlight = {}
+// Timeouts de réversion 'uploaded' → 'pending' si la confirmation tarde.
+const _confirmTimers = {}
+const CONFIRM_TIMEOUT_MS = 120000  // 2 min
 let _permissionToastShown = false
 
 export function enqueuePhoto(cellIdx, dataUrl, objId) {
@@ -55,6 +59,10 @@ export function enqueuePhoto(cellIdx, dataUrl, objId) {
     clearTimeout(_retryTimers[cellIdx])
     delete _retryTimers[cellIdx]
   }
+  if (_confirmTimers[cellIdx]) {
+    clearTimeout(_confirmTimers[cellIdx])
+    delete _confirmTimers[cellIdx]
+  }
   _attempt(cellIdx)
 }
 
@@ -65,6 +73,10 @@ async function _attempt(cellIdx) {
   if (_inFlight[cellIdx]) return
   const entry = state._pendingPhotos?.[cellIdx]
   if (!entry) return
+  // Une entry 'uploaded' attend la confirmation du serveur, on ne re-upload
+  // pas (sinon on duplique vers Storage). Le timeout de réversion s'occupera
+  // de retry si la confirmation tarde trop.
+  if (entry.status === 'uploaded') return
   if (!state.gameCode || !state.uid || state.uid === 'me') return
 
   _inFlight[cellIdx] = true
@@ -75,11 +87,6 @@ async function _attempt(cellIdx) {
 
     // Re-sync grid + score : idempotent, rattrape les échecs éventuels du
     // handleValidation initial (qui faisait aussi des fire-and-forget).
-    // Le score est recalculé depuis state.myGrid plutôt que lu depuis
-    // me.score : un snapshot Firestore arrivé entre handleValidation et
-    // ici peut avoir écrasé state.players[me].score avec une valeur
-    // stale (ex: après reload, le score Firestore ne reflète pas encore
-    // les photos en queue). Le calcul depuis la grille est déterministe.
     try {
       const { updatePlayerGrid, updatePlayerScore } = await import('../firebase/game.js')
       const { computeScore } = await import('../controllers/gameController.js')
@@ -89,15 +96,14 @@ async function _attempt(cellIdx) {
       await updatePlayerGrid(state.gameCode, state.uid, state.myGrid)
       await updatePlayerScore(state.gameCode, state.uid, score)
     } catch (err) {
-      // Non-bloquant — la photo elle-même est OK. Si le grid/score n'a
-      // pas synchro, le prochain upload re-tentera la sync.
       console.warn('[photo-queue] post-upload state sync failed:', err)
     }
 
-    delete state._pendingPhotos[cellIdx]
-    _persist()
-    _updateCellUI(cellIdx)
-    console.log('[photo-queue] uploaded', cellIdx, '→', url)
+    // Pas de delete : on attend la confirmation Firestore via
+    // confirmFromPhotos. Si jamais elle ne vient pas, _scheduleConfirmTimeout
+    // relancera un _attempt (idempotent côté Storage).
+    _markUploaded(cellIdx)
+    console.log('[photo-queue] uploaded (awaiting server confirm)', cellIdx, '→', url)
   } catch (err) {
     console.warn(`[photo-queue] attempt ${entry.attempts + 1} failed for cell ${cellIdx}:`, err)
 
@@ -130,14 +136,73 @@ async function _attempt(cellIdx) {
   }
 }
 
+function _markUploaded(cellIdx) {
+  const entry = state._pendingPhotos?.[cellIdx]
+  if (!entry) return
+  entry.status = 'uploaded'
+  entry.uploadedAt = Date.now()
+  _persist()
+  _updateCellUI(cellIdx)
+  _scheduleConfirmTimeout(cellIdx)
+}
+
+function _scheduleConfirmTimeout(cellIdx) {
+  if (_confirmTimers[cellIdx]) clearTimeout(_confirmTimers[cellIdx])
+  _confirmTimers[cellIdx] = setTimeout(() => {
+    delete _confirmTimers[cellIdx]
+    const e = state._pendingPhotos?.[cellIdx]
+    if (!e || e.status !== 'uploaded') return
+    // Pas de confirmation après 2 min : on revient à 'pending' pour relancer
+    // un cycle complet. uploadPhoto est idempotent (path fixe sur Storage,
+    // doc trace keyé par uid_cellIdx).
+    console.warn('[photo-queue] confirmation timeout, reverting to pending', cellIdx)
+    e.status = 'pending'
+    e.attempts = 0
+    _persist()
+    _updateCellUI(cellIdx)
+    _attempt(cellIdx)
+  }, CONFIRM_TIMEOUT_MS)
+}
+
+/**
+ * Appelé depuis le handler subscribeToPhotos quand un nouveau snapshot arrive.
+ * Pour chaque entry 'uploaded' dont le couple (uid, objId) apparaît dans la
+ * collection photos Firestore : on supprime de la queue. Le serveur a
+ * confirmé la livraison.
+ */
+export function confirmFromPhotos(photos) {
+  if (!state._pendingPhotos || !state.uid) return
+  let changed = false
+  for (const cellIdx of Object.keys(state._pendingPhotos)) {
+    const entry = state._pendingPhotos[cellIdx]
+    if (entry.status !== 'uploaded') continue
+    const matched = photos.some(p => p.uid === state.uid && p.objId === entry.objId)
+    if (matched) {
+      delete state._pendingPhotos[cellIdx]
+      if (_confirmTimers[cellIdx]) {
+        clearTimeout(_confirmTimers[cellIdx])
+        delete _confirmTimers[cellIdx]
+      }
+      _updateCellUI(parseInt(cellIdx))
+      changed = true
+    }
+  }
+  if (changed) _persist()
+}
+
 /**
  * Réessaye toutes les photos en queue. Appelé sur événement 'online' et
- * au mount de l'écran 'game' (couvre le boot après reload).
+ * au boot via restorePendingPhotos.
+ *
+ * Les entries 'uploaded' sont laissées telles quelles : leur sort dépend de
+ * la confirmation Firestore (ou du timeout de réversion). On ne les renvoie
+ * pas pour éviter les doublons.
  */
 export function retryAllPending() {
   if (!state._pendingPhotos) return
   for (const cellIdx of Object.keys(state._pendingPhotos)) {
     const entry = state._pendingPhotos[cellIdx]
+    if (entry.status === 'uploaded') continue
     // Reset les compteurs : c'est un nouveau cycle (nouvelle connexion ou
     // nouveau reload) et la cause d'échec a peut-être disparu.
     entry.status = 'pending'
@@ -153,7 +218,7 @@ export function retryAllPending() {
 
 /**
  * À appeler au boot (après que state.gameCode soit hydraté) pour
- * récupérer les photos qui n'ont pas pu être uploadées avant le reload.
+ * récupérer les photos qui n'ont pas pu être confirmées avant le reload.
  */
 export function restorePendingPhotos() {
   if (!state.gameCode) return
@@ -164,17 +229,21 @@ export function restorePendingPhotos() {
     const data = JSON.parse(raw)
     state._pendingPhotos = data
     // Restaure aussi les dataURL dans state.myPhotos pour que l'UI les
-    // affiche tant que l'upload n'est pas confirmé.
+    // affiche tant que la confirmation n'est pas arrivée.
     for (const [cellIdx, entry] of Object.entries(data)) {
       const idx = parseInt(cellIdx)
       if (!state.myPhotos[idx]) state.myPhotos[idx] = entry.dataUrl
-      // Cellule déjà marquée validée localement par handleValidation pré-reload
-      // mais on s'assure que le grid local reflète bien ça
       if (state.myGrid[idx] && state.myGrid[idx].status !== 'validated') {
         state.myGrid[idx].status = 'validated'
       }
+      // Pour les entries 'uploaded' on relance le timeout de réversion :
+      // si la confirmation arrive vite via subscribeToPhotos, l'entry est
+      // supprimée avant le timeout. Sinon on retentera après 2 min.
+      if (entry.status === 'uploaded') {
+        _scheduleConfirmTimeout(idx)
+      }
     }
-    // Démarre les uploads tout de suite (idempotent grâce au verrou _inFlight)
+    // Démarre les uploads en attente (skip les 'uploaded' qui attendent confirm)
     retryAllPending()
   } catch (err) {
     console.warn('[photo-queue] restore failed:', err)
@@ -183,15 +252,7 @@ export function restorePendingPhotos() {
 
 /**
  * Nettoie les photos en attente pour une partie donnée. Appelé quand on
- * abandonne / clear la partie courante (newGame, forgetActiveGame), pour
- * éviter d'accumuler du localStorage sur de vieilles parties terminées.
- *
- * On clear systématiquement la queue mémoire ET les timers : appelants
- * sont newGame/forgetActiveGame qui visent toujours à abandonner la
- * partie courante. Sans ce reset, des entrées orphelines peuvent rester
- * en mémoire (race entre l'import dynamique de cette fn et resetGame qui
- * met state.gameCode à null avant que le check soit évalué) et être
- * réuploadées vers la NOUVELLE partie au prochain online event.
+ * abandonne / clear la partie courante (newGame, forgetActiveGame).
  */
 export function clearPendingPhotos(gameCode) {
   if (!gameCode) return
@@ -203,11 +264,26 @@ export function clearPendingPhotos(gameCode) {
     clearTimeout(_retryTimers[idx])
     delete _retryTimers[idx]
   }
+  for (const idx of Object.keys(_confirmTimers)) {
+    clearTimeout(_confirmTimers[idx])
+    delete _confirmTimers[idx]
+  }
+  // Reset aussi _inFlight : un upload mid-await au moment de
+  // clearPendingPhotos laisserait sinon un flag orphelin qui bloquerait
+  // silencieusement le prochain enqueue sur le même cellIdx dans la
+  // partie suivante.
+  for (const idx of Object.keys(_inFlight)) {
+    delete _inFlight[idx]
+  }
 }
 
+/**
+ * Visuel : 'pending' ET 'uploaded' sont rendues comme "en cours" pour l'user.
+ * Tant que le serveur n'a pas confirmé, on affiche le pulse pending.
+ */
 export function isPhotoPending(cellIdx) {
   const e = state._pendingPhotos?.[cellIdx]
-  return !!e && e.status === 'pending'
+  return !!e && (e.status === 'pending' || e.status === 'uploaded')
 }
 
 export function isPhotoFailed(cellIdx) {
@@ -217,18 +293,28 @@ export function isPhotoFailed(cellIdx) {
 
 /**
  * Stats globales sur la queue d'upload — utilisé par le badge de sync
- * dans le HUD pour donner un feedback à l'utilisateur sans qu'il ait
- * à inspecter chaque cellule.
+ * dans le HUD. 'pending' et 'uploaded' sont comptés ensemble dans pending
+ * (l'utilisateur voit "en cours" tant que la livraison serveur n'est pas
+ * confirmée).
  */
 export function getQueueStats() {
   const pending = state._pendingPhotos || {}
   let pendingCount = 0
   let failedCount  = 0
+  let uploadedOnly = 0  // sous-total : 'uploaded' seules (déjà sur Storage)
   for (const entry of Object.values(pending)) {
     if (entry.status === 'failed') failedCount++
-    else pendingCount++
+    else {
+      pendingCount++
+      if (entry.status === 'uploaded') uploadedOnly++
+    }
   }
-  return { pending: pendingCount, failed: failedCount, total: pendingCount + failedCount }
+  return {
+    pending:      pendingCount,
+    failed:       failedCount,
+    total:        pendingCount + failedCount,
+    uploadedOnly,
+  }
 }
 
 function _persist() {
@@ -242,8 +328,6 @@ function _persist() {
       localStorage.setItem(key, JSON.stringify(data))
     }
   } catch (err) {
-    // localStorage plein (rare : ~5MB par origin) — on ne bloque pas l'app,
-    // on continue avec la queue en mémoire seule.
     console.warn('[photo-queue] persist failed:', err)
   }
 }
@@ -256,8 +340,6 @@ function _updateCellUI(cellIdx) {
     cellEl.classList.toggle('upload-pending', pending)
     cellEl.classList.toggle('upload-failed', failed)
   }
-  // Met à jour aussi le badge de sync global (HUD) pour rester cohérent
-  // sans attendre un re-render complet de l'écran.
   _updateSyncBadge()
 }
 
@@ -265,10 +347,6 @@ function _updateSyncBadge() {
   const el = document.getElementById('game-sync-badge')
   if (!el) return
   const stats = getQueueStats()
-  // On utilise un attribut data-state plutôt que des classes pour éviter
-  // les conflits avec les classes utilitaires du jeu. Les labels gardent
-  // toujours un suffixe "↻ <verbe>" pour indiquer clairement la
-  // cliquabilité (vérifier / relancer / réessayer).
   if (stats.failed > 0) {
     el.dataset.state = 'failed'
     el.textContent = `! ${stats.failed} échec${stats.failed > 1 ? 's' : ''} · ↻ réessayer`
