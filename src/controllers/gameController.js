@@ -47,13 +47,34 @@ export async function recordGameStats(reason = 'ended') {
 
 // ─── Validation photo ─────────────────────────────────────────────────────────
 
+/**
+ * Score = somme des points des cellules validées de myGrid.
+ * Calcul déterministe depuis la grille (source de vérité) plutôt qu'un
+ * compteur incrémenté qui peut diverger si un snapshot Firestore stale
+ * écrase me.score entre deux validations (ou si une re-sync depuis
+ * photoQueue se déclenche après que me.score a été modifié par un
+ * snapshot pendant l'upload).
+ */
+export function computeScore() {
+  return state.myGrid
+    .filter(c => c.status === 'validated')
+    .reduce((acc, c) => {
+      const obj = getObject(c.objId)
+      return acc + (obj?.points || 1)
+    }, 0)
+}
+
 export function handleValidation(cellIdx) {
   const cell = state.myGrid[cellIdx]
   const obj  = getObject(cell.objId)
 
   cell.status = 'validated'
+  // On recalcule le total depuis la grille au lieu de faire me.score + delta.
+  // Ça garantit que score = somme exacte des cellules validées même si
+  // me.score avait été écrasé par un snapshot stale juste avant.
+  const newScore = computeScore()
   const me = state.players.find(p => p.isYou)
-  if (me) me.score = (me.score || 0) + (obj.points || 1)
+  if (me) me.score = newScore
 
   toast(`✓ ${obj.name} capturé ! +${obj.points} pts`)
   triggerHudAvatar('jump', { duration: 800, emote: 'star' })
@@ -65,11 +86,13 @@ export function handleValidation(cellIdx) {
     checkHeartbeat()
   }, 100)
 
-  // Firestore async (fire & forget)
+  // Firestore async (fire & forget) — on envoie newScore (calculé localement
+  // ci-dessus) plutôt que me?.score qui pourrait avoir été modifié par un
+  // snapshot entre-temps.
   if (state.gameCode && state.uid) {
     fbGame().then(({ updatePlayerGrid, updatePlayerScore }) => {
       updatePlayerGrid(state.gameCode, state.uid, state.myGrid).catch(console.error)
-      updatePlayerScore(state.gameCode, state.uid, me?.score || 0).catch(console.error)
+      updatePlayerScore(state.gameCode, state.uid, newScore).catch(console.error)
     })
   }
 
