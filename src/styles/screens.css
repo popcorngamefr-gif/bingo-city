@@ -82,17 +82,17 @@
   background: var(--ink);
   border: 3px solid var(--tram-yellow);
   border-radius: 12px;
-  padding: 10px 14px;
+  padding: 12px 14px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   margin-bottom: 14px;
   box-shadow: 0 4px 0 var(--tram-red-dark);
 }
 .hud-avatar .avatar.sm {
-  width: 50px;
-  height: 50px;
+  width: 60px;
+  height: 60px;
   border: 2px solid var(--tram-yellow);
 }
 .hud-stat {
@@ -100,15 +100,61 @@
   align-items: center;
   gap: 6px;
   font-family: 'Press Start 2P', monospace;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--cream-cold);
   text-shadow: 1px 1px 0 var(--ink);
 }
-.hud-value {
-  font-size: 13px;
-  line-height: 1;
+.hud-label {
+  font-size: 9px;
+  opacity: 0.85;
 }
-.hud-value.timer { color: var(--tram-yellow); font-size: 13px; }
+.hud-value {
+  font-size: 17px;
+  line-height: 1;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+.hud-value.timer { color: var(--tram-yellow); font-size: 17px; }
+
+/* Compteur photos (entre HUD et grille) */
+.game-progress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 12px;
+  font-family: 'Press Start 2P', monospace;
+  color: var(--ink);
+}
+.game-progress-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--tram-yellow);
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  padding: 6px 12px;
+  box-shadow: 2px 2px 0 var(--ink);
+  font-size: 14px;
+}
+.game-progress-num {
+  font-size: 18px;
+  color: var(--ink);
+}
+.game-progress-total {
+  font-size: 14px;
+  opacity: 0.7;
+  margin-left: 1px;
+}
+.game-progress-hint {
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  color: var(--ink-soft);
+}
+.game-progress-hint strong {
+  color: var(--tram-red);
+  font-weight: normal;
+}
 
 .bingo-grid {
   display: grid;
@@ -128,6 +174,9 @@
   padding: 4px;
   position: relative;
   box-shadow: 2px 2px 0 var(--ink);
+  /* Clip toute valeur de nom trop longue pour ne pas casser l'alignement
+     visuel de la grille (la photo en background utilise object-fit:cover) */
+  overflow: hidden;
 }
 .bingo-cell:active {
   transform: translate(1px, 1px);
@@ -140,8 +189,15 @@
   font-size: 15px;
   color: var(--ink);
   text-align: center;
-  line-height: 1;
+  line-height: 1.05;
   margin-top: 2px;
+  /* Limite à 3 lignes max — au-delà ellipsis pour garder les tuiles uniformes */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
 .bingo-cell.pending {
   background: linear-gradient(180deg, #fce080 0%, var(--tram-yellow) 100%);
@@ -1325,6 +1381,7 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 1px;
+  min-width: 0;
 }
 .hud-label {
   font-family: 'Press Start 2P', monospace;
