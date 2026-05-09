@@ -10,12 +10,16 @@ import { bgVarsovieHtml } from '../ui/varsovie.js'
 import { icon } from '../ui/icons.js'
 import { escapeHtml } from '../utils/html.js'
 import { safeImg } from '../utils/media.js'
+import { getPlayerScore } from '../controllers/gameController.js'
 
 export function renderEnd() {
   const isPreview = !!state._previewClassement
-  const sorted = [...state.players].sort((a, b) => (b.score || 0) - (a.score || 0))
+  // On trie par score recalculé depuis photos Firestore (source de vérité)
+  // plutôt que par le champ player.score qui peut avoir drifté pour les
+  // joueurs qui ont joué avec une version pré-fix de computeScore.
+  const sorted = [...state.players].sort((a, b) => getPlayerScore(b) - getPlayerScore(a))
   const winner = sorted[0]
-  const hasScores = sorted.some(p => (p.score || 0) > 0)
+  const hasScores = sorted.some(p => getPlayerScore(p) > 0)
   const title  = isPreview ? 'CLASSEMENT EN COURS'
                 : !winner ? 'PARTIE TERMINÉE'
                 : !hasScores ? 'PARTIE TERMINÉE'
@@ -104,7 +108,7 @@ export function renderEnd() {
               <div class="lb-name">
                 ${escapeHtml(p.name)}${p.isYou ? ' (toi)' : ''}${p.isMJ ? ' [MJ]' : ''}
               </div>
-              <div class="lb-score">${p.score || 0}</div>
+              <div class="lb-score">${getPlayerScore(p)}</div>
             </div>
           `).join('')}
         </div>

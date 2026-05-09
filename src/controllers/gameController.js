@@ -29,9 +29,13 @@ export async function recordGameStats(reason = 'ended') {
   state._statsRecordedFor = state.gameCode
 
   const me       = state.players.find(p => p.isYou)
-  const score    = me?.score || 0
+  // On utilise getPlayerScore pour avoir le score recalculé depuis la
+  // collection photos (source de vérité), pas le champ player.score qui
+  // peut être drifté. Le sort isWinner est cohérent avec l'affichage du
+  // classement à l'écran end.
+  const score    = getPlayerScore(me)
   const hasBingo = me?.hasBingo || false
-  const sorted   = [...state.players].sort((a, b) => (b.score || 0) - (a.score || 0))
+  const sorted   = [...state.players].sort((a, b) => getPlayerScore(b) - getPlayerScore(a))
   const isWinner = sorted[0]?.isYou ?? false
 
   console.log('[stats] recording', { reason, score, hasBingo, isWinner })
@@ -62,6 +66,30 @@ export function computeScore() {
       const obj = getObject(c.objId)
       return acc + (obj?.points || 1)
     }, 0)
+}
+
+/**
+ * Score d'un joueur recalculé depuis la collection photos Firestore (state.gamePhotos).
+ * Utilisé pour l'affichage du classement et le calcul du rang : la collection
+ * photos est la vraie source de vérité (chaque doc a un objId persistant), alors
+ * que le champ players[uid].score peut avoir drifté à cause de races snapshot
+ * pré-fix de computeScore. Sans écriture côté Firestore : on respecte la donnée
+ * des autres joueurs, on corrige juste l'affichage.
+ *
+ * Fallback : si state.gamePhotos n'est pas encore chargé (subscribeToPhotos
+ * en cours de mount), on retombe sur player.score pour ne pas afficher 0
+ * partout pendant le premier render.
+ */
+export function getPlayerScore(player) {
+  if (!player) return 0
+  const photos = state.gamePhotos
+  if (!photos || photos.length === 0) return player.score || 0
+  let total = 0
+  for (const p of photos) {
+    if (p.uid !== player.id || !p.objId) continue
+    total += getObject(p.objId)?.points || 1
+  }
+  return total
 }
 
 export function handleValidation(cellIdx) {
