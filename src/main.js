@@ -624,11 +624,6 @@ const ACTIONS = {
     state.isMJ     = active.isMJ
     state.myName   = active.myName || state.myName
     toast('Reprise de la partie…', 2000)
-    // Récupère les photos en attente d'upload (idem boot) avant de naviguer.
-    try {
-      const { restorePendingPhotos } = await import('./utils/photoQueue.js')
-      restorePendingPhotos()
-    } catch (err) { console.warn('[resume] restore photo queue failed:', err) }
 
     // Route selon le statut Firestore : si la partie tourne déjà ('playing')
     // on retourne directement à l'écran de jeu, sinon on tombe sur le lobby
@@ -683,6 +678,15 @@ const ACTIONS = {
       console.warn('[resume] getGameOnce failed:', err)
       navigate('lobby')
     } finally {
+      // Restaure la queue d'upload photos APRÈS l'hydratation Firestore :
+      // les dataURLs en attente sont overlay sur les URLs résolues sans
+      // jamais écraser un upload qui a déjà réussi (le if(!state.myPhotos[idx])
+      // dans restorePendingPhotos respecte la version Firestore quand elle
+      // est dispo).
+      try {
+        const { restorePendingPhotos } = await import('./utils/photoQueue.js')
+        restorePendingPhotos()
+      } catch (err) { console.warn('[resume] restore photo queue failed:', err) }
       delete state._resumingGame
     }
   },
@@ -1008,9 +1012,22 @@ function setupEventDelegation() {
       const idx  = parseInt(cellAttr)
       const cell = state.myGrid[idx]
       if (!cell) return
-      // Cellule validée avec photo : ouvre la photo en plein écran
+      // Cellule validée avec photo : ouvre la photo en plein écran.
       if (cell.status === 'validated') {
-        const photo = state.myPhotos?.[idx]
+        // On cherche d'abord state.myPhotos[idx] (cas normal). En fallback,
+        // on lit state.gamePhotos qui contient TOUTES les photos Firestore
+        // de la partie (peuplé via subscribeToPhotos au mount du screen).
+        // Ça couvre les cas où myPhotos a un trou (ex: late-hydration où
+        // _hydratePhotos n'a pas encore été déclenché ou échoué silencieux).
+        let photo = state.myPhotos?.[idx]
+        if (!photo) {
+          const found = (state.gamePhotos || []).find(p => p.uid === state.uid && p.objId === cell.objId)
+          if (found?.url) {
+            photo = found.url
+            // Mémorise pour les prochains clics (et pour la cohérence générale)
+            state.myPhotos[idx] = found.url
+          }
+        }
         if (photo) {
           Promise.all([
             import('./ui/photo-viewer.js'),
@@ -1222,14 +1239,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       state.gameName = active.name
       state.isMJ     = active.isMJ
       state.myName   = active.myName || state.myName
-      // Hydrate la queue d'upload photos depuis localStorage : récupère les
-      // photos qui n'avaient pas pu atteindre Storage avant le reload.
-      // Les uploads en attente seront relancés au mount de l'écran 'game'
-      // via le screen:rendered hook.
-      try {
-        const { restorePendingPhotos } = await import('./utils/photoQueue.js')
-        restorePendingPhotos()
-      } catch (err) { console.warn('[boot] restore photo queue failed:', err) }
       // Hydrate la partie depuis Firestore avant de render. Timeout 8s :
       // sur réseau pourri on n'attend pas indéfiniment, on rend l'écran et
       // _onGameUpdate fera l'hydratation tardive quand le snapshot arrive.
@@ -1304,6 +1313,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch (err) {
         console.warn('[boot] hydrate failed:', err)
       }
+
+      // Hydrate la queue d'upload photos APRÈS _hydratePhotos pour ne pas
+      // se faire écraser par le reset state.myPhotos = {} de _hydratePhotos.
+      // restorePendingPhotos n'écrit que si state.myPhotos[idx] n'existe pas
+      // déjà (on respecte la version Firestore quand elle est dispo) et
+      // déclenche retryAllPending pour relancer les uploads en attente.
+      try {
+        const { restorePendingPhotos } = await import('./utils/photoQueue.js')
+        restorePendingPhotos()
+      } catch (err) { console.warn('[boot] restore photo queue failed:', err) }
     } else {
       // Pas de partie active → revenir home
       location.hash = 'home'
