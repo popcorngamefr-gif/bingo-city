@@ -590,14 +590,75 @@ const ACTIONS = {
     navigate('avatar-pick')
   },
 
-  resumeActiveGame() {
+  async resumeActiveGame() {
+    // Garde anti double-clic : la bannière home n'est pas un .btn donc le
+    // verrou auto du dispatch ne s'applique pas.
+    if (state._resumingGame) return
+    state._resumingGame = true
+
     const active = getActiveGame()
-    if (!active) return
+    if (!active) { delete state._resumingGame; return }
     state.gameCode = active.code
     state.gameName = active.name
     state.isMJ     = active.isMJ
     state.myName   = active.myName || state.myName
-    navigate('lobby')
+    toast('Reprise de la partie…', 2000)
+
+    // Route selon le statut Firestore : si la partie tourne déjà ('playing')
+    // on retourne directement à l'écran de jeu, sinon on tombe sur le lobby
+    // (ou 'end' si la partie est terminée). Sans cette résolution, le MJ
+    // d'une partie en cours était renvoyé sur un lobby qui propose
+    // 'Choisir les objets' → setup, comme s'il devait tout reconfigurer.
+    try {
+      const game = await withTimeout(getGameOnce(active.code), 6000, 'firestore-timeout')
+      if (!game) {
+        clearActiveGame()
+        toast('Partie introuvable')
+        navigate('home')
+        return
+      }
+      if (typeof game.duration === 'number') state.gameDuration = game.duration
+      if (game.startedAt && typeof game.startedAt.toMillis === 'function') {
+        state.gameStartedAt = game.startedAt.toMillis()
+      }
+      state.selectedObjects = game.selectedObjects || []
+      state.customObjects   = game.customObjects   || []
+
+      if (game.status === 'playing') {
+        // Reconstruit myGrid + myPhotos depuis les photos persistées,
+        // exactement comme le boot fait sur reload du tab.
+        state.myGrid = state.selectedObjects.map(id => ({ objId: id, status: 'empty' }))
+        state.myPhotos = {}
+        try {
+          const photos = await getPhotosOnce(active.code)
+          state.gamePhotos = photos
+          const mine = photos.filter(p => p.uid === state.uid)
+          for (const photo of mine) {
+            if (!photo.objId) continue
+            const idx = state.selectedObjects.indexOf(photo.objId)
+            if (idx >= 0) {
+              state.myGrid[idx].status = 'validated'
+              state.myPhotos[idx]      = photo.url
+            }
+          }
+        } catch (err) {
+          console.warn('[resume] photos failed:', err)
+        }
+        startTimer()
+        navigate('game')
+      } else if (game.status === 'ended') {
+        navigate('end')
+      } else {
+        navigate('lobby')
+      }
+    } catch (err) {
+      // Firestore injoignable : fallback lobby (les subscriptions hydrateront
+      // le state quand le réseau revient ; cf. _onGameUpdate hydratation tardive)
+      console.warn('[resume] getGameOnce failed:', err)
+      navigate('lobby')
+    } finally {
+      delete state._resumingGame
+    }
   },
 
   forgetActiveGame() {
