@@ -8,7 +8,7 @@ import { getObject, objectSvg } from '../data/objects.js'
 import { avatarLayersHtml } from '../ui/avatar.js'
 import { icon } from '../ui/icons.js'
 import { safeImg } from '../utils/media.js'
-import { isPhotoPending, isPhotoFailed } from '../utils/photoQueue.js'
+import { isPhotoPending, isPhotoFailed, getQueueStats } from '../utils/photoQueue.js'
 
 export function renderGame() {
   const me          = state.players.find(p => p.isYou) || { score: 0, avatar: state.myAvatar }
@@ -22,6 +22,17 @@ export function renderGame() {
   // Au-delà de 16 on garde 4 colonnes : meilleur lisibilité, on assume le scroll vertical
   const validated  = state.myGrid.filter(c => c.status === 'validated').length
   const remaining  = n - validated
+  // État de synchro photos (queue d'upload). Sert de feedback visible et
+  // de bouton de retry manuel.
+  const syncStats  = getQueueStats()
+  const syncState  = syncStats.failed > 0 ? 'failed'
+                   : syncStats.pending > 0 ? 'pending'
+                   : 'ok'
+  const syncLabel  = syncState === 'failed'
+                       ? `! ${syncStats.failed} échec${syncStats.failed > 1 ? 's' : ''} · réessayer`
+                   : syncState === 'pending'
+                       ? `↑ ${syncStats.pending} en cours…`
+                       : '✓ synchro'
 
   return `
     <section class="screen game-screen">
@@ -72,6 +83,12 @@ export function renderGame() {
             ? `<strong>${remaining}</strong> à shooter`
             : `<strong>Bingo complet !</strong>`}
         </span>
+        <button id="game-sync-badge" class="game-sync-badge"
+                data-state="${syncState}"
+                data-action="retryPhotoUploads"
+                title="${syncState === 'ok' ? 'Photos synchronisées' : 'Forcer la synchronisation'}">
+          ${syncLabel}
+        </button>
       </div>
 
       <!-- Grille de bingo -->

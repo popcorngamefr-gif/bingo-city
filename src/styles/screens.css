@@ -127,7 +127,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 12px;
+  flex-wrap: wrap;
   margin-bottom: 12px;
   font-family: 'Press Start 2P', monospace;
   color: var(--ink);
@@ -160,6 +161,47 @@
 .game-progress-hint strong {
   color: var(--tram-red);
   font-weight: normal;
+}
+
+/* Badge de synchro photos. Trois états :
+   - ok      : tout est sur le serveur, badge vert discret, non actionnable
+   - pending : upload(s) en cours, badge jaune pulsant, click = retry
+   - failed  : upload(s) échoué(s), badge rouge attention, click = retry */
+.game-sync-badge {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 2px solid var(--ink);
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  flex-basis: 100%;
+  text-align: center;
+  /* On le laisse passer à la ligne suivante grâce au flex-wrap du parent */
+}
+.game-sync-badge[data-state="ok"] {
+  background: #b6cdb0;
+  color: var(--green-go-dark);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+.game-sync-badge[data-state="pending"] {
+  background: var(--tram-yellow);
+  color: var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  animation: syncPendingPulse 1.4s ease-in-out infinite;
+}
+.game-sync-badge[data-state="failed"] {
+  background: var(--tram-red);
+  color: white;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+.game-sync-badge:active {
+  transform: translate(1px, 1px);
+  box-shadow: 0 0 0 var(--ink);
+}
+@keyframes syncPendingPulse {
+  0%, 100% { box-shadow: 2px 2px 0 var(--ink); }
+  50%      { box-shadow: 2px 2px 0 var(--ink), 0 0 0 3px var(--tram-yellow-warm); }
 }
 
 .bingo-grid {

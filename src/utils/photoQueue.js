@@ -211,6 +211,22 @@ export function isPhotoFailed(cellIdx) {
   return !!e && e.status === 'failed'
 }
 
+/**
+ * Stats globales sur la queue d'upload — utilisé par le badge de sync
+ * dans le HUD pour donner un feedback à l'utilisateur sans qu'il ait
+ * à inspecter chaque cellule.
+ */
+export function getQueueStats() {
+  const pending = state._pendingPhotos || {}
+  let pendingCount = 0
+  let failedCount  = 0
+  for (const entry of Object.values(pending)) {
+    if (entry.status === 'failed') failedCount++
+    else pendingCount++
+  }
+  return { pending: pendingCount, failed: failedCount, total: pendingCount + failedCount }
+}
+
 function _persist() {
   if (!state.gameCode) return
   const key = `bingo_pending_photos_${state.gameCode}`
@@ -230,11 +246,33 @@ function _persist() {
 
 function _updateCellUI(cellIdx) {
   const cellEl = document.querySelector(`.bingo-cell[data-cell="${cellIdx}"]`)
-  if (!cellEl) return
-  const pending = isPhotoPending(cellIdx)
-  const failed  = isPhotoFailed(cellIdx)
-  cellEl.classList.toggle('upload-pending', pending)
-  cellEl.classList.toggle('upload-failed', failed)
+  if (cellEl) {
+    const pending = isPhotoPending(cellIdx)
+    const failed  = isPhotoFailed(cellIdx)
+    cellEl.classList.toggle('upload-pending', pending)
+    cellEl.classList.toggle('upload-failed', failed)
+  }
+  // Met à jour aussi le badge de sync global (HUD) pour rester cohérent
+  // sans attendre un re-render complet de l'écran.
+  _updateSyncBadge()
+}
+
+function _updateSyncBadge() {
+  const el = document.getElementById('game-sync-badge')
+  if (!el) return
+  const stats = getQueueStats()
+  // On utilise un attribut data-state plutôt que des classes pour éviter
+  // les conflits avec les classes utilitaires du jeu.
+  if (stats.failed > 0) {
+    el.dataset.state = 'failed'
+    el.textContent = `! ${stats.failed} échec${stats.failed > 1 ? 's' : ''} · réessayer`
+  } else if (stats.pending > 0) {
+    el.dataset.state = 'pending'
+    el.textContent = `↑ ${stats.pending} en cours…`
+  } else {
+    el.dataset.state = 'ok'
+    el.textContent = '✓ synchro'
+  }
 }
 
 function _showPermissionToastOnce() {
