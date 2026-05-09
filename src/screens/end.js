@@ -9,6 +9,7 @@ import { avatarLayersHtml } from '../ui/avatar.js'
 import { bgVarsovieHtml } from '../ui/varsovie.js'
 import { icon } from '../ui/icons.js'
 import { escapeHtml } from '../utils/html.js'
+import { safeImg } from '../utils/media.js'
 
 export function renderEnd() {
   const isPreview = !!state._previewClassement
@@ -70,9 +71,10 @@ export function renderEnd() {
           <div class="photos-grid">
             ${photos.map(photo => {
               const obj = photo.objId ? getObject(photo.objId) : null
+              const objName = obj ? obj.name : ''
               return `
-                <div class="photo-thumb" data-photo-url="${photo.url}" data-photo-name="${obj ? escapeHtml(obj.name) : ''}">
-                  <img src="${photo.url}" alt="${obj ? escapeHtml(obj.name) : ''}" loading="lazy" />
+                <div class="photo-thumb" data-photo-url="${photo.url}" data-photo-name="${escapeHtml(objName)}">
+                  ${safeImg(photo.url, { alt: objName })}
                   <div class="photo-label">${obj ? escapeHtml(obj.name) : '?'}</div>
                 </div>
               `

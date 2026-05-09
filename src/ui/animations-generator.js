@@ -6,6 +6,7 @@
  */
 
 import { state } from '../state.js'
+import { fetchWithTimeout } from '../utils/network.js'
 
 const POLL_MS      = 3000
 const MAX_ATTEMPTS = 100  // ~5 min max (génération wan ~40-80s)
@@ -35,11 +36,11 @@ export async function generateAnimations(imageUrl, prompt, onProgress, onComplet
   delete state.myAvatar.animationUrl
 
   try {
-    const res = await fetch('/api/generate-animations', {
+    const res = await fetchWithTimeout('/api/generate-animations', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ imageUrl, prompt }),
-    })
+    }, 30000)
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
       throw new Error(err.error || `HTTP ${res.status}`)
@@ -71,7 +72,7 @@ function _poll(id, attempt, onProgress, onComplete) {
 
   setTimeout(async () => {
     try {
-      const res  = await fetch(`/api/check-generation?id=${id}`)
+      const res  = await fetchWithTimeout(`/api/check-generation?id=${id}`, {}, 10000)
       const data = await res.json()
 
       onProgress?.({ status: data.status, attempt })

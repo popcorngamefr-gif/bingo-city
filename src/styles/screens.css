@@ -3066,3 +3066,83 @@
   flex: 1 1 0;
   white-space: nowrap;
 }
+
+/* ============================================
+   RÉSILIENCE RÉSEAU
+   - Bandeau hors ligne persistant
+   - Placeholder pour images/vidéos qui foirent
+   - Skeleton shimmer pour la galerie photos
+   - État erreur du photo viewer
+   ============================================ */
+
+/* Bandeau hors ligne — sticky en haut de l'écran */
+.offline-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--tram-red);
+  color: #fff;
+  padding: 8px 14px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  text-align: center;
+  letter-spacing: 0.04em;
+  z-index: 9998;
+  box-shadow: 0 2px 0 var(--tram-red-dark);
+  transform: translateY(-100%);
+  transition: transform 0.25s ease-out;
+  pointer-events: none;
+}
+.offline-banner.show {
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* Image/vidéo qui a échoué et a été remplacée par le placeholder.
+   On baisse l'opacité et on retire le crisp-edges pour bien signaler
+   que c'est un fallback (pas une vraie photo). */
+.media-fallback {
+  opacity: 0.7;
+  image-rendering: auto !important;
+  filter: saturate(0.6);
+}
+
+/* Skeleton shimmer sur les vignettes de la galerie pendant le chargement.
+   L'<img> couvre le shimmer une fois chargée (aspect-ratio + object-fit:cover) ;
+   on n'a pas besoin de JS pour détecter l'état chargé. */
+.photo-thumb {
+  background:
+    linear-gradient(90deg,
+      var(--concrete) 0%,
+      var(--cream-cold) 50%,
+      var(--concrete) 100%);
+  background-size: 200% 100%;
+  animation: photoShimmer 1.4s ease-in-out infinite;
+}
+@keyframes photoShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Photo viewer : état erreur (URL Storage inaccessible) */
+.photo-viewer-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  width: min(90vw, 480px);
+  aspect-ratio: 1;
+  background: rgba(0, 0, 0, 0.4);
+  border: 4px solid var(--tram-yellow);
+  border-radius: 12px;
+}
+.photo-viewer-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--tram-yellow);
+  padding: 20px;
+  text-align: center;
+}

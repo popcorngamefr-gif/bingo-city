@@ -12,6 +12,7 @@
 import { ref, uploadString, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { doc, setDoc, serverTimestamp }                   from 'firebase/firestore'
 import { storage, db }                                    from './config.js'
+import { fetchWithTimeout }                               from '../utils/network.js'
 
 /**
  * @param {string} gameCode
@@ -46,7 +47,10 @@ export async function uploadPhoto(gameCode, uid, cellIdx, dataUrl, objId) {
  * @returns {Promise<string>} URL Storage permanente
  */
 async function _mirrorToStorage(sourceUrl, destPath, contentType) {
-  const res = await fetch(sourceUrl)
+  // Timeout 25s : un avatar fait < 1 Mo, une vidéo Déglingo ~ 1-3 Mo. En 4G
+  // dégradée ça reste OK ; au-delà on préfère échouer proprement et garder
+  // l'URL Replicate (volatile mais valide pour la session courante).
+  const res = await fetchWithTimeout(sourceUrl, {}, 25000)
   if (!res.ok) throw new Error(`Failed to fetch source (${res.status})`)
   const blob = await res.blob()
   const storageRef = ref(storage, destPath)
