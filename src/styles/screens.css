@@ -3209,3 +3209,59 @@
   padding: 20px;
   text-align: center;
 }
+
+/* ── Upload photo : état pending / failed sur la cellule ──────────────── */
+/* Photo prise mais pas encore confirmée côté Storage. On indique que ça
+   se synchro en arrière-plan : pulse jaune subtil sur la bordure +
+   indicateur ↑ en coin. */
+.bingo-cell.upload-pending {
+  box-shadow: 2px 2px 0 var(--ink), 0 0 0 2px var(--tram-yellow);
+  animation: uploadPendingPulse 1.4s ease-in-out infinite;
+}
+.bingo-cell.upload-pending::after {
+  content: '↑';
+  position: absolute;
+  top: 4px; left: 4px;
+  background: var(--tram-yellow);
+  color: var(--ink);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  border: 1px solid var(--ink);
+  border-radius: 4px;
+  padding: 1px 3px;
+  z-index: 5;
+  animation: uploadPendingArrow 0.9s ease-in-out infinite;
+}
+@keyframes uploadPendingPulse {
+  0%, 100% { box-shadow: 2px 2px 0 var(--ink), 0 0 0 2px var(--tram-yellow); }
+  50%      { box-shadow: 2px 2px 0 var(--ink), 0 0 0 4px var(--tram-yellow-warm); }
+}
+@keyframes uploadPendingArrow {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-2px); }
+}
+
+/* Échec d'upload après les 5 essais : indicateur rouge persistant.
+   La photo reste en queue, sera retentée à la prochaine reconnexion ou
+   au prochain reload — l'user peut juste attendre, pas d'action manuelle
+   requise. */
+.bingo-cell.upload-failed {
+  box-shadow: 2px 2px 0 var(--ink), 0 0 0 2px var(--tram-red);
+}
+.bingo-cell.upload-failed::after {
+  content: '!';
+  position: absolute;
+  top: 4px; left: 4px;
+  background: var(--tram-red);
+  color: white;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}

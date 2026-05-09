@@ -52,21 +52,13 @@ function _process(cellIdx, dataUrl) {
   state.currentPickingObj = null
   handleValidation(cellIdx)
 
+  // L'upload passe par photoQueue pour fiabilité : retry exponentiel,
+  // persistance localStorage si échec, retry auto sur reconnexion réseau
+  // ou au prochain reload. Voir src/utils/photoQueue.js.
   if (state.gameCode && state.uid && state.uid !== 'me') {
-    import('../firebase/storage.js').then(({ uploadPhoto }) => {
+    import('../utils/photoQueue.js').then(({ enqueuePhoto }) => {
       const cell = state.myGrid[cellIdx]
-      uploadPhoto(state.gameCode, state.uid, cellIdx, dataUrl, cell?.objId)
-        .then(url => { state.myPhotos[cellIdx] = url; console.log('[photo] uploaded:', url) })
-        .catch(err => {
-          console.error('[photo] upload failed:', err)
-          if (err.code === 'storage/unauthorized') {
-            // Toast une seule fois pour pas spammer
-            if (!window.__photoErrShown) {
-              window.__photoErrShown = true
-              import('./toast.js').then(({ toast }) => toast('Photos désactivées (rules Storage)', 4000))
-            }
-          }
-        })
+      enqueuePhoto(cellIdx, dataUrl, cell?.objId)
     })
   }
 }

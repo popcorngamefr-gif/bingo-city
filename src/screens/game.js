@@ -8,6 +8,7 @@ import { getObject, objectSvg } from '../data/objects.js'
 import { avatarLayersHtml } from '../ui/avatar.js'
 import { icon } from '../ui/icons.js'
 import { safeImg } from '../utils/media.js'
+import { isPhotoPending, isPhotoFailed } from '../utils/photoQueue.js'
 
 export function renderGame() {
   const me          = state.players.find(p => p.isYou) || { score: 0, avatar: state.myAvatar }
@@ -87,7 +88,13 @@ export function renderGame() {
             : objectSvg(obj)
           // Si validée et photo dispo : on affiche la photo en background, l'icône est masquée
           const hasPhoto = isValidated && photo
-          return `<div class="bingo-cell ${cell.status} ${hasPhoto ? 'has-photo' : ''}" data-cell="${i}">
+          // État upload : pending = en cours d'envoi vers Storage, failed = échec
+          // après plusieurs tentatives. Permet à l'user de voir que la photo
+          // n'est pas encore "officiellement" sur le serveur.
+          const uploadCls = isPhotoPending(i) ? ' upload-pending'
+                          : isPhotoFailed(i)  ? ' upload-failed'
+                          : ''
+          return `<div class="bingo-cell ${cell.status} ${hasPhoto ? 'has-photo' : ''}${uploadCls}" data-cell="${i}">
             ${hasPhoto
               ? safeImg(photo, { alt: obj.name, className: 'bingo-cell-photo' })
               : `<div class="bingo-cell-icon">${iconHtml}</div>`
