@@ -7,6 +7,7 @@ import { state } from '../state.js'
 import { getObject, objectSvg } from '../data/objects.js'
 import { avatarLayersHtml } from '../ui/avatar.js'
 import { icon } from '../ui/icons.js'
+import { safeImg } from '../utils/media.js'
 
 export function renderGame() {
   const me          = state.players.find(p => p.isYou) || { score: 0, avatar: state.myAvatar }
@@ -78,7 +79,7 @@ export function renderGame() {
           const hasPhoto = isValidated && photo
           return `<div class="bingo-cell ${cell.status} ${hasPhoto ? 'has-photo' : ''}" data-cell="${i}">
             ${hasPhoto
-              ? `<img src="${photo}" alt="${obj.name}" class="bingo-cell-photo" loading="lazy" />`
+              ? safeImg(photo, { alt: obj.name, className: 'bingo-cell-photo' })
               : `<div class="bingo-cell-icon">${iconHtml}</div>`
             }
             <div class="bingo-cell-name">${obj.name}</div>

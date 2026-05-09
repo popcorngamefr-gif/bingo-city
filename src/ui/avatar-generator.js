@@ -7,6 +7,7 @@ import { state }      from '../state.js'
 import { navigate }   from '../router.js'
 import { icon }       from './icons.js'
 import { openCamera } from './modal.js'
+import { fetchWithTimeout } from '../utils/network.js'
 
 const POLL_MS = 2500
 
@@ -40,11 +41,12 @@ function _resizeAndSend(dataUrl) {
 async function _start(base64) {
   _setLoading("Patiente… dans quelques secondes tu auras un visage de déglingo !")
   try {
-    const res = await fetch('/api/start-generation', {
+    // 30s : l'API encode l'image en base64 + requête Replicate, peut prendre du temps en 4G
+    const res = await fetchWithTimeout('/api/start-generation', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ imageBase64: base64 }),
-    })
+    }, 30000)
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
       throw new Error(err.detail || err.error || `HTTP ${res.status}`)
@@ -52,7 +54,7 @@ async function _start(base64) {
     const { id } = await res.json()
     _poll(id, 0)
   } catch (err) {
-    _setError(err.message)
+    _setError(err.message === 'timeout' ? 'Réseau trop lent, réessaie' : err.message)
   }
 }
 
@@ -60,7 +62,7 @@ function _poll(id, n) {
   if (n > 40) { _setError('Délai dépassé, réessaie'); return }
   setTimeout(async () => {
     try {
-      const data = await fetch(`/api/check-generation?id=${id}`).then(r => r.json())
+      const data = await fetchWithTimeout(`/api/check-generation?id=${id}`, {}, 10000).then(r => r.json())
       if      (data.status === 'succeeded') _showResult(data.url)
       else if (data.status === 'failed')    _setError(data.error || 'Génération échouée')
       else {

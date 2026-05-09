@@ -10,6 +10,7 @@ import { signInAnonymously, onAuthStateChanged } from 'firebase/auth'
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { auth, db } from './config.js'
 import { state }    from '../state.js'
+import { cacheProfile } from '../utils/profileCache.js'
 
 // ─── Init (appelé au démarrage de l'app) ─────────────────────────────────────
 
@@ -49,6 +50,8 @@ export async function loadProfile(uid) {
   if (data.avatar)     state.myAvatar   = { ...state.myAvatar, ...data.avatar }
   if (data.accountKey) state.accountKey = data.accountKey
   state.userProfile = data
+  // Rafraîchit le cache local avec la version Firestore (source de vérité)
+  cacheProfile({ name: state.myName, avatar: state.myAvatar })
   return data
 }
 
@@ -107,6 +110,8 @@ export async function saveProfile({ name, avatar }) {
   state.myAvatar    = { ...state.myAvatar, ...cleanAvatar }
   if (name) state.myName = name
   state.userProfile = { ...(state.userProfile || {}), name: state.myName, avatar: state.myAvatar }
+  // Cache local pour permettre un boot offline-friendly
+  cacheProfile({ name: state.myName, avatar: state.myAvatar })
 }
 
 /**

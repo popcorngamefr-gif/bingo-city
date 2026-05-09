@@ -18,6 +18,7 @@
 
 import { PORTRAIT } from '../data/portrait.js'
 import { state }    from '../state.js'
+import { safeVideo, FALLBACK_DATA_URI } from '../utils/media.js'
 
 export function avatarHtml(av, opts = {}) {
   const { size = 'md', mood = 'idle', confidence = 'neutral', sparkles = false } = opts
@@ -35,22 +36,31 @@ export function avatarHtml(av, opts = {}) {
 export function avatarLayersHtml(av, mood = 'idle', confidence = 'neutral') {
   av = av || {}
   // 1. Vidéo Déglingo IA — priorise animationUrl (joueur en cours de partie),
-  //    sinon state.myAnimation.url (mon propre avatar dans l'éditeur)
+  //    sinon state.myAnimation.url (mon propre avatar dans l'éditeur).
+  //    En cas d'échec vidéo (réseau coupé, URL Replicate expirée), on retombe
+  //    sur l'image statique via le poster + onerror du safeVideo.
   const videoUrl = av.animationUrl || state.myAnimation?.url
   if (videoUrl && (av?.generatedImageUrl || av?.animationUrl)) {
-    const safeUrl = String(videoUrl).replace(/"/g, '&quot;')
     return `
       <div class="layer generated-video">
-        <video src="${safeUrl}" autoplay loop muted playsinline
-               style="width:100%;height:100%;object-fit:cover;image-rendering:pixelated;"></video>
+        ${safeVideo(videoUrl, {
+          posterUrl: av?.generatedImageUrl || '',
+          extraStyle: 'width:100%;height:100%;object-fit:cover;image-rendering:pixelated;',
+        })}
       </div>
     `
   }
-  // 2. Image statique générée par face-to-many
+  // 2. Image statique générée par face-to-many.
+  //    On utilise un <img> plutôt qu'un background-image pour profiter de
+  //    l'onerror : si l'URL Storage est inaccessible, on swap sur le placeholder.
   if (av?.generatedImageUrl) {
-    const safeUrl = String(av.generatedImageUrl).replace(/'/g, "\\'").replace(/"/g, '%22')
+    const safeUrl = String(av.generatedImageUrl).replace(/"/g, '%22')
     return `
-      <div class="layer generated-img" style="background-image:url('${safeUrl}')"></div>
+      <div class="layer generated-img">
+        <img src="${safeUrl}" alt="" loading="lazy" decoding="async"
+             style="width:100%;height:100%;object-fit:cover;image-rendering:pixelated;"
+             onerror="this.onerror=null;this.src='${FALLBACK_DATA_URI}';this.classList.add('media-fallback');" />
+      </div>
     `
   }
   // 3. Sprites classiques avec bouche SVG animée

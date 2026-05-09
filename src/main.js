@@ -25,6 +25,8 @@ import { openSouvenirsModal }             from './ui/souvenirs-modal.js'
 import { openConfirmModal }               from './ui/confirm-modal.js'
 
 import { initAuth, saveProfile }          from './firebase/auth.js'
+import { withTimeout, initConnectivityWatcher, onConnectivityChange, isOnline } from './utils/network.js'
+import { loadProfileCache }               from './utils/profileCache.js'
 import { createGame as fbCreateGame, joinGame as fbJoinGame, startGame as fbStartGame, subscribeToPlayers, subscribeToGame, subscribeToPhotos, unsubscribeAll, getGameOnce, getPlayersOnce, getPhotosOnce } from './firebase/game.js'
 import { checkPseudoAvailable, createAccount, loginWithPin, updateAccountUID } from './firebase/account.js'
 import { openGeneratorModal }   from './ui/avatar-generator.js'
@@ -42,6 +44,55 @@ function _showAdblockBanner() {
   b.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#cf3a3a;color:#fff;padding:10px 16px;font-family:system-ui,sans-serif;font-size:13px;text-align:center;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,0.3);'
   b.innerHTML = `⚠️ Bloqueur de pub détecté — désactive-le sur ce site sinon le jeu ne fonctionnera pas correctement <span style="opacity:0.7;cursor:pointer;margin-left:8px;" onclick="this.parentElement.remove()">✕</span>`
   document.body.appendChild(b)
+}
+
+/**
+ * Bandeau persistant + toast au passage offline/online.
+ */
+function _setupOfflineBanner() {
+  initConnectivityWatcher()
+  const ensureBanner = () => {
+    let b = document.getElementById('offline-banner')
+    if (!b) {
+      b = document.createElement('div')
+      b.id = 'offline-banner'
+      b.className = 'offline-banner'
+      b.textContent = 'Hors ligne — on attend le retour du réseau'
+      document.body.appendChild(b)
+    }
+    return b
+  }
+  const apply = (online) => {
+    const b = ensureBanner()
+    b.classList.toggle('show', !online)
+    if (online) toast('Reconnecté')
+    else        toast('Hors ligne')
+  }
+  // État initial : banner visible si déjà offline
+  if (!isOnline()) ensureBanner().classList.add('show')
+  onConnectivityChange(apply)
+}
+
+/**
+ * Écran de chargement initial. Affiche un bouton "Réessayer" si l'auth
+ * met plus de quelques secondes — l'utilisateur n'est plus bloqué sur un
+ * "Connexion..." figé en cas de réseau pourri ou de Firebase bloqué.
+ */
+function _renderBootScreen({ withRetry = false, errorMsg = '' } = {}) {
+  const app = document.getElementById('app')
+  if (!app) return
+  app.innerHTML = `
+    <section class="screen" style="display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
+      <div style="font-family:'Press Start 2P',monospace;font-size:11px;color:var(--ink);text-align:center;line-height:1.8;">BINGO SANTÉ<br>VARSOVIE</div>
+      <div style="font-family:'VT323',monospace;font-size:18px;color:var(--ink-soft);">
+        ${errorMsg || 'Connexion...'}
+      </div>
+      ${withRetry ? `
+        <button onclick="location.reload()" style="margin-top:8px;padding:10px 18px;background:#d04848;color:#fff;border:3px solid #2a2228;border-radius:8px;font-family:'Press Start 2P',monospace;font-size:10px;cursor:pointer;box-shadow:2px 2px 0 #2a2228;">
+          RÉESSAYER
+        </button>
+      ` : ''}
+    </section>`
 }
 
 // ─── Persistance partie en cours ─────────────────────────────────────────────
@@ -936,19 +987,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupInputFilters()
   setupEventDelegation()
   setupScreenHooks()
+  _setupOfflineBanner()
 
-  document.getElementById('app').innerHTML = `
-    <section class="screen" style="display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
-      <div style="font-family:'Press Start 2P',monospace;font-size:11px;color:var(--ink);text-align:center;line-height:1.8;">BINGO SANTÉ<br>VARSOVIE</div>
-      <div style="font-family:'VT323',monospace;font-size:18px;color:var(--ink-soft);">Connexion...</div>
-    </section>`
+  // Hydratation rapide depuis le cache localStorage : permet au moins
+  // d'afficher l'avatar de l'utilisateur si Firestore est lent à répondre.
+  // Sera écrasé proprement par loadProfile() une fois Firestore disponible.
+  const cachedProfile = loadProfileCache()
+  if (cachedProfile) {
+    if (cachedProfile.name)   state.myName   = cachedProfile.name
+    if (cachedProfile.avatar) state.myAvatar = { ...state.myAvatar, ...cachedProfile.avatar }
+  }
 
-  try { await initAuth() } catch (err) {
+  _renderBootScreen()
+  // Si l'auth traîne, on propose un Réessayer après 6s sans bloquer le flow
+  const slowBootTimer = setTimeout(() => _renderBootScreen({ withRetry: true, errorMsg: 'Réseau lent…' }), 6000)
+
+  try {
+    // Timeout dur à 12s : au-delà, on considère Firebase injoignable
+    // (adblock, captive portal, 4G coupée). On affiche l'écran avec Réessayer.
+    await withTimeout(initAuth(), 12000, 'auth-timeout')
+  } catch (err) {
     console.warn('Auth failed, running offline:', err)
+    if (err?.message === 'auth-timeout') {
+      clearTimeout(slowBootTimer)
+      _renderBootScreen({ withRetry: true, errorMsg: 'Connexion impossible. Vérifie ton réseau.' })
+      // On laisse l'écran de retry à l'user et on ne continue PAS le boot :
+      // sans uid, la suite (Firestore reads, etc.) échouerait en cascade.
+      return
+    }
     if (err?.code?.includes('network') || err?.message?.includes('network') || err?.message?.includes('blocked')) {
       _showAdblockBanner()
     }
   }
+  clearTimeout(slowBootTimer)
 
   // Fallback localStorage : si Firebase a perdu l'UID anonyme
   // (cookies effacés, navigation privée…), accountKey peut ne pas remonter
@@ -959,7 +1030,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (cachedKey) {
         const { doc, getDoc } = await import('firebase/firestore')
         const { db } = await import('./firebase/config.js')
-        const snap = await getDoc(doc(db, 'accounts', cachedKey))
+        // Timeout 6s : si Firestore ne répond pas, on n'a pas à bloquer le boot.
+        // L'user verra son profil cache et pourra interagir ; le re-link se
+        // fera tout seul plus tard quand le réseau sera revenu.
+        const snap = await withTimeout(getDoc(doc(db, 'accounts', cachedKey)), 6000, 'firestore-timeout')
         if (snap.exists()) {
           const data = snap.data()
           state.accountKey  = cachedKey
