@@ -9,10 +9,13 @@ import { avatarLayersHtml } from '../ui/avatar.js'
 import { icon } from '../ui/icons.js'
 import { safeImg } from '../utils/media.js'
 import { isPhotoPending, isPhotoFailed, getQueueStats } from '../utils/photoQueue.js'
+import { getPlayerScore } from '../controllers/gameController.js'
 
 export function renderGame() {
   const me          = state.players.find(p => p.isYou) || { score: 0, avatar: state.myAvatar }
-  const sorted      = [...state.players].sort((a, b) => (b.score || 0) - (a.score || 0))
+  // Tri par score recalculé depuis photos Firestore : le rang reste juste
+  // même si d'autres joueurs ont un score.player drifté.
+  const sorted      = [...state.players].sort((a, b) => getPlayerScore(b) - getPlayerScore(a))
   const rank        = sorted.findIndex(p => p.isYou) + 1
   const totalPlayers = state.players.length
 
