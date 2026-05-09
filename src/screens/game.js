@@ -18,7 +18,9 @@ export function renderGame() {
   const n    = state.myGrid.length
   let cols   = 3
   if (n > 9)  cols = 4
-  if (n > 16) cols = 5
+  // Au-delà de 16 on garde 4 colonnes : meilleur lisibilité, on assume le scroll vertical
+  const validated  = state.myGrid.filter(c => c.status === 'validated').length
+  const remaining  = n - validated
 
   return `
     <section class="screen game-screen">
@@ -59,9 +61,17 @@ export function renderGame() {
         </div>
       </div>
 
-      <p class="small light center mb">
-        Repéré ? <strong style="color: var(--tram-red);">Tape</strong> pour prendre la photo.
-      </p>
+      <div class="game-progress">
+        <span class="game-progress-count">
+          ${icon('camera', { size: 16 })}
+          <span class="game-progress-num">${validated}</span><span class="game-progress-total">/${n}</span>
+        </span>
+        <span class="game-progress-hint">
+          ${remaining > 0
+            ? `<strong>${remaining}</strong> à shooter`
+            : `<strong>Bingo complet !</strong>`}
+        </span>
+      </div>
 
       <!-- Grille de bingo -->
       <div class="bingo-grid" style="grid-template-columns: repeat(${cols}, minmax(0, 1fr));">
