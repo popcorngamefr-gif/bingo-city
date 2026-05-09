@@ -140,6 +140,41 @@ function _onGameUpdate(gameData) {
     state.gameStartedAt = gameData.startedAt.toMillis()
   }
 
+  // Hydratation tardive : si on est arrivé sur un écran de partie sans state
+  // (ex: getGameOnce a timeout au boot), on remplit selectedObjects + myGrid
+  // depuis le 1er snapshot live et on re-render. Idempotent : on ne déclenche
+  // qu'une fois (tant que selectedObjects reste vide).
+  const inGameScreen = state.currentScreen === 'game' || state.currentScreen === 'end'
+  const stateEmpty   = !state.selectedObjects || state.selectedObjects.length === 0
+  if (gameData.status === 'playing' && inGameScreen && stateEmpty
+      && Array.isArray(gameData.selectedObjects) && gameData.selectedObjects.length) {
+    state.selectedObjects = gameData.selectedObjects
+    state.customObjects   = gameData.customObjects || []
+    state.myGrid = state.selectedObjects.map(id => ({ objId: id, status: 'empty' }))
+    if (!state.timerInterval) startTimer()
+    // Hydrate les photos en différé puis re-render (idempotent côté state)
+    import('./firebase/game.js').then(({ getPhotosOnce }) => getPhotosOnce(state.gameCode))
+      .then(photos => {
+        state.gamePhotos = photos
+        state.myPhotos = state.myPhotos || {}
+        const mine = photos.filter(p => p.uid === state.uid)
+        for (const photo of mine) {
+          if (!photo.objId) continue
+          const idx = state.selectedObjects.indexOf(photo.objId)
+          if (idx >= 0) {
+            state.myGrid[idx].status = 'validated'
+            state.myPhotos[idx]      = photo.url
+          }
+        }
+        if (state.currentScreen === 'game' || state.currentScreen === 'end') show(state.currentScreen)
+      })
+      .catch(err => {
+        console.warn('[late-hydrate] photos failed:', err)
+        if (state.currentScreen === 'game' || state.currentScreen === 'end') show(state.currentScreen)
+      })
+    return
+  }
+
   if (gameData.status === 'playing' && state.currentScreen === 'lobby' && !state.isMJ) {
     state.selectedObjects = gameData.selectedObjects || []
     state.customObjects   = gameData.customObjects || []
@@ -867,6 +902,16 @@ function setupEventDelegation() {
       return
     }
 
+    // Galerie de fin / vignettes : ouvrir la photo en plein écran
+    const photoUrl = target.dataset.photoUrl
+    if (photoUrl) {
+      const photoName = target.dataset.photoName || ''
+      import('./ui/photo-viewer.js').then(({ openPhotoViewer }) => {
+        openPhotoViewer(photoUrl, photoName)
+      }).catch(err => console.warn('[photo-viewer] failed to load:', err))
+      return
+    }
+
     const cellAttr = target.dataset.cell
     if (cellAttr !== undefined) {
       const idx  = parseInt(cellAttr)
@@ -1086,9 +1131,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       state.gameName = active.name
       state.isMJ     = active.isMJ
       state.myName   = active.myName || state.myName
-      // Hydrate la partie depuis Firestore avant de render
+      // Hydrate la partie depuis Firestore avant de render. Timeout 8s :
+      // sur réseau pourri on n'attend pas indéfiniment, on rend l'écran et
+      // _onGameUpdate fera l'hydratation tardive quand le snapshot arrive.
       try {
-        const game = await getGameOnce(active.code)
+        const game = await withTimeout(getGameOnce(active.code), 8000, 'firestore-timeout')
         if (game) {
           if (typeof game.duration === 'number') state.gameDuration = game.duration
           if (game.startedAt && typeof game.startedAt.toMillis === 'function') {
