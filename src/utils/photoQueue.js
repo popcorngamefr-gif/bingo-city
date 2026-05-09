@@ -185,19 +185,23 @@ export function restorePendingPhotos() {
  * Nettoie les photos en attente pour une partie donnée. Appelé quand on
  * abandonne / clear la partie courante (newGame, forgetActiveGame), pour
  * éviter d'accumuler du localStorage sur de vieilles parties terminées.
+ *
+ * On clear systématiquement la queue mémoire ET les timers : appelants
+ * sont newGame/forgetActiveGame qui visent toujours à abandonner la
+ * partie courante. Sans ce reset, des entrées orphelines peuvent rester
+ * en mémoire (race entre l'import dynamique de cette fn et resetGame qui
+ * met state.gameCode à null avant que le check soit évalué) et être
+ * réuploadées vers la NOUVELLE partie au prochain online event.
  */
 export function clearPendingPhotos(gameCode) {
   if (!gameCode) return
   try {
     localStorage.removeItem(`bingo_pending_photos_${gameCode}`)
   } catch {}
-  // Reset aussi la queue mémoire si elle correspond à cette partie
-  if (state.gameCode === gameCode) {
-    state._pendingPhotos = {}
-    for (const idx of Object.keys(_retryTimers)) {
-      clearTimeout(_retryTimers[idx])
-      delete _retryTimers[idx]
-    }
+  state._pendingPhotos = {}
+  for (const idx of Object.keys(_retryTimers)) {
+    clearTimeout(_retryTimers[idx])
+    delete _retryTimers[idx]
   }
 }
 

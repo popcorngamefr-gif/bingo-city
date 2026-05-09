@@ -173,10 +173,28 @@ function _onGameUpdate(gameData) {
             state.myPhotos[idx]      = photo.url
           }
         }
+        // Ré-applique 'validated' sur les cellules dont la photo est encore
+        // en queue d'upload (pas encore en Firestore). Sans ça, le reset
+        // myGrid='empty' au-dessus les ferait paraître perdues, alors que
+        // leur dataURL est bien en localStorage et l'upload va se relancer.
+        if (state._pendingPhotos) {
+          for (const cellIdx of Object.keys(state._pendingPhotos)) {
+            const idx = parseInt(cellIdx)
+            if (state.myGrid[idx]) state.myGrid[idx].status = 'validated'
+          }
+        }
         if (state.currentScreen === 'game' || state.currentScreen === 'end') show(state.currentScreen)
       })
       .catch(err => {
         console.warn('[late-hydrate] photos failed:', err)
+        // Même si Firestore photos échoue, on remarque les cellules en queue
+        // pour ne pas que l'user perde de vue ses photos non encore uploadées.
+        if (state._pendingPhotos) {
+          for (const cellIdx of Object.keys(state._pendingPhotos)) {
+            const idx = parseInt(cellIdx)
+            if (state.myGrid[idx]) state.myGrid[idx].status = 'validated'
+          }
+        }
         if (state.currentScreen === 'game' || state.currentScreen === 'end') show(state.currentScreen)
       })
     return
@@ -554,18 +572,30 @@ const ACTIONS = {
   cancelPhoto() { closeModal(); state.currentPickingObj = null },
 
   // Bouton de synchronisation manuelle dans le HUD du jeu : relance les
-  // uploads en attente et donne un feedback explicite. Utile quand
-  // l'utilisateur veut être sûr que tout est sur le serveur (fin de partie,
-  // changement de cellule réseau, etc.). Idempotent — si la queue est
-  // vide, on confirme juste que c'est synchro.
+  // uploads en attente, ré-applique le status validated sur les cellules
+  // pending (au cas où un re-render aurait raté l'overlay), et refresh
+  // l'affichage. Idempotent — si la queue est vide, on confirme juste.
   async retryPhotoUploads() {
     const { retryAllPending, getQueueStats } = await import('./utils/photoQueue.js')
     const stats = getQueueStats()
     if (stats.total === 0) {
       toast('Tout est synchronisé ✓')
+      // Re-render quand même : si l'user clique alors qu'il a une cellule
+      // qui devrait être validée mais ne l'est pas (drift), on tente au
+      // moins de raffraîchir le HUD/grille avec le state actuel.
+      if (state.currentScreen === 'game') show('game')
       return
     }
+    // Re-applique 'validated' sur les cellules pending au cas où un
+    // re-render entre-temps aurait reset le status visuellement.
+    for (const cellIdx of Object.keys(state._pendingPhotos || {})) {
+      const idx = parseInt(cellIdx)
+      if (state.myGrid[idx] && state.myGrid[idx].status !== 'validated') {
+        state.myGrid[idx].status = 'validated'
+      }
+    }
     retryAllPending()
+    if (state.currentScreen === 'game') show('game')
     toast(`Réessai de ${stats.total} photo${stats.total > 1 ? 's' : ''}…`, 2000)
   },
 
@@ -699,9 +729,16 @@ const ACTIONS = {
       // jamais écraser un upload qui a déjà réussi (le if(!state.myPhotos[idx])
       // dans restorePendingPhotos respecte la version Firestore quand elle
       // est dispo).
+      // Puis on re-render l'écran courant : navigate() au-dessus a déjà
+      // émis un rendu AVANT que restorePendingPhotos n'overlay les dataURLs
+      // pending → sans ce show, les cellules en queue paraîtraient vides
+      // alors que leur photo est en localStorage.
       try {
         const { restorePendingPhotos } = await import('./utils/photoQueue.js')
         restorePendingPhotos()
+        if (state.currentScreen === 'game' || state.currentScreen === 'end') {
+          show(state.currentScreen)
+        }
       } catch (err) { console.warn('[resume] restore photo queue failed:', err) }
       delete state._resumingGame
     }
