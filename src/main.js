@@ -553,6 +553,22 @@ const ACTIONS = {
 
   cancelPhoto() { closeModal(); state.currentPickingObj = null },
 
+  // Bouton de synchronisation manuelle dans le HUD du jeu : relance les
+  // uploads en attente et donne un feedback explicite. Utile quand
+  // l'utilisateur veut être sûr que tout est sur le serveur (fin de partie,
+  // changement de cellule réseau, etc.). Idempotent — si la queue est
+  // vide, on confirme juste que c'est synchro.
+  async retryPhotoUploads() {
+    const { retryAllPending, getQueueStats } = await import('./utils/photoQueue.js')
+    const stats = getQueueStats()
+    if (stats.total === 0) {
+      toast('Tout est synchronisé ✓')
+      return
+    }
+    retryAllPending()
+    toast(`Réessai de ${stats.total} photo${stats.total > 1 ? 's' : ''}…`, 2000)
+  },
+
   openClassement() {
     // Vue temporaire du classement pendant la partie (ne termine pas la partie)
     state._previewClassement = true
