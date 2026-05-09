@@ -75,11 +75,19 @@ async function _attempt(cellIdx) {
 
     // Re-sync grid + score : idempotent, rattrape les échecs éventuels du
     // handleValidation initial (qui faisait aussi des fire-and-forget).
+    // Le score est recalculé depuis state.myGrid plutôt que lu depuis
+    // me.score : un snapshot Firestore arrivé entre handleValidation et
+    // ici peut avoir écrasé state.players[me].score avec une valeur
+    // stale (ex: après reload, le score Firestore ne reflète pas encore
+    // les photos en queue). Le calcul depuis la grille est déterministe.
     try {
       const { updatePlayerGrid, updatePlayerScore } = await import('../firebase/game.js')
+      const { computeScore } = await import('../controllers/gameController.js')
+      const score = computeScore()
       const me = state.players.find(p => p.isYou)
+      if (me) me.score = score
       await updatePlayerGrid(state.gameCode, state.uid, state.myGrid)
-      await updatePlayerScore(state.gameCode, state.uid, me?.score || 0)
+      await updatePlayerScore(state.gameCode, state.uid, score)
     } catch (err) {
       // Non-bloquant — la photo elle-même est OK. Si le grid/score n'a
       // pas synchro, le prochain upload re-tentera la sync.

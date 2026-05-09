@@ -624,11 +624,6 @@ const ACTIONS = {
     state.isMJ     = active.isMJ
     state.myName   = active.myName || state.myName
     toast('Reprise de la partie…', 2000)
-    // Récupère les photos en attente d'upload (idem boot) avant de naviguer.
-    try {
-      const { restorePendingPhotos } = await import('./utils/photoQueue.js')
-      restorePendingPhotos()
-    } catch (err) { console.warn('[resume] restore photo queue failed:', err) }
 
     // Route selon le statut Firestore : si la partie tourne déjà ('playing')
     // on retourne directement à l'écran de jeu, sinon on tombe sur le lobby
@@ -1244,14 +1239,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       state.gameName = active.name
       state.isMJ     = active.isMJ
       state.myName   = active.myName || state.myName
-      // Hydrate la queue d'upload photos depuis localStorage : récupère les
-      // photos qui n'avaient pas pu atteindre Storage avant le reload.
-      // Les uploads en attente seront relancés au mount de l'écran 'game'
-      // via le screen:rendered hook.
-      try {
-        const { restorePendingPhotos } = await import('./utils/photoQueue.js')
-        restorePendingPhotos()
-      } catch (err) { console.warn('[boot] restore photo queue failed:', err) }
       // Hydrate la partie depuis Firestore avant de render. Timeout 8s :
       // sur réseau pourri on n'attend pas indéfiniment, on rend l'écran et
       // _onGameUpdate fera l'hydratation tardive quand le snapshot arrive.
