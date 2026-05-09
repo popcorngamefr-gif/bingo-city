@@ -89,14 +89,12 @@
   gap: 8px;
   margin-bottom: 14px;
   box-shadow: 0 4px 0 var(--tram-red-dark);
-  /* Garde-fou : sur très petit viewport ou langue longue, on clamp
-     plutôt que de laisser déborder hors du cadre jaune. */
-  overflow: hidden;
 }
 .hud-avatar .avatar.sm {
-  width: 56px;
-  height: 56px;
+  width: 60px;
+  height: 60px;
   border: 2px solid var(--tram-yellow);
+  flex-shrink: 0;
 }
 .hud-stat {
   display: flex;
@@ -108,21 +106,20 @@
   text-shadow: 1px 1px 0 var(--ink);
   min-width: 0;
 }
-.hud-label {
-  font-size: 8px;
-  opacity: 0.85;
-}
+/* .hud-label est défini plus bas dans le fichier (ligne ~1395) avec
+   font-size: 6px et la fonte Press Start 2P. On ne le redéfinit pas ici. */
 .hud-value {
-  /* Échelle responsive : ~14px sur petit écran, jusqu'à 16px sur grand.
-     Press Start 2P est déjà une fonte large, on reste prudent. */
-  font-size: clamp(13px, 3.8vw, 16px);
+  font-size: 16px;
   line-height: 1;
   margin-top: 2px;
   white-space: nowrap;
 }
+/* Le timer affiche jusqu'à 6-7 caractères ('1j 22h', '23:58:48') donc
+   on lui donne une fonte légèrement plus petite pour qu'il rentre
+   dans la HUD sans clipping même sur iPhone 12 mini (360px). */
 .hud-value.timer {
   color: var(--tram-yellow);
-  font-size: clamp(13px, 3.8vw, 16px);
+  font-size: 14px;
 }
 
 /* Compteur photos (entre HUD et grille) */
