@@ -63,7 +63,7 @@ export function renderGame() {
       </p>
 
       <!-- Grille de bingo -->
-      <div class="bingo-grid" style="grid-template-columns: repeat(${cols}, 1fr);">
+      <div class="bingo-grid" style="grid-template-columns: repeat(${cols}, minmax(0, 1fr));">
         ${state.myGrid.map((cell, i) => {
           const obj = getObject(cell.objId)
           if (!obj) return ''
