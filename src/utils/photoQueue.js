@@ -266,16 +266,18 @@ function _updateSyncBadge() {
   if (!el) return
   const stats = getQueueStats()
   // On utilise un attribut data-state plutôt que des classes pour éviter
-  // les conflits avec les classes utilitaires du jeu.
+  // les conflits avec les classes utilitaires du jeu. Les labels gardent
+  // toujours un suffixe "↻ <verbe>" pour indiquer clairement la
+  // cliquabilité (vérifier / relancer / réessayer).
   if (stats.failed > 0) {
     el.dataset.state = 'failed'
-    el.textContent = `! ${stats.failed} échec${stats.failed > 1 ? 's' : ''} · réessayer`
+    el.textContent = `! ${stats.failed} échec${stats.failed > 1 ? 's' : ''} · ↻ réessayer`
   } else if (stats.pending > 0) {
     el.dataset.state = 'pending'
-    el.textContent = `↑ ${stats.pending} en cours…`
+    el.textContent = `↑ ${stats.pending} en cours · ↻ relancer`
   } else {
     el.dataset.state = 'ok'
-    el.textContent = '✓ synchro'
+    el.textContent = '✓ tout sur le serveur · ↻ vérifier'
   }
 }
 

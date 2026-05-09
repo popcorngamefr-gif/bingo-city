@@ -23,16 +23,16 @@ export function renderGame() {
   const validated  = state.myGrid.filter(c => c.status === 'validated').length
   const remaining  = n - validated
   // État de synchro photos (queue d'upload). Sert de feedback visible et
-  // de bouton de retry manuel.
+  // de bouton de retry/refresh manuel.
   const syncStats  = getQueueStats()
   const syncState  = syncStats.failed > 0 ? 'failed'
                    : syncStats.pending > 0 ? 'pending'
                    : 'ok'
   const syncLabel  = syncState === 'failed'
-                       ? `! ${syncStats.failed} échec${syncStats.failed > 1 ? 's' : ''} · réessayer`
+                       ? `! ${syncStats.failed} échec${syncStats.failed > 1 ? 's' : ''} · ↻ réessayer`
                    : syncState === 'pending'
-                       ? `↑ ${syncStats.pending} en cours…`
-                       : '✓ synchro'
+                       ? `↑ ${syncStats.pending} en cours · ↻ relancer`
+                       : '✓ tout sur le serveur · ↻ vérifier'
 
   return `
     <section class="screen game-screen">
