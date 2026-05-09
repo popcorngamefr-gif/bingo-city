@@ -586,6 +586,14 @@ const ACTIONS = {
       if (state.currentScreen === 'game') show('game')
       return
     }
+    // Cas où toutes les entries sont 'uploaded' (envoyées sur Storage,
+    // attendant la confirmation Firestore via subscribeToPhotos) :
+    // pas la peine de re-uploader, on attend juste le snapshot.
+    if (stats.failed === 0 && stats.uploadedOnly === stats.pending) {
+      toast(`Photos envoyées, on attend la confirmation côté serveur…`, 3000)
+      if (state.currentScreen === 'game') show('game')
+      return
+    }
     // Re-applique 'validated' sur les cellules pending au cas où un
     // re-render entre-temps aurait reset le status visuellement.
     for (const cellIdx of Object.keys(state._pendingPhotos || {})) {
@@ -596,7 +604,8 @@ const ACTIONS = {
     }
     retryAllPending()
     if (state.currentScreen === 'game') show('game')
-    toast(`Réessai de ${stats.total} photo${stats.total > 1 ? 's' : ''}…`, 2000)
+    const retryCount = stats.total - stats.uploadedOnly
+    toast(`Réessai de ${retryCount} photo${retryCount > 1 ? 's' : ''}…`, 2000)
   },
 
   openClassement() {
@@ -1166,6 +1175,11 @@ function _setupGamePhotosSubscription() {
   _photosSubscribedFor = state.gameCode
   subscribeToPhotos(state.gameCode, (photos) => {
     state.gamePhotos = photos
+    // Confirme les uploads en attente : les entries 'uploaded' dont le doc
+    // (uid, objId) apparaît maintenant dans la collection sont supprimées
+    // de la queue. Voir src/utils/photoQueue.js confirmFromPhotos.
+    import('./utils/photoQueue.js').then(({ confirmFromPhotos }) => confirmFromPhotos(photos))
+      .catch(() => {})
     // Re-render end si on est dessus pour voir les photos qui arrivent
     if (state.currentScreen === 'end') show('end')
   })
