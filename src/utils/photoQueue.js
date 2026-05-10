@@ -50,6 +50,11 @@ export function enqueuePhoto(cellIdx, dataUrl, objId) {
     objId,
     attempts: 0,
     status:   'pending',
+    // Tagué avec le gameCode pour éviter qu'une entry d'une partie A
+    // se fasse fausssement confirmer par un snapshot d'une partie B
+    // (cas viewHistoryGame qui change state.gameCode tout en gardant
+    // _pendingPhotos en mémoire).
+    gameCode: state.gameCode,
   }
   _persist()
   _updateCellUI(cellIdx)
@@ -78,6 +83,10 @@ async function _attempt(cellIdx) {
   // de retry si la confirmation tarde trop.
   if (entry.status === 'uploaded') return
   if (!state.gameCode || !state.uid || state.uid === 'me') return
+  // Sécurité : si l'entry appartient à une autre partie (l'utilisateur a
+  // navigué via history → state.gameCode a changé), on ne touche pas. Elle
+  // sera traitée quand on reviendra à la bonne partie.
+  if (entry.gameCode && entry.gameCode !== state.gameCode) return
 
   _inFlight[cellIdx] = true
   try {
@@ -171,11 +180,17 @@ function _scheduleConfirmTimeout(cellIdx) {
  * confirmé la livraison.
  */
 export function confirmFromPhotos(photos) {
-  if (!state._pendingPhotos || !state.uid) return
+  if (!state._pendingPhotos || !state.uid || !state.gameCode) return
   let changed = false
   for (const cellIdx of Object.keys(state._pendingPhotos)) {
     const entry = state._pendingPhotos[cellIdx]
     if (entry.status !== 'uploaded') continue
+    // L'entry doit appartenir à la partie courante. Sans ce check, un
+    // snapshot d'une autre partie (consultée via viewHistoryGame, par
+    // ex.) pourrait confirmer faussement une photo de la partie active
+    // si les objId matchent par hasard → suppression locale d'une
+    // photo qui n'est en fait pas encore vraiment côté serveur.
+    if (entry.gameCode && entry.gameCode !== state.gameCode) continue
     const matched = photos.some(p => p.uid === state.uid && p.objId === entry.objId)
     if (matched) {
       delete state._pendingPhotos[cellIdx]
@@ -203,6 +218,10 @@ export function retryAllPending() {
   for (const cellIdx of Object.keys(state._pendingPhotos)) {
     const entry = state._pendingPhotos[cellIdx]
     if (entry.status === 'uploaded') continue
+    // Skip les entries d'une autre partie : on ne re-upload pas vers la
+    // mauvaise gameCode. Elles seront retentées quand l'utilisateur
+    // reviendra sur la bonne partie (boot/resumeActiveGame).
+    if (entry.gameCode && entry.gameCode !== state.gameCode) continue
     // Reset les compteurs : c'est un nouveau cycle (nouvelle connexion ou
     // nouveau reload) et la cause d'échec a peut-être disparu.
     entry.status = 'pending'
@@ -225,8 +244,21 @@ export function restorePendingPhotos() {
   const key = `bingo_pending_photos_${state.gameCode}`
   try {
     const raw = localStorage.getItem(key)
-    if (!raw) return
+    if (!raw) {
+      // Pas de queue persistée pour cette partie — on s'assure que la
+      // mémoire ne contient pas non plus d'entries fantômes d'une partie
+      // précédente (cas viewHistoryGame qui change state.gameCode sans
+      // remettre _pendingPhotos à zéro).
+      state._pendingPhotos = {}
+      return
+    }
     const data = JSON.parse(raw)
+    // Backfill du gameCode sur les entries legacy (pré-fix isolation par
+    // gameCode) : on était dans cette partie au moment du persist, donc
+    // les entries sans tag appartiennent à state.gameCode.
+    for (const entry of Object.values(data)) {
+      if (!entry.gameCode) entry.gameCode = state.gameCode
+    }
     state._pendingPhotos = data
     // Restaure aussi les dataURL dans state.myPhotos pour que l'UI les
     // affiche tant que la confirmation n'est pas arrivée.
@@ -321,11 +353,22 @@ function _persist() {
   if (!state.gameCode) return
   const key = `bingo_pending_photos_${state.gameCode}`
   try {
-    const data = state._pendingPhotos
-    if (!data || Object.keys(data).length === 0) {
+    // Ne persiste que les entries de la partie courante. Sans ce filtre,
+    // si state._pendingPhotos contient encore des entries d'une partie
+    // précédente (race entre changement de gameCode et opération async),
+    // on les écrirait par erreur dans le localStorage de la nouvelle
+    // partie.
+    const data = state._pendingPhotos || {}
+    const relevant = {}
+    for (const [idx, entry] of Object.entries(data)) {
+      if (!entry.gameCode || entry.gameCode === state.gameCode) {
+        relevant[idx] = entry
+      }
+    }
+    if (Object.keys(relevant).length === 0) {
       localStorage.removeItem(key)
     } else {
-      localStorage.setItem(key, JSON.stringify(data))
+      localStorage.setItem(key, JSON.stringify(relevant))
     }
   } catch (err) {
     console.warn('[photo-queue] persist failed:', err)
