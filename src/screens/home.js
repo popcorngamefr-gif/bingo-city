@@ -8,11 +8,14 @@ import { bgVarsovieHtml, floatingItemsHtml } from '../ui/varsovie.js'
 import { icon }         from '../ui/icons.js'
 import { avatarLayersHtml } from '../ui/avatar.js'
 import { getActiveGame } from '../activeGame.js'
+import { loadHistory, formatRelativeTime } from '../utils/gameHistory.js'
+import { escapeHtml }    from '../utils/html.js'
 
 export function renderHome() {
   const profile    = state.userProfile
   const hasAccount = !!state.accountKey
   const active     = getActiveGame()
+  const history    = loadHistory().filter(h => !active || h.code !== active.code)
   const myAvatar   = state.myAvatar || profile?.avatar
   const displayName = profile?.name || state.myName || state.accountKey || ''
   const hasDeglingoVideo = !!(myAvatar?.animationUrl)
@@ -118,6 +121,33 @@ export function renderHome() {
           </button>
         `}
       </div>
+
+      <!-- Historique : tes dernières parties terminées (max 5) -->
+      ${history.length > 0 ? `
+        <div class="home-v3-history">
+          <div class="home-v3-history-title">
+            ${icon('trophy', { size: 12 })} TES DERNIÈRES PARTIES
+          </div>
+          <div class="home-v3-history-list">
+            ${history.map(h => `
+              <div class="home-v3-history-card" data-action="viewHistoryGame" data-history-code="${escapeHtml(h.code)}">
+                <div class="home-v3-history-info">
+                  <div class="home-v3-history-name">${escapeHtml(h.name)}</div>
+                  <div class="home-v3-history-meta">
+                    <span class="home-v3-history-code">${escapeHtml(h.code)}</span>
+                    ${h.isMJ ? `<span class="home-v3-history-mj">MJ</span>` : ''}
+                    <span class="home-v3-history-date">${formatRelativeTime(h.endedAt)}</span>
+                  </div>
+                </div>
+                <div class="home-v3-history-arrow">${icon('arrow_right', { size: 14 })}</div>
+                <button class="home-v3-history-remove" data-action="removeHistoryGame" data-history-code="${escapeHtml(h.code)}" title="Retirer de l'historique">
+                  ${icon('cross', { size: 12 })}
+                </button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
 
       <!-- ZONE 4 : Help + Hall of Fame mini-CTAs (au-dessus du skyline) -->
       <div class="home-v3-help home-v3-help-top">
