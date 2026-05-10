@@ -218,6 +218,20 @@ function _onGameUpdate(gameData) {
       if (state.currentScreen === 'end') show('end')
       else navigate('end')
     }
+    // Archive la partie dans l'historique local pour que l'utilisateur
+    // puisse y revenir plus tard depuis le home, même après avoir lancé
+    // une nouvelle partie. Idempotent (dédupe par code dans archiveGame).
+    if (state.gameCode) {
+      import('./utils/gameHistory.js').then(({ archiveGame }) => {
+        archiveGame({
+          code:    state.gameCode,
+          name:    state.gameName,
+          isMJ:    state.isMJ,
+          myName:  state.myName,
+          endedAt: Date.now(),
+        })
+      }).catch(() => {})
+    }
   }
 }
 
@@ -619,14 +633,113 @@ const ACTIONS = {
     navigate('game')
   },
 
+  /**
+   * Ouvre une partie de l'historique en mode lecture seule. Hydrate
+   * state.gameCode, gameName, players, photos depuis Firestore. Ne touche
+   * PAS bingo_active_game (la partie en cours, si elle existe, reste
+   * intacte ; resumeActiveGame la reprendra correctement plus tard).
+   */
+  async viewHistoryGame(target) {
+    const code = target?.dataset?.historyCode
+    if (!code) return
+
+    // Stop le timer de la partie active si en cours — on switch de
+    // contexte. resumeActiveGame le redémarrera correctement quand
+    // l'utilisateur reviendra à sa partie en cours.
+    if (state.timerInterval) {
+      clearInterval(state.timerInterval)
+      state.timerInterval = null
+    }
+    state._viewingHistory = true
+    state._previewClassement = false
+    toast('Chargement…', 1500)
+
+    const { loadHistory, removeFromHistory } = await import('./utils/gameHistory.js')
+    const meta = loadHistory().find(g => g.code === code)
+    if (!meta) { toast('Entrée historique introuvable'); navigate('home'); return }
+
+    state.gameCode = meta.code
+    state.gameName = meta.name
+    state.isMJ     = meta.isMJ
+    state.myName   = meta.myName || state.myName
+
+    try {
+      const game = await withTimeout(getGameOnce(meta.code), 8000, 'firestore-timeout')
+      if (!game) {
+        // Doc Firestore supprimé (cleanup admin, expiration) → purge
+        // l'entry historique pour ne pas reproposer un truc cassé.
+        removeFromHistory(meta.code)
+        toast('Cette partie n\'existe plus côté serveur')
+        navigate('home')
+        return
+      }
+      if (typeof game.duration === 'number') state.gameDuration = game.duration
+      if (game.startedAt && typeof game.startedAt.toMillis === 'function') {
+        state.gameStartedAt = game.startedAt.toMillis()
+      }
+      state.selectedObjects = game.selectedObjects || []
+      state.customObjects   = game.customObjects   || []
+
+      try {
+        const players = await getPlayersOnce(meta.code)
+        state.players = players.map(p => ({ ...p, isYou: p.id === state.uid }))
+      } catch (err) { console.warn('[history] players failed:', err) }
+
+      try {
+        const photos = await getPhotosOnce(meta.code)
+        state.gamePhotos = photos
+        // Reconstitue myGrid + myPhotos pour la galerie inline du joueur
+        state.myGrid = state.selectedObjects.map(id => ({ objId: id, status: 'empty' }))
+        state.myPhotos = {}
+        const mine = photos.filter(p => p.uid === state.uid)
+        for (const photo of mine) {
+          if (!photo.objId) continue
+          const idx = state.selectedObjects.indexOf(photo.objId)
+          if (idx >= 0) {
+            state.myGrid[idx].status = 'validated'
+            state.myPhotos[idx]      = photo.url
+          }
+        }
+      } catch (err) { console.warn('[history] photos failed:', err) }
+
+      navigate('end')
+    } catch (err) {
+      console.warn('[history] view failed:', err)
+      toast('Impossible de charger cette partie')
+      navigate('home')
+    }
+  },
+
+  removeHistoryGame(target) {
+    const code = target?.dataset?.historyCode
+    if (!code) return
+    import('./utils/gameHistory.js').then(({ removeFromHistory }) => {
+      removeFromHistory(code)
+      // Re-render home pour retirer la carte
+      if (state.currentScreen === 'home') show('home')
+    }).catch(() => {})
+  },
+
   newGame() {
     unsubscribeAll()
     _seenPlayerIds.clear()
     _lobbySubscribedFor = null
     _photosSubscribedFor = null
-    // Nettoie la queue d'upload photo de la partie qu'on abandonne pour
-    // ne pas polluer le localStorage entre parties.
+    // Avant de tout reset, on archive la partie dans l'historique : ça
+    // permettra à l'utilisateur de revenir voir le classement plus tard
+    // depuis le home. Idempotent — archiveGame dédupe par code.
     if (state.gameCode) {
+      const archiveMeta = {
+        code:    state.gameCode,
+        name:    state.gameName,
+        isMJ:    state.isMJ,
+        myName:  state.myName,
+        endedAt: Date.now(),
+      }
+      import('./utils/gameHistory.js').then(({ archiveGame }) => archiveGame(archiveMeta))
+        .catch(() => {})
+      // Nettoie la queue d'upload photo de la partie qu'on abandonne pour
+      // ne pas polluer le localStorage entre parties.
       import('./utils/photoQueue.js').then(({ clearPendingPhotos }) => clearPendingPhotos(state.gameCode))
         .catch(() => {})
     }
@@ -989,7 +1102,7 @@ function setupEventDelegation() {
       // Anti double-clic : on désactive immédiatement le bouton.
       // Pour les actions async, on affiche un spinner jusqu'à résolution.
       const isButton = target.tagName === 'BUTTON' || target.classList.contains('btn')
-      const result = ACTIONS[action]()
+      const result = ACTIONS[action](target)
       if (result && typeof result.then === 'function' && isButton) {
         _withButtonLoader(target, result)
       } else if (isButton) {
@@ -1164,7 +1277,7 @@ function setupScreenHooks() {
     if (screen === 'account')            _setupAccountScreen()
     if (screen === 'animations-loading') _setupAnimationsLoadingScreen()
     if (screen === 'end')                { _setupGamePhotosSubscription(); _setupLobbySubscriptions() }
-    if (screen === 'home')               { unsubscribeAll(); _lobbySubscribedFor = null; _photosSubscribedFor = null; delete state._pendingIntent }
+    if (screen === 'home')               { unsubscribeAll(); _lobbySubscribedFor = null; _photosSubscribedFor = null; delete state._pendingIntent; delete state._viewingHistory }
   })
 }
 

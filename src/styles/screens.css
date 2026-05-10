@@ -410,6 +410,51 @@
   box-shadow: 2px 2px 0 var(--ink);
   position: relative;
 }
+/* Variante détaillée : la row devient une colonne (header + strip de photos)
+   Le header reprend l'ancien layout flex via .lb-row-main */
+.leaderboard-detailed .lb-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+.lb-row-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lb-photos-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding-top: 6px;
+  border-top: 2px dashed rgba(42, 34, 40, 0.18);
+}
+.lb-photo-thumb {
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--ink);
+  border-radius: 5px;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 1px 1px 0 var(--ink);
+  flex-shrink: 0;
+  background: var(--ink);
+}
+.lb-photo-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  image-rendering: auto;
+}
+.lb-photo-thumb:active {
+  transform: translate(1px, 1px);
+  box-shadow: 0 0 0 var(--ink);
+}
+/* Mise en avant du gagnant : léger glow doré */
+.lb-row-winner {
+  box-shadow: 2px 2px 0 var(--ink), 0 0 0 3px rgba(240, 200, 96, 0.55);
+}
 .lb-row.rank-1 { background: linear-gradient(135deg, var(--tram-yellow), var(--tram-yellow-warm)); }
 .lb-row.rank-2 { background: linear-gradient(135deg, var(--concrete), var(--concrete-mid)); }
 .lb-row.rank-3 { background: linear-gradient(135deg, var(--brick), var(--brick-dark)); }
@@ -3306,4 +3351,147 @@
   align-items: center;
   justify-content: center;
   z-index: 5;
+}
+
+/* ============================================
+   COTILLONS — confettis pixel-art à la fin de partie
+   Animation pure CSS, déclenchée seulement à la VRAIE fin (pas en preview
+   classement, pas en consultation historique).
+   ============================================ */
+.cotillons {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 4;
+}
+.cotillon {
+  position: absolute;
+  top: -20px;
+  width: 8px;
+  height: 12px;
+  border: 1px solid var(--ink);
+  animation-name: cotillonFall;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}
+@keyframes cotillonFall {
+  0%   { transform: translateY(-20px) rotate(0deg); opacity: 0; }
+  10%  { opacity: 1; }
+  100% { transform: translateY(105vh) rotate(540deg); opacity: 1; }
+}
+
+/* ============================================
+   HOME — cartes d'historique des dernières parties
+   ============================================ */
+.home-v3-history {
+  width: 100%;
+  max-width: 360px;
+  margin: 16px auto 0;
+  padding: 0 4px;
+  position: relative;
+  z-index: 5;
+}
+.home-v3-history-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: var(--ink-soft);
+  text-align: center;
+  margin-bottom: 10px;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.home-v3-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.home-v3-history-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--cream-cold);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  box-shadow: 2px 2px 0 var(--ink);
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.1s steps(2);
+}
+.home-v3-history-card:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+.home-v3-history-info {
+  flex: 1;
+  min-width: 0;
+}
+.home-v3-history-name {
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--ink);
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-v3-history-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+.home-v3-history-code {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  background: var(--tram-yellow);
+  color: var(--ink);
+  padding: 2px 6px;
+  border: 1px solid var(--ink);
+  border-radius: 4px;
+}
+.home-v3-history-mj {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  background: var(--tram-red);
+  color: white;
+  padding: 2px 5px;
+  border: 1px solid var(--ink);
+  border-radius: 4px;
+}
+.home-v3-history-date {
+  font-size: 13px;
+  opacity: 0.85;
+}
+.home-v3-history-arrow {
+  color: var(--ink);
+  flex-shrink: 0;
+}
+.home-v3-history-remove {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  background: transparent;
+  border: 1px solid var(--ink-soft);
+  border-radius: 50%;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 4px;
+}
+.home-v3-history-remove:hover {
+  background: var(--tram-red);
+  color: white;
+  border-color: var(--ink);
 }
